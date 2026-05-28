@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Torrent HLS — Multi-User Test Player</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #111; color: #eee; font-family: system-ui, sans-serif; padding: 24px; }
+  h1 { font-size: 1.4rem; margin-bottom: 20px; color: #7df; }
+
+  .card { background: #1e1e1e; border: 1px solid #333; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; margin-bottom: 12px; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  input[type=text] {
+    width: 100%; padding: 10px 12px; background: #2a2a2a; border: 1px solid #444;
+    border-radius: 4px; color: #eee; font-size: 0.95rem; margin-bottom: 10px;
+  }
+  button {
+    padding: 10px 22px; border: none; border-radius: 4px; cursor: pointer;
+    font-size: 0.9rem; font-weight: 600; transition: opacity 0.15s;
+  }
+  button:hover { opacity: 0.85; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-start { background: #2ecc71; color: #111; }
+  .btn-stop  { background: #e74c3c; color: #fff; }
+  .btn-load  { background: #3498db; color: #fff; }
+
+  video { width: 100%; border-radius: 6px; background: #000; }
+
+  #status-box { font-family: monospace; font-size: 0.82rem; line-height: 1.7;
+    background: #161616; padding: 14px; border-radius: 4px; min-height: 60px; }
+  .label { color: #888; }
+  .val   { color: #7df; }
+  .ok    { color: #2ecc71; }
+  .err   { color: #e74c3c; }
+  .warn  { color: #f39c12; }
+
+  progress { width: 100%; height: 6px; border-radius: 3px; margin-top: 8px; }
+
+  #toast { display:none; position:fixed; top:16px; left:50%; transform:translateX(-50%);
+    background:#c0392b; color:#fff; padding:10px 20px; border-radius:6px;
+    font-weight:600; font-size:0.9rem; z-index:999; max-width:90vw; text-align:center; }
+
+  #log { font-family: monospace; font-size: 0.78rem; background: #161616;
+    padding: 12px; border-radius: 4px; height: 140px; overflow-y: auto;
+    line-height: 1.6; white-space: pre-wrap; color: #aaa; }
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<h1>Torrent → HLS → Browser (Multi-User)</h1>
+
+<!-- ── Step 1: Submit magnet link ── -->
+<div class="card">
+  <h2>1. Start torrent</h2>
+  <input id="magnet" type="text" placeholder="magnet:?xt=urn:btih:..." />
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <button type="button" class="btn-start" id="btn-start" onclick="startTorrent()">Start download</button>
+    <button type="button" class="btn-stop"  id="btn-stop"  onclick="stopTorrent()" disabled>Stop &amp; cleanup</button>
+  </div>
+</div>
+
+<!-- ── Step 2: Status ── -->
+<div class="card">
+  <h2>2. Status</h2>
+  <div id="status-box">Idle — paste a magnet link above and click Start download.</div>
+  <progress id="dl-progress" value="0" max="1"></progress>
+</div>
+
+<!-- ── Step 3: Player ── -->
+<div class="card">
+  <h2>3. Player</h2>
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
+    <input id="stream-url" type="text" placeholder="/stream/<sessionId>/master.m3u8" style="margin:0;flex:1;" />
+    <button type="button" class="btn-load" onclick="loadStream()">Load</button>
+  </div>
+  <video id="player" controls></video>
+</div>
+
+<!-- ── Log ── -->
+<div class="card">
+  <h2>Log</h2>
+  <div id="log"></div>
+</div>
+
+<!--
+  HLS.js: enables HLS playback in Chrome/Firefox/Edge which don't support
+  HLS natively. Safari supports HLS natively so HLS.js falls back gracefully.
+-->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
+<script>
+let statusInterval = null;
+let hlsInstance    = null;
+let activeSessionId = null;
+
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+
+function log(msg, cls = '') {
+  console.log(`[ui] ${msg}`);
+  const el = document.getElementById('log');
+  const ts = new Date().toTimeString().slice(0, 8);
+  el.innerHTML += `<span class="${cls}">[${ts}] ${msg}\n</span>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+function normalizeMagnet(raw) {
+  const s = raw.trim();
+  if (s.startsWith('magnet:')) return s;
+  if (s.startsWith('?xt='))    return 'magnet:' + s;
+  return s;
+}
+
+async function startTorrent() {
+  console.log('[ui] startTorrent() called');
+  const magnet = normalizeMagnet(document.getElementById('magnet').value);
+  if (!magnet.startsWith('magnet:')) {
+    toast('Paste a valid magnet link first (magnet:?xt=urn:btih:...)');
+    log('No valid magnet link entered.', 'err');
+    return;
+  }
+
+  document.getElementById('btn-start').disabled = true;
+  document.getElementById('btn-stop').disabled  = false;
+  log('Sending magnet to server...');
+
+  try {
+    const resp = await fetch('/torrent/start', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ magnet }),
+    });
+
+    const data = await resp.json();
+    if (!resp.ok) {
+      toast(`Server error: ${data.error}`);
+      log(`Server error: ${data.error}`, 'err');
+      document.getElementById('btn-start').disabled = false;
+      return;
+    }
+
+    activeSessionId = data.sessionId;
+
+    const statusLabel = data.status === 'joined' ? 'Joined existing stream' : 'Stream ready';
+    log(`${statusLabel}: ${data.streamUrl} [mode=${data.mode}, viewers=${data.viewers}]`, 'ok');
+    document.getElementById('stream-url').value = data.streamUrl;
+    loadStream(data.streamUrl);
+    startPolling(data.sessionId);
+  } catch (err) {
+    toast(`Fetch error: ${err.message}`);
+    log(`Fetch error: ${err.message}`, 'err');
+    document.getElementById('btn-start').disabled = false;
+  }
+}
+
+async function stopTorrent() {
+  clearInterval(statusInterval);
+  if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+  document.getElementById('player').src    = '';
+  document.getElementById('btn-start').disabled = false;
+  document.getElementById('btn-stop').disabled  = true;
+
+  if (activeSessionId) {
+    try {
+      const r = await fetch('/torrent/stop', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ sessionId: activeSessionId, clean: true }),
+      });
+      const d = await r.json();
+      log(`Stopped. Cleaned: ${d.cleaned}`, 'ok');
+    } catch (err) {
+      log(`Stop error: ${err.message}`, 'err');
+    }
+    activeSessionId = null;
+  }
+
+  document.getElementById('status-box').textContent = 'Stopped.';
+  document.getElementById('dl-progress').value      = 0;
+}
+
+function loadStream(url) {
+  url = url ?? document.getElementById('stream-url').value.trim();
+  if (!url) return;
+
+  if (typeof Hls === 'undefined') {
+    log('HLS.js failed to load from CDN — check your connection and reload.', 'err');
+    return;
+  }
+
+  const video = document.getElementById('player');
+  if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+  document.getElementById('log').innerHTML = '';
+
+  const fullUrl = url.startsWith('http') ? url : (window.location.origin + url);
+
+  if (Hls.isSupported()) {
+    /*
+     * VOD-mode HLS.js config — hls_list_size 0 keeps all segments in the
+     * playlist so HLS.js sees #EXT-X-ENDLIST (eventually) and uses VOD buffering.
+     * Each user has their own independent session/FFmpeg process, so there's no
+     * shared rolling window that would delete segments out from under a lagging viewer.
+     *
+     * backBufferLength: 60 s — keep a generous back-buffer for rewinding.
+     * maxBufferLength / maxMaxBufferLength: standard VOD values.
+     */
+    hlsInstance = new Hls({
+      enableWorker:            true,
+      startPosition:           0,
+      maxBufferLength:         30,
+      maxMaxBufferLength:      120,
+      backBufferLength:        60,
+      startFragPrefetch:       true,
+      nudgeOffset:             0.1,
+      nudgeMaxRetry:           3,
+      manifestLoadingTimeOut:  20000,
+      manifestLoadingMaxRetry: 10,
+      levelLoadingTimeOut:     20000,
+      levelLoadingMaxRetry:    10,
+      fragLoadingTimeOut:      60000,
+      fragLoadingMaxRetry:     6,
+    });
+    hlsInstance.loadSource(fullUrl);
+    hlsInstance.attachMedia(video);
+
+    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+      log('Manifest loaded — starting playback', 'ok');
+      video.muted  = false;
+      video.volume = 1.0;
+      video.play().catch(e => log(`Autoplay blocked — click the video to play (${e.message})`, 'warn'));
+    });
+
+    hlsInstance.on(Hls.Events.ERROR, (ev, data) => {
+      const underlying = data.error?.message ?? data.err?.message ?? '';
+      log(
+        `HLS ${data.fatal ? 'fatal' : 'warn'} [${data.type}] ${data.details}${underlying ? ': ' + underlying : ''}`,
+        data.fatal ? 'err' : ''
+      );
+      if (!data.fatal) return;
+      if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+        log('Network error — retrying...');
+        hlsInstance.startLoad();
+      } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+        log('Media error — attempting recovery...');
+        hlsInstance.recoverMediaError();
+      } else {
+        log('Unrecoverable HLS error — destroying player', 'err');
+        hlsInstance.destroy();
+        hlsInstance = null;
+      }
+    });
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    // Safari — native HLS support (no HLS.js needed)
+    video.src = fullUrl;
+    video.play();
+    log('Using native Safari HLS', 'ok');
+  } else {
+    log('Browser does not support HLS. Install HLS.js manually.', 'err');
+  }
+}
+
+function startPolling(sessionId) {
+  const url = sessionId ? `/torrent/status?sessionId=${sessionId}` : '/torrent/status';
+  statusInterval = setInterval(async () => {
+    try {
+      const resp = await fetch(url);
+      const data = await resp.json();
+      // Status endpoint returns an array when no sessionId is given,
+      // or a single object when sessionId is given.
+      const s = Array.isArray(data) ? (data[0] ?? {}) : data;
+      renderStatus(s);
+    } catch { /* server may be restarting */ }
+  }, 1500);
+}
+
+function renderStatus(s) {
+  const pct   = s.total ? ((s.downloaded / s.total) * 100).toFixed(1) : 0;
+  const speed = fmt(s.downloadSpeed) + '/s';
+  const box   = document.getElementById('status-box');
+
+  box.innerHTML = `
+<span class="label">State       </span><span class="val ${s.state === 'streaming' ? 'ok' : ''}">${s.state ?? '—'}</span>
+<span class="label">Mode        </span><span class="val">${s.mode ?? '—'}</span>
+<span class="label">Viewers     </span><span class="val">${s.viewers ?? '—'}</span>
+<span class="label">File        </span><span class="val">${s.name ?? '—'}</span>
+<span class="label">Downloaded  </span><span class="val">${fmt(s.downloaded ?? 0)} / ${fmt(s.total ?? 0)} (${pct}%)</span>
+<span class="label">Speed       </span><span class="val">${speed}</span>
+<span class="label">Peers       </span><span class="val">${s.numPeers ?? 0}</span>
+<span class="label">HLS segments</span><span class="val">${s.hlsSegments ?? 0}</span>
+<span class="label">Memory (MB) </span><span class="val">${s.memoryUsedMB ?? '—'}</span>
+<span class="label">Stream URL  </span><span class="val">${s.streamUrl ?? '—'}</span>
+`.trim();
+  document.getElementById('dl-progress').value = s.progress ?? 0;
+}
+
+function fmt(bytes) {
+  if (!bytes) return '0 B';
+  if (bytes < 1024)       return bytes + ' B';
+  if (bytes < 1024 ** 2)  return (bytes / 1024).toFixed(1) + ' KB';
+  if (bytes < 1024 ** 3)  return (bytes / 1024 ** 2).toFixed(1) + ' MB';
+  return (bytes / 1024 ** 3).toFixed(2) + ' GB';
+}
+</script>
+</body>
+</html>
