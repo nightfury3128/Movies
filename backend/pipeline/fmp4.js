@@ -80,35 +80,23 @@ function parseTrunDuration(payload) {
 
   const flags       = ru32(payload, 0) & 0xffffff;
   const sampleCount = ru32(payload, 4);
-  const hasDuration   = (flags & 0x100) !== 0;
-  const hasDefaultDur = (flags & 0x200) !== 0;
+  if ((flags & 0x100) === 0 || sampleCount === 0) return null;
 
+  // Optional fields before per-sample table (ISO BMFF 8.8.8).
   let off = 8;
   if (flags & 0x001) off += 4; // data_offset
-  if (hasDefaultDur)  off += 4; // default_sample_duration
+  if (flags & 0x004) off += 4; // first_sample_flags
 
-  if (sampleCount === 0) return null;
-
-  if (hasDuration) {
-    let total = 0;
-    for (let i = 0; i < sampleCount; i++) {
-      if (off + 4 > payload.length) break;
-      total += ru32(payload, off);
-      off += 4;
-      if (flags & 0x400) off += 4; // first_sample_flags
-      if (flags & 0x800) off += 4; // sample_size
-      if (flags & 0x010) off += 4; // sample_flags
-      if (flags & 0x020) off += 4; // sample_composition_time_offset
-    }
-    return total > 0 ? total : null;
+  let total = 0;
+  for (let i = 0; i < sampleCount; i++) {
+    if (off + 4 > payload.length) break;
+    total += ru32(payload, off);  // sample_duration
+    off += 4;
+    if (flags & 0x200) off += 4; // sample_size
+    if (flags & 0x400) off += 4; // sample_flags
+    if (flags & 0x800) off += 4; // sample_composition_time_offset
   }
-
-  if (hasDefaultDur && payload.length >= 12) {
-    const defaultDur = ru32(payload, 8);
-    return defaultDur * sampleCount;
-  }
-
-  return null;
+  return total > 0 ? total : null;
 }
 
 /**
@@ -177,9 +165,9 @@ export function readVideoTimescale(buf) {
       if (mdhdPayload.length < 12) { pos += size; continue; }
 
       const version = mdhdPayload[0];
-      // version==0: flags(3)+creation(4)+modification(4)+timescale(4) → ts at offset 8
-      // version==1: flags(3)+creation(8)+modification(8)+timescale(4) → ts at offset 20
-      return version === 1 ? ru32(mdhdPayload, 20) : ru32(mdhdPayload, 8);
+      // version==0: version(1)+flags(3)+creation(4)+modification(4)+timescale(4) → ts at offset 12
+      // version==1: version(1)+flags(3)+creation(8)+modification(8)+timescale(4) → ts at offset 20
+      return version === 1 ? ru32(mdhdPayload, 20) : ru32(mdhdPayload, 12);
     }
 
     pos += size;

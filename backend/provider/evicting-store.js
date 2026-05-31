@@ -28,10 +28,10 @@ export class EvictingMemoryStore {
     this.HEADER_PRESERVE_CHUNKS = 0;
   }
 
-  get(index, offset, length, cb) {
+  get(index, cb) {
     const chunk = this.chunks.get(index);
     if (!chunk) return cb(new Error('chunk not found'));
-    cb(null, chunk.slice(offset, offset + length));
+    cb(null, chunk);
   }
 
   put(index, buf, cb) {
@@ -73,9 +73,13 @@ export class EvictingMemoryStore {
     return total;
   }
 
-  destroy(cb) {
+  close(cb) {
     this.chunks.clear();
     cb?.(null);
+  }
+
+  destroy(cb) {
+    this.close(cb);
   }
 }
 

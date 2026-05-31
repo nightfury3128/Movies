@@ -45,12 +45,15 @@ export class SegmentCache {
   }
 
   /**
-   * Check if a fully transcoded copy exists (has #EXT-X-ENDLIST in master.m3u8).
+   * Check if a fully transcoded copy exists.
+   * Requires #EXT-X-ENDLIST and at least 30 segments (≥60 s at 2 s/seg).
    */
   isComplete(infoHash) {
     try {
       const playlist = fs.readFileSync(path.join(this.dir(infoHash), 'master.m3u8'), 'utf8');
-      return playlist.includes('#EXT-X-ENDLIST');
+      if (!playlist.includes('#EXT-X-ENDLIST')) return false;
+      const segCount = (playlist.match(/#EXTINF:/g) ?? []).length;
+      return segCount >= 30;
     } catch {
       return false;
     }

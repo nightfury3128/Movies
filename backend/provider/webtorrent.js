@@ -199,14 +199,18 @@ export class TorrentManager extends EventEmitter {
           'Content-Type':   'video/mp4',
           'Accept-Ranges':  'bytes',
         });
-        file.createReadStream({ start, end }).pipe(res);
+        const rs1 = file.createReadStream({ start, end });
+        rs1.on('error', () => {});
+        rs1.pipe(res);
       } else {
         res.writeHead(200, {
           'Content-Length': String(total),
           'Content-Type':   'video/mp4',
           'Accept-Ranges':  'bytes',
         });
-        file.createReadStream().pipe(res);
+        const rs2 = file.createReadStream();
+        rs2.on('error', () => {});
+        rs2.pipe(res);
       }
     });
 
@@ -225,14 +229,16 @@ export class TorrentManager extends EventEmitter {
 
   _waitForBuffer(torrent, resolve) {
     const MIN_PIECES = 4;
+    let resolved = false;
     const check = () => {
-      if (!torrent.pieces) return;
+      if (resolved || !torrent.pieces) return;
       const downloaded = torrent.pieces.filter(Boolean).length;
       if (downloaded >= MIN_PIECES || torrent.done) {
+        resolved = true;
+        torrent.off('download', check);
         this._bufferReady = true;
         log(NS, `Buffer ready (${downloaded} pieces)`);
         resolve({ internalUrl: this.internalUrl, videoFile: this.videoFile });
-        return;
       }
     };
 

@@ -365,9 +365,28 @@ async function _startPipeline(session, segmentCache) {
     session.mainLastTime = t;
 
     // Advance eviction frontier — free RAM for old pieces.
-    if (codecInfo.duration && videoFile.length) {
-      const bytePos = (t / codecInfo.duration) * videoFile.length;
-      torrentMgr.evictBefore(bytePos);
+    // Use actual duration if known; otherwise estimate from first-segment bitrate.
+    if (videoFile.length) {
+      let dur = codecInfo.duration ?? session._estDuration ?? null;
+      if (!dur && t > 5 && session.timeline.count() >= 2) {
+        const segs = session.timeline.getAll().slice(0, 4);
+        let hlsBytes = 0, hlsSecs = 0;
+        for (const s of segs) {
+          try {
+            hlsBytes += fs.statSync(path.join(hlsPath, s.file)).size;
+            hlsSecs += s.duration;
+          } catch {}
+        }
+        if (hlsBytes > 0 && hlsSecs > 0) {
+          session._estDuration = videoFile.length / (hlsBytes / hlsSecs);
+          dur = session._estDuration;
+          log(NS, `[${sessionId}] Estimated duration: ${dur.toFixed(0)}s`);
+        }
+      }
+      if (dur) {
+        const fileOff = videoFile.offset ?? 0;
+        torrentMgr.evictBefore(fileOff + (t / dur) * videoFile.length);
+      }
     }
 
     // Clean up expired seek workers.
@@ -383,12 +402,10 @@ async function _startPipeline(session, segmentCache) {
 
   // ── 6. Wait for init.mp4 ──────────────────────────────────────────────────
   log(NS, `[${sessionId}] Waiting for init.mp4`);
-  await _waitForFile(path.join(hlsPath, 'init.mp4'), 60_000);
+  await _waitForFile(path.join(hlsPath, 'init.mp4'), 60_000, 100);
 
-  // Read actual video timescale from init segment.
-  const timescale = await readInitTimescale(path.join(hlsPath, 'init.mp4'));
-  session.videoTimescale = timescale ?? 90000;
-  log(NS, `[${sessionId}] Video timescale: ${session.videoTimescale}`);
+  // Timescale read is deferred — init.mp4 may not be fully written yet.
+  // It will be read once init.mp4 exists AND parses (checked below after first segment).
 
   // ── 7. Start segment watcher ───────────────────────────────────────────────
   const stopWatcher = _watchMainHlsDir(session);
@@ -400,6 +417,21 @@ async function _startPipeline(session, segmentCache) {
   // ── 9. Wait for first segment ─────────────────────────────────────────────
   log(NS, `[${sessionId}] Waiting for first segment`);
   await _waitForFirstSegment(session, FIRST_SEG_TIMEOUT_MS);
+
+  // ── 9b. Now init.mp4 is definitely fully written — read the timescale. ────
+  const timescale = await readInitTimescale(path.join(hlsPath, 'init.mp4'));
+  session.videoTimescale = timescale ?? 90000;
+  log(NS, `[${sessionId}] Video timescale: ${session.videoTimescale}`);
+
+  // Re-register any already-seen segments with the correct timescale.
+  if (timescale && timescale !== 90000) {
+    for (const entry of session.timeline.getAll()) {
+      const timing = await readSegmentTiming(path.join(hlsPath, entry.file), timescale);
+      if (timing) {
+        session.timeline.register({ file: entry.file, startTime: timing.startTime, endTime: timing.endTime, source: 'main' });
+      }
+    }
+  }
 
   // ── 10. Emit stream:ready ──────────────────────────────────────────────────
   session.state = 'streaming';
@@ -508,12 +540,14 @@ function _segmentExistsOnDisk(hlsPath, file) {
   try { return fs.statSync(path.join(hlsPath, file)).size > 0; } catch { return false; }
 }
 
-function _waitForFile(filePath, timeoutMs) {
+function _waitForFile(filePath, timeoutMs, minBytes = 0) {
   return new Promise((resolve, reject) => {
     const deadline = Date.now() + timeoutMs;
     const check = () => {
-      if (fs.existsSync(filePath)) { resolve(); return; }
-      if (Date.now() >= deadline)  { reject(new Error(`Timeout waiting for ${filePath}`)); return; }
+      try {
+        if (fs.statSync(filePath).size > minBytes) { resolve(); return; }
+      } catch {}
+      if (Date.now() >= deadline) { reject(new Error(`Timeout waiting for ${filePath}`)); return; }
       setTimeout(check, 200);
     };
     check();
