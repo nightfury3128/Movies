@@ -1,7 +1,7 @@
 {
-  "name": "torrent-hls-poc",
-  "version": "1.0.0",
-  "description": "Proof-of-concept: torrent → HLS → browser streaming",
+  "name": "athera-engine",
+  "version": "2.0.0",
+  "description": "Athera streaming engine — torrent-native HLS with timeline-authoritative seek",
   "main": "server.js",
   "type": "module",
   "scripts": {

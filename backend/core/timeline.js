@@ -1,37 +1,35 @@
 /**
- * timeline/segment-registry.js
+ * core/timeline.js — SegmentTimelineRegistry
  *
- * THE single source of truth for media timeline → file mapping.
+ * THE single source of truth for media time → segment file mapping.
  *
- * Every segment written by either the main encoder or seek worker must pass
- * through register(). No other code should map time → file or file → time.
+ * Every registered segment is keyed by media time, not filename or index.
+ * All seek resolution, gap recovery, and playback scheduling consult this
+ * registry — never raw file listings or playlist order.
  *
- * Entry shape:
- *   { file, startTime, endTime, duration, source, createdAt }
+ * Persistence: optionally writes to a JSON file so the timeline survives
+ * a server restart (critical for cached sessions that skip re-transcoding).
  *
- * Waiting callers (stream.js waitForFile) resolve instantly when the segment
- * they need is registered, with no polling loop.
+ * Async waiting: callers can await segment availability without polling loops.
  */
 
 import fs from 'fs';
 
 export class SegmentTimelineRegistry {
   /**
-   * @param {string|null} persistPath  - Optional JSON file to persist/reload entries.
+   * @param {string|null} persistPath  Optional JSON path for persistence.
    */
   constructor(persistPath = null) {
     this._segments    = [];   // sorted ascending by startTime
     this._persistPath = persistPath;
-    this._waiters     = [];   // { minTime, maxTime, resolve, timer }
+    this._waiters     = [];   // { mode, time?, bufferedEnd?, file?, resolve, timer }
   }
 
   // ── Write ─────────────────────────────────────────────────────────────────
 
   /**
-   * Register a segment.  Idempotent: registering the same file twice is a no-op.
-   *
-   * @param {{ file: string, startTime: number, endTime: number, source?: string }} opts
-   * @returns {object} the registry entry
+   * Register a segment. Idempotent: same file re-registered is a no-op unless
+   * timing changed.
    */
   register({ file, startTime, endTime, source = 'main' }) {
     const existing = this._segments.find(s => s.file === file);
@@ -58,7 +56,7 @@ export class SegmentTimelineRegistry {
       createdAt: Date.now(),
     };
 
-    // Insert sorted by startTime.
+    // Insert sorted by startTime
     let i = this._segments.length;
     while (i > 0 && this._segments[i - 1].startTime > startTime) i--;
     this._segments.splice(i, 0, entry);
@@ -68,10 +66,6 @@ export class SegmentTimelineRegistry {
     return entry;
   }
 
-  /**
-   * Bulk-register a list of persisted entries (on server restart from cache).
-   * @param {object[]} entries
-   */
   bulkRegister(entries) {
     for (const e of entries) {
       if (!this._segments.find(s => s.file === e.file)) {
@@ -83,7 +77,7 @@ export class SegmentTimelineRegistry {
 
   // ── Read ──────────────────────────────────────────────────────────────────
 
-  /** @returns {object|null} segment where startTime <= time < endTime */
+  /** Segment where startTime <= time < endTime. */
   findSegmentForTime(time) {
     for (const s of this._segments) {
       if (s.startTime <= time && time < s.endTime) return s;
@@ -91,30 +85,14 @@ export class SegmentTimelineRegistry {
     return null;
   }
 
-  /** True when entry spans seekTime. */
-  coversTime(entry, time) {
-    return entry != null && entry.startTime <= time && time < entry.endTime;
-  }
-
-  /**
-   * Segment valid for a cached seek response — must cover seekTime.
-   * @returns {object|null}
-   */
   findSeekTargetSegment(time) {
     return this.findSegmentForTime(time);
   }
 
-  /**
-   * For MSE gap recovery: segment that extends bufferedEnd, or the next
-   * registered segment after a hole (so the client can prefetch/wait).
-   * @param {number} bufferedEnd
-   * @returns {object|null}
-   */
+  /** Segment that extends bufferedEnd (starts ≤ bufferedEnd + before, ends > bufferedEnd + after). */
   findNextForBuffer(bufferedEnd, maxGapSec = 45) {
     for (const s of this._segments) {
-      if (s.startTime <= bufferedEnd + 0.5 && s.endTime > bufferedEnd + 0.1) {
-        return s;
-      }
+      if (s.startTime <= bufferedEnd + 0.5 && s.endTime > bufferedEnd + 0.1) return s;
     }
     let best = null;
     for (const s of this._segments) {
@@ -126,20 +104,10 @@ export class SegmentTimelineRegistry {
     return best;
   }
 
-  /**
-   * @deprecated Use findSeekTargetSegment for seek; only returns covering segments.
-   * @returns {object|null}
-   */
-  findPrerollSegment(time) {
-    return this.findSegmentForTime(time);
-  }
-
-  /** @returns {object|null} */
   findByFile(file) {
     return this._segments.find(s => s.file === file) ?? null;
   }
 
-  /** Next segment after `startTime` (strictly greater startTime). */
   findNextAfter(startTime) {
     for (const s of this._segments) {
       if (s.startTime > startTime) return s;
@@ -147,7 +115,6 @@ export class SegmentTimelineRegistry {
     return null;
   }
 
-  /** @returns {object|null} closest segment by startTime */
   findNearestSegment(time) {
     if (!this._segments.length) return null;
     return this._segments.reduce((best, s) =>
@@ -155,127 +122,53 @@ export class SegmentTimelineRegistry {
     );
   }
 
-  /** @returns {object[]} all segments whose range overlaps [startTime, endTime] */
   findSegmentsInRange(startTime, endTime) {
     return this._segments.filter(s => s.startTime < endTime && s.endTime > startTime);
   }
 
-  hasTime(time) {
-    return this.findSegmentForTime(time) != null;
-  }
+  hasTime(time) { return this.findSegmentForTime(time) != null; }
 
-  /** Latest endTime registered, or 0 if empty. */
   latestTime() {
     return this._segments.length ? this._segments[this._segments.length - 1].endTime : 0;
   }
 
-  getAll() { return [...this._segments]; }
-
-  count() { return this._segments.length; }
+  getAll()  { return [...this._segments]; }
+  count()   { return this._segments.length; }
 
   // ── Async wait ────────────────────────────────────────────────────────────
 
-  /**
-   * Resolve with the segment covering `time` as soon as it is registered.
-   * Returns null if nothing is registered within `timeoutMs`.
-   *
-   * @param {number} time       - Seek target in seconds
-   * @param {number} timeoutMs
-   * @returns {Promise<object|null>}
-   */
   waitForTime(time, timeoutMs = 30_000) {
     const existing = this.findSegmentForTime(time);
     if (existing) return Promise.resolve(existing);
-
-    return new Promise(resolve => {
-      let timer;
-      const waiter = {
-        time,
-        mode:    'cover',
-        resolve: entry => { clearTimeout(timer); resolve(entry); },
-      };
-      this._waiters.push(waiter);
-      timer = setTimeout(() => {
-        const i = this._waiters.indexOf(waiter);
-        if (i !== -1) this._waiters.splice(i, 1);
-        resolve(null);
-      }, timeoutMs);
-    });
+    return this._makeWaiter({ mode: 'cover', time }, timeoutMs, () => this.findSegmentForTime(time));
   }
 
-  /**
-   * Resolve when a preroll segment for `time` is available.
-   * @param {number} time
-   * @param {number} timeoutMs
-   * @returns {Promise<object|null>}
-   */
-  waitForPreroll(time, timeoutMs = 30_000) {
-    return this.waitForTime(time, timeoutMs);
-  }
-
-  /**
-   * Resolve when a segment extending `bufferedEnd` (or the next after a hole) registers.
-   * @param {number} bufferedEnd
-   * @param {number} timeoutMs
-   * @returns {Promise<object|null>}
-   */
   waitForNextAfter(bufferedEnd, timeoutMs = 30_000) {
     const existing = this.findNextForBuffer(bufferedEnd);
     if (existing) return Promise.resolve(existing);
-
-    return new Promise(resolve => {
-      let timer;
-      const waiter = {
-        mode:         'after',
-        bufferedEnd,
-        resolve: entry => { clearTimeout(timer); resolve(entry); },
-      };
-      this._waiters.push(waiter);
-      timer = setTimeout(() => {
-        const i = this._waiters.indexOf(waiter);
-        if (i !== -1) this._waiters.splice(i, 1);
-        resolve(this.findNextForBuffer(bufferedEnd));
-      }, timeoutMs);
-    });
+    return this._makeWaiter({ mode: 'after', bufferedEnd }, timeoutMs, () => this.findNextForBuffer(bufferedEnd));
   }
 
-  /**
-   * Resolve when a specific segment file is registered.
-   * @param {string} file
-   * @param {number} timeoutMs
-   */
   waitForFile(file, timeoutMs = 30_000) {
     const existing = this.findByFile(file);
     if (existing) return Promise.resolve(existing);
+    return this._makeWaiter({ mode: 'file', file }, timeoutMs, () => this.findByFile(file));
+  }
 
+  _makeWaiter(spec, timeoutMs, fallback) {
     return new Promise(resolve => {
       let timer;
       const waiter = {
-        file,
-        mode:    'file',
+        ...spec,
         resolve: entry => { clearTimeout(timer); resolve(entry); },
       };
       this._waiters.push(waiter);
       timer = setTimeout(() => {
         const i = this._waiters.indexOf(waiter);
         if (i !== -1) this._waiters.splice(i, 1);
-        resolve(null);
+        resolve(fallback());
       }, timeoutMs);
     });
-  }
-
-  // ── Compatibility ─────────────────────────────────────────────────────────
-
-  /**
-   * Return the segment whose startTime corresponds to a legacy FFmpeg index.
-   * Only used during the migration period where callers still have an integer idx.
-   *
-   * @param {number} idx        - Legacy segment index
-   * @param {number} segDuration - Nominal segment duration (default 2 s)
-   */
-  segmentForLegacyIndex(idx, segDuration = 2) {
-    const approxTime = idx * segDuration;
-    return this.findSegmentForTime(approxTime) ?? this.findNearestSegment(approxTime);
   }
 
   // ── Persistence ───────────────────────────────────────────────────────────
@@ -297,18 +190,18 @@ export class SegmentTimelineRegistry {
     const remaining = [];
     for (const w of this._waiters) {
       let resolved = null;
+
       if (w.mode === 'file') {
         if (w.file === entry.file) resolved = entry;
-      } else if (w.mode === 'preroll') {
-        resolved = this.findSegmentForTime(w.time);
       } else if (w.mode === 'after') {
-        if (entry.startTime <= w.bufferedEnd + 0.5 && entry.endTime > w.bufferedEnd + 0.1) {
-          resolved = entry;
-        } else if (entry.startTime > w.bufferedEnd + 0.1) {
+        if (
+          (entry.startTime <= w.bufferedEnd + 0.5 && entry.endTime > w.bufferedEnd + 0.1) ||
+          (entry.startTime > w.bufferedEnd + 0.1 && entry.startTime - w.bufferedEnd <= 45)
+        ) {
           resolved = entry;
         }
-      } else if (w.time >= startTime && w.time < endTime) {
-        resolved = entry;
+      } else if (w.mode === 'cover') {
+        if (w.time >= startTime && w.time < endTime) resolved = entry;
       }
 
       if (resolved) w.resolve(resolved);
@@ -318,14 +211,12 @@ export class SegmentTimelineRegistry {
   }
 }
 
-/** @param {object|null} entry @returns {object|null} */
+/** Normalise a timeline entry into the wire format used by SSE and HTTP responses. */
 export function toSegmentPayload(entry) {
   if (!entry) return null;
-  const file = entry.file ?? entry.segmentId;
-  if (!file) return null;
   return {
-    segmentId: file,
-    file,
+    segmentId: entry.file,
+    file:      entry.file,
     startTime: entry.startTime,
     endTime:   entry.endTime,
     duration:  entry.duration ?? (entry.endTime - entry.startTime),

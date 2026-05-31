@@ -1,50 +1,50 @@
 /**
- * routes/stream.js
+ * routes/stream.js — HLS file serving.
  *
- * Serves HLS playlist and segment files from the persistent segment cache.
- * Timeline-aware: legacy filename requests redirect to TFDT-renamed files via
- * the session SegmentTimelineRegistry.
+ * GET /stream/:sessionId/init.mp4
+ * GET /stream/:sessionId/master.m3u8
+ * GET /stream/:sessionId/by-id/:segmentId
+ * GET /stream/:sessionId/:filename
+ *
+ * Segment requests block until the file appears on disk (or 120s timeout).
+ * This is intentional: the browser asks for a segment, and the server waits
+ * for FFmpeg/seek worker to produce it rather than returning 404.
+ *
+ * Seek artifact resolution: if the client requests `segment_t118000.m4s` but
+ * the timeline has a nearby-time segment under a different name, we serve the
+ * actual file from disk. This handles minor TFDT rounding differences.
  */
 
 import path from 'path';
-import fs from 'fs';
-import { createReadStream } from 'fs';
-import { INIT_IDX, SEG_DURATION } from '../cache/segment-cache.js';
-import { seekLog, seekWarn, instrLog } from '../logger.js';
-import {
-  readFragmentVideoTimeline,
-  globalIdxFromFragmentStart,
-} from '../instrumentation/fragment-timeline.js';
+import fs   from 'fs';
 
-const SEGMENT_ID_RE = /^segment_(?:t\d+(?:_\d+)?|\d+)\.m4s$/;
+const SEGMENT_RE = /^segment_(?:t\d+(?:_\d+)?|\d+)\.m4s$/;
+const SEG_WAIT_MS = 120_000;
 
 export default async function streamRoutes(fastify, opts) {
   const { sessionManager, segmentCache } = opts;
 
-  // ─── GET /stream/:sessionId/by-id/:segmentId ───────────────────────────────
-  fastify.get('/:sessionId/by-id/:segmentId', async (request, reply) => {
-    const { sessionId, segmentId } = request.params;
+  // ── GET /stream/:id/by-id/:segmentId ──────────────────────────────────────
+  fastify.get('/:sessionId/by-id/:segmentId', async (req, reply) => {
+    const { sessionId, segmentId } = req.params;
 
     if (segmentId.includes('..') || path.isAbsolute(segmentId)) {
       return reply.code(400).send({ error: 'Invalid segmentId' });
     }
-    if (!SEGMENT_ID_RE.test(segmentId)) {
-      return reply.code(400).send({ error: 'segmentId must match segment_NNNNN.m4s or segment_tNNNN.m4s' });
+    if (!SEGMENT_RE.test(segmentId)) {
+      return reply.code(400).send({ error: 'Invalid segment filename' });
     }
 
     const session = sessionManager.getBySessionId(sessionId);
     if (!session) return reply.code(404).send({ error: 'Session not found' });
 
     sessionManager.touch(sessionId);
-    touchSegmentLru(session, segmentCache, segmentId);
-
-    const filePath = path.join(session.hlsPath, segmentId);
-    return serveHlsFile(reply, filePath, segmentId, { sessionId, filename: segmentId, session });
+    return _serveSegment(reply, session, segmentId);
   });
 
-  // ─── GET /stream/:sessionId/:filename ──────────────────────────────────────
-  fastify.get('/:sessionId/:filename', async (request, reply) => {
-    const { sessionId, filename } = request.params;
+  // ── GET /stream/:id/:filename ──────────────────────────────────────────────
+  fastify.get('/:sessionId/:filename', async (req, reply) => {
+    const { sessionId, filename } = req.params;
 
     if (filename.includes('..') || path.isAbsolute(filename)) {
       return reply.code(400).send({ error: 'Invalid filename' });
@@ -55,268 +55,145 @@ export default async function streamRoutes(fastify, opts) {
 
     sessionManager.touch(sessionId);
 
-    // Legacy filename → resolve via timeline registry before hitting disk.
-    if (SEGMENT_ID_RE.test(filename) && session.timeline) {
-      const resolved = resolveLegacySegmentRequest(session, filename);
-      if (resolved && resolved.file !== filename) {
-        instrLog('stream', 'legacy filename mapped to timeline segment', {
-          requested: filename,
-          actual:    resolved.file,
-          startTime: resolved.startTime,
-        });
-        touchSegmentLru(session, segmentCache, resolved.file);
-        const actualPath = path.join(session.hlsPath, resolved.file);
-        return serveHlsFile(reply, actualPath, resolved.file, { sessionId, filename: resolved.file, session });
-      }
+    // For segment files, use the timeline-aware path which can wait.
+    if (SEGMENT_RE.test(filename)) {
+      return _serveSegment(reply, session, filename);
     }
 
+    // For init.mp4, master.m3u8 — serve directly with wait.
     const filePath = path.join(session.hlsPath, filename);
-
-    const segMatch = filename.match(/^segment_(\d+)\.m4s$/);
-    if (segMatch) {
-      const segIdx = parseInt(segMatch[1], 10);
-      const ahead  = segIdx > session.lastSegmentIdx;
-      if (ahead || session.seekWorker) {
-        seekLog('stream', 'segment request', {
-          sessionId,
-          filename,
-          segIdx,
-          mainLastSeg: session.lastSegmentIdx,
-          seekWorker:  !!session.seekWorker,
-          exists:      fs.existsSync(filePath),
-        });
-      }
-    }
-
-    touchSegmentLru(session, segmentCache, filename);
-    return serveHlsFile(reply, filePath, filename, { sessionId, filename, session });
+    return _serveStatic(reply, filePath, filename);
   });
 
-  // ─── GET /stream/:sessionId ───────────────────────────────────────────────
-  fastify.get('/:sessionId', async (request, reply) => {
-    return reply.redirect(`/stream/${request.params.sessionId}/master.m3u8`);
+  // ── GET /stream/:id ────────────────────────────────────────────────────────
+  fastify.get('/:sessionId', async (req, reply) => {
+    return reply.redirect(`/stream/${req.params.sessionId}/master.m3u8`);
   });
 }
 
-/** Map a legacy index-based filename to the timeline entry covering that time. */
-function resolveLegacySegmentRequest(session, filename) {
-  const m = /^segment_(\d+)\.m4s$/.exec(filename);
-  if (!m || !session.timeline) return null;
+// ── Segment serving ───────────────────────────────────────────────────────────
 
-  const legacyIdx = parseInt(m[1], 10);
-  const approxTime = legacyIdx * SEG_DURATION;
+async function _serveSegment(reply, session, segmentId) {
+  const hlsPath = session.hlsPath;
 
-  const byFile = session.timeline.findByFile(filename);
-  if (byFile) return byFile;
-
-  return session.timeline.findSegmentForTime(approxTime)
-    ?? session.timeline.segmentForLegacyIndex(legacyIdx, SEG_DURATION);
-}
-
-function touchSegmentLru(session, segmentCache, filename) {
-  const base = path.basename(filename).toLowerCase();
-  if (base === 'init.mp4') {
-    segmentCache.touch(session.infoHash, INIT_IDX);
-    return;
+  // Fast path: file already on disk.
+  const directPath = path.join(hlsPath, segmentId);
+  if (fs.existsSync(directPath)) {
+    return _sendFile(reply, directPath, segmentId);
   }
-  const m = filename.match(/^segment_(\d+)\.m4s$/);
-  if (m) segmentCache.touch(session.infoHash, parseInt(m[1], 10));
-}
 
-async function serveHlsFile(reply, filePath, filename, ctx = {}) {
-  const ext      = path.extname(filename).toLowerCase();
-  const base     = path.basename(filename).toLowerCase();
-  const t0       = Date.now();
-  const session  = ctx.session;
-  const timeline = session?.seekTimeline;
-
-  if (!fs.existsSync(filePath)) {
-    if (ext === '.m4s' || base === 'init.mp4') {
-      instrLog('waitForFile', 'enter', { filename, filePath, timeoutMs: 120_000 });
-      timeline?.markOnce(`wait-${filename}`, 'client waiting for segment', { filename });
-
-      const found = await waitForSegmentOnDisk(session, filename, filePath, 120_000, { ...ctx, timeline, t0 });
-
-      if (!found) {
-        instrLog('waitForFile', 'TIMEOUT', {
-          filename, filePath, waitedMs: Date.now() - t0,
-        });
-        timeline?.mark('waitForFile timeout', { filename, waitedMs: Date.now() - t0 });
-        timeline?.summary('waitForFile timeout');
-        return reply.code(404).send({ error: 'Segment not ready after 120 s' });
-      }
-
-      // waitForSegmentOnDisk may have resolved a different TFDT-renamed file.
-      if (found.file && found.file !== filename) {
-        const actualPath = path.join(session.hlsPath, found.file);
-        instrLog('waitForFile', 'serving TFDT-renamed file', {
-          requested: filename, actual: found.file, waitedMs: Date.now() - t0,
-        });
-        return serveHlsFile(reply, actualPath, found.file, ctx);
-      }
-
-      instrLog('waitForFile', 'complete', {
-        filename, waitedMs: Date.now() - t0, size: fs.statSync(filePath).size,
-      });
-      timeline?.markOnce(`served-${filename}`, 'client served segment', {
-        filename, waitedMs: Date.now() - t0,
-      });
-    } else {
-      return reply.code(404).send({ error: 'File not found' });
+  // For seek artifacts: check if the timeline has a segment covering the same time.
+  const resolvedId = _resolveSegmentId(session, segmentId);
+  if (resolvedId && resolvedId !== segmentId) {
+    const resolvedPath = path.join(hlsPath, resolvedId);
+    if (fs.existsSync(resolvedPath)) {
+      return _sendFile(reply, resolvedPath, resolvedId);
     }
-  } else if (ext === '.m4s' && session?.seekWorker) {
-    timeline?.markOnce(`served-${filename}`, 'client served segment (immediate)', { filename });
   }
 
-  let mime;
-  if (ext === '.m3u8') {
-    mime = 'application/vnd.apple.mpegurl';
-  } else if (ext === '.m4s' || ext === '.mp4' || base === 'init.mp4') {
-    mime = 'video/mp4';
-  } else if (ext === '.ts') {
-    mime = 'video/mp2t';
+  // Wait for the segment to appear (via timeline registration).
+  const targetId   = resolvedId ?? segmentId;
+  const targetPath = path.join(hlsPath, targetId);
+  const isSeek     = _isSeekArtifact(segmentId);
+
+  let entry = null;
+  if (isSeek) {
+    // For seek segments, wait for any segment covering the predicted time.
+    const predictedTime = _parseSeekTime(segmentId);
+    if (predictedTime != null) {
+      entry = await session.timeline.waitForTime(predictedTime, SEG_WAIT_MS);
+    }
   } else {
-    mime = 'application/octet-stream';
+    entry = await session.timeline.waitForFile(targetId, SEG_WAIT_MS);
   }
 
-  const cacheControl = ext === '.m3u8' ? 'no-cache, no-store' : 'public, max-age=3600';
-
-  if (ext === '.m3u8' && base === 'master.m3u8') {
-    let body = fs.readFileSync(filePath, 'utf8');
-    const dur = session?.codecInfo?.duration;
-    if (dur && !body.includes('#EXT-X-TORRENT-DURATION:')) {
-      body = body.replace('#EXTM3U\n', `#EXTM3U\n#EXT-X-TORRENT-DURATION:${dur}\n`);
-    }
-    reply.header('Content-Type', mime);
-    reply.header('Cache-Control', cacheControl);
-    reply.header('Access-Control-Allow-Origin', '*');
-    reply.header('Content-Length', Buffer.byteLength(body));
-    return reply.send(body);
+  if (!entry) {
+    return reply.code(404).send({ error: 'Segment not ready (timeout)' });
   }
 
-  if (ext === '.m4s') {
-    const segMatch = filename.match(/^segment_(\d+)\.m4s$/);
-    if (segMatch) {
-      const segIdx       = parseInt(segMatch[1], 10);
-      const timelineInfo = readFragmentVideoTimeline(filePath);
-      const expectedSeg  = timelineInfo != null
-        ? globalIdxFromFragmentStart(timelineInfo.startSeconds)
-        : null;
-      const delta        = expectedSeg != null ? segIdx - expectedSeg : null;
-
-      let creationTime = null;
-      try {
-        const st = fs.statSync(filePath);
-        creationTime = st.birthtimeMs || st.mtimeMs;
-      } catch {}
-
-      const serveEntry = {
-        assignedSeg:          segIdx,
-        ffmpegReportedTime:   null,
-        startSecondsFromTfdt: timelineInfo?.startSeconds ?? null,
-        expectedSegFromTfdt:  expectedSeg,
-        delta,
-        segmentFilename:      filename,
-        actualPath:           filePath,
-        creationTime,
-      };
-
-      session?.segmentTrace?.record('serve', serveEntry);
-      console.log('[SERVE SEGMENT]', serveEntry);
-    }
+  // The entry might have a different filename (e.g. rounding).
+  const actualPath = path.join(hlsPath, entry.file);
+  if (fs.existsSync(actualPath)) {
+    return _sendFile(reply, actualPath, entry.file);
   }
 
-  reply.header('Content-Type', mime);
-  reply.header('Cache-Control', cacheControl);
-  reply.header('Access-Control-Allow-Origin', '*');
+  // Last resort: wait for the file to appear on disk.
+  await _waitForFileDisk(actualPath, 30_000);
+  if (fs.existsSync(actualPath)) {
+    return _sendFile(reply, actualPath, entry.file);
+  }
 
-  const { size } = fs.statSync(filePath);
-  reply.header('Content-Length', size);
-
-  return reply.send(createReadStream(filePath));
+  return reply.code(404).send({ error: 'Segment file not found' });
 }
+
+async function _serveStatic(reply, filePath, filename) {
+  // For init.mp4 / master.m3u8, wait up to 60 s if not yet written.
+  const maxWait = filename === 'init.mp4' ? 60_000 : 30_000;
+  if (!fs.existsSync(filePath)) {
+    await _waitForFileDisk(filePath, maxWait);
+  }
+  if (!fs.existsSync(filePath)) {
+    return reply.code(404).send({ error: `File not found: ${filename}` });
+  }
+  return _sendFile(reply, filePath, filename);
+}
+
+function _sendFile(reply, filePath, filename) {
+  const ext = path.extname(filename).toLowerCase();
+  const mime = {
+    '.m4s':  'video/mp4',
+    '.mp4':  'video/mp4',
+    '.m3u8': 'application/vnd.apple.mpegurl',
+  }[ext] ?? 'application/octet-stream';
+
+  const stat = fs.statSync(filePath);
+  reply.header('Content-Type', mime);
+  reply.header('Content-Length', stat.size);
+  reply.header('Cache-Control', 'no-cache');
+  reply.header('Access-Control-Allow-Origin', '*');
+  return reply.send(fs.createReadStream(filePath));
+}
+
+// ── Timeline-aware segment ID resolution ─────────────────────────────────────
 
 /**
- * Wait until a segment is on disk. Uses the timeline registry when available
- * so legacy filename requests resolve to the actual TFDT-renamed file.
- *
- * @returns {Promise<{ file: string }|true|null>}
+ * For a seek artifact filename like `segment_t118000.m4s`, find the timeline
+ * entry whose startTime ≈ 118.0s.  Returns the actual filename or null.
  */
-async function waitForSegmentOnDisk(session, filename, filePath, timeoutMs, ctx = {}) {
-  const deadline = Date.now() + timeoutMs;
+function _resolveSegmentId(session, segmentId) {
+  // Main segments: check timeline by filename.
+  const byFile = session.timeline.findByFile(segmentId);
+  if (byFile) return byFile.file;
 
-  const fileReady = (f) => {
-    try {
-      const p = path.join(session.hlsPath, f);
-      return fs.existsSync(p) && fs.statSync(p).size > 0;
-    } catch {
-      return false;
-    }
-  };
-
-  // Exact segmentId request — wait on timeline registry for that file.
-  if (SEGMENT_ID_RE.test(filename) && session?.timeline) {
-    if (fileReady(filename)) return { file: filename };
-
-    const entry = await session.timeline.waitForFile(filename, timeoutMs);
-    if (entry && fileReady(entry.file)) return { file: entry.file };
+  // Seek artifact: look up by predicted time.
+  if (_isSeekArtifact(segmentId)) {
+    const t = _parseSeekTime(segmentId);
+    if (t == null) return null;
+    const covering = session.timeline.findSegmentForTime(t)
+      ?? session.timeline.findNearestSegment(t);
+    if (covering && Math.abs(covering.startTime - t) < 2) return covering.file;
   }
 
-  // Legacy index filename — resolve via timeline covering that approximate time.
-  const legacyMatch = filename.match(/^segment_(\d+)\.m4s$/);
-  if (legacyMatch && session?.timeline) {
-    const legacyIdx  = parseInt(legacyMatch[1], 10);
-    const approxTime = legacyIdx * SEG_DURATION;
-
-    const existing = session.timeline.findSegmentForTime(approxTime)
-      ?? session.timeline.segmentForLegacyIndex(legacyIdx, SEG_DURATION);
-    if (existing && fileReady(existing.file)) {
-      return { file: existing.file };
-    }
-
-    const remaining = deadline - Date.now();
-    if (remaining > 0) {
-      const entry = await session.timeline.waitForTime(approxTime, remaining);
-      if (entry && fileReady(entry.file)) return { file: entry.file };
-    }
-  }
-
-  // Polling fallback (init.mp4, sessions without timeline).
-  const pollFound = await waitForFilePoll(filePath, deadline, ctx);
-  return pollFound ? { file: filename } : null;
+  return null;
 }
 
-function waitForFilePoll(filePath, deadline, ctx = {}) {
-  return new Promise((resolve) => {
-    const pollT0 = ctx.t0 ?? Date.now();
-    let polls = 0;
+function _isSeekArtifact(id) {
+  return /^segment_t\d+\.m4s$/.test(id ?? '');
+}
+
+function _parseSeekTime(segmentId) {
+  const m = /^segment_t(\d+)\.m4s$/.exec(segmentId);
+  return m ? parseInt(m[1], 10) / 1000 : null;
+}
+
+// ── Disk wait ─────────────────────────────────────────────────────────────────
+
+function _waitForFileDisk(filePath, timeoutMs) {
+  return new Promise(resolve => {
+    const deadline = Date.now() + timeoutMs;
     const check = () => {
-      polls++;
-      try {
-        if (fs.existsSync(filePath) && fs.statSync(filePath).size > 0) {
-          instrLog('waitForFile', 'found (poll)', {
-            filename: ctx.filename, polls, elapsedMs: Date.now() - pollT0,
-          });
-          return resolve(true);
-        }
-      } catch { /* not yet */ }
-      if (Date.now() >= deadline) {
-        instrLog('waitForFile', 'deadline exceeded', {
-          filename: ctx.filename, polls, elapsedMs: Date.now() - pollT0,
-        });
-        return resolve(false);
-      }
-      if (polls === 1) {
-        instrLog('waitForFile', 'first poll (missing)', {
-          filename: ctx.filename, filePath, elapsedMs: Date.now() - pollT0,
-        });
-      } else if (polls % 100 === 0) {
-        instrLog('waitForFile', `poll #${polls} (still missing)`, {
-          filename: ctx.filename,
-          elapsedMs: Date.now() - pollT0,
-          remainingMs: deadline - Date.now(),
-        });
-      }
+      if (fs.existsSync(filePath)) { resolve(); return; }
+      if (Date.now() >= deadline)  { resolve(); return; } // resolve anyway, caller checks again
       setTimeout(check, 200);
     };
     check();

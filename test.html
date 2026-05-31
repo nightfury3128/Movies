@@ -192,6 +192,30 @@ progress { width: 100%; height: 5px; margin-top: 8px; border-radius: 3px; }
   <div id="log-box"></div>
 </div>
 
+<div class="card">
+  <h2>4 — Seek Workers</h2>
+  <pre id="seek-workers-body" style="font-family:monospace;font-size:0.78rem;background:#141414;padding:10px;border-radius:4px;min-height:40px;color:#aaa;">No active seek workers.</pre>
+</div>
+
+<div class="card">
+  <h2>5 — Timeline Registry <span id="timeline-count" style="font-weight:normal;color:#888;font-size:0.75rem;letter-spacing:0;text-transform:none;"></span></h2>
+  <div id="timeline-registry-wrap" style="max-height:180px;overflow:auto;background:#141414;border:1px solid #333;border-radius:4px;">
+    <table id="timeline-registry-table" style="width:100%;border-collapse:collapse;font-family:monospace;font-size:0.68rem;">
+      <thead style="position:sticky;top:0;background:#1c1c1c;">
+        <tr>
+          <th style="padding:5px 6px;text-align:left;color:#7df;border-bottom:1px solid #444;">#</th>
+          <th style="padding:5px 6px;text-align:left;color:#7df;border-bottom:1px solid #444;">file</th>
+          <th style="padding:5px 6px;text-align:left;color:#7df;border-bottom:1px solid #444;">start</th>
+          <th style="padding:5px 6px;text-align:left;color:#7df;border-bottom:1px solid #444;">end</th>
+          <th style="padding:5px 6px;text-align:left;color:#7df;border-bottom:1px solid #444;">dur</th>
+          <th style="padding:5px 6px;text-align:left;color:#7df;border-bottom:1px solid #444;">src</th>
+        </tr>
+      </thead>
+      <tbody id="timeline-registry-body"></tbody>
+    </table>
+  </div>
+</div>
+
 <script>
 'use strict';
 
@@ -206,7 +230,9 @@ const MAX_MSE_SEGMENTS    = 35;   // max appended segments before cleanup kicks 
 const CLEANUP_AGENT_MS    = 2000; // periodic MSE cleanup interval
 const BOOTSTRAP_SEC       = 120;  // only queue this much timeline on startup
 const MAX_FETCH_PARALLEL  = 6;    // concurrent segment fetches (network I/O)
-const VIDEO_TIMESCALE     = 16000; // must match backend fragment-timeline.js
+// Video timescale is set per-session from the stream:ready payload.
+// The backend reads it from init.mp4 (mdhd box) after FFmpeg starts.
+let   VIDEO_TIMESCALE     = 90000; // updated at stream:ready from server
 const AUDIO_TIMESCALE     = 48000; // AAC sample rate in fMP4 from this pipeline
 const AV_WARN_MS          = 200;   // flag A/V drift above this in trace table
 
@@ -2246,7 +2272,14 @@ btnStart.addEventListener('click', async function () {
 });
 
 function launchMsePlayer(payload) {
-  const { feedUrl, initUrl, mimeType, streamUrl, duration } = payload;
+  const { feedUrl, initUrl, mimeType, streamUrl, duration, videoTimescale } = payload;
+
+  // Apply server-reported timescale so TFDT parsing and MSE offset correction
+  // use the real track timescale from init.mp4, not a hardcoded guess.
+  if (videoTimescale && Number.isFinite(videoTimescale) && videoTimescale > 0) {
+    VIDEO_TIMESCALE = videoTimescale;
+    log('Video timescale from server: ' + videoTimescale, 'ok');
+  }
 
   if (!window.MediaSource || !MediaSource.isTypeSupported(mimeType)) {
     log('MSE not supported — using native HLS', 'warn');
@@ -2324,8 +2357,12 @@ player.addEventListener('seeking', function () {
 });
 
 // ── status polling ─────────────────────────────────────────────────────────────
+let _timelineRefreshTimer = null;
+
 function startPolling(sessionId) {
   clearInterval(pollTimer);
+  clearInterval(_timelineRefreshTimer);
+
   pollTimer = setInterval(async function () {
     try {
       const params = new URLSearchParams({ sessionId });
@@ -2337,19 +2374,77 @@ function startPolling(sessionId) {
       renderStatus(data);
     } catch (_) {}
   }, 2000);
+
+  // Slower refresh for the full timeline registry panel (every 5s).
+  _timelineRefreshTimer = setInterval(async function () {
+    try {
+      const r = await fetch('/torrent/timeline?sessionId=' + encodeURIComponent(sessionId));
+      if (!r.ok) return;
+      const entries = await r.json();
+      renderTimelineRegistry(entries);
+    } catch (_) {}
+  }, 5000);
+}
+
+function renderTimelineRegistry(entries) {
+  const tbody = document.getElementById('timeline-registry-body');
+  const countEl = document.getElementById('timeline-count');
+  if (!tbody) return;
+
+  if (countEl) countEl.textContent = entries.length + ' segment' + (entries.length === 1 ? '' : 's');
+
+  const frag = document.createDocumentFragment();
+  let idx = 0;
+  for (const e of entries) {
+    const tr = document.createElement('tr');
+    const dur = e.endTime != null && e.startTime != null ? (e.endTime - e.startTime).toFixed(2) : '—';
+    const isSeek = /^segment_t/.test(e.file ?? '');
+    tr.style.color = isSeek ? '#f0a500' : '';
+    const cells = [
+      String(idx++),
+      (e.file ?? '').length > 24 ? (e.file ?? '').slice(0, 22) + '…' : (e.file ?? ''),
+      e.startTime != null ? e.startTime.toFixed(2) : '—',
+      e.endTime   != null ? e.endTime.toFixed(2) : '—',
+      dur,
+      e.source ?? '—',
+    ];
+    cells.forEach((text, i) => {
+      const td = document.createElement('td');
+      td.textContent = text;
+      td.style.padding = '3px 6px';
+      td.style.borderBottom = '1px solid #222';
+      td.style.whiteSpace = 'nowrap';
+      if (i === 1) td.title = e.file ?? '';
+      tr.appendChild(td);
+    });
+    frag.appendChild(tr);
+  }
+  tbody.replaceChildren(frag);
 }
 
 function renderStatus(s) {
   const pct = s.total ? ((s.downloaded / s.total) * 100).toFixed(1) : '0.0';
+  const piecePct = s.pieces?.total
+    ? ((s.pieces.have / s.pieces.total) * 100).toFixed(1) + '%'
+    : '—';
+  const ramStr = s.ramBytes != null ? fmt(s.ramBytes) : '—';
+
   statusEl.textContent =
     'State:      ' + (s.state ?? '—') + '\n' +
     'Mode:       ' + (s.mode  ?? '—') + '\n' +
     'Downloaded: ' + fmt(s.downloaded ?? 0) + ' / ' + fmt(s.total ?? 0) + ' (' + pct + '%)\n' +
     'Speed:      ' + fmt(s.downloadSpeed ?? 0) + '/s\n' +
     'Peers:      ' + (s.numPeers ?? 0) + '\n' +
-    'Segments:   ' + (s.hlsSegments ?? 0) + '\n' +
-    'Memory:     ' + (s.memoryUsedMB ?? '—') + ' MB';
+    'Pieces:     ' + (s.pieces?.have ?? '—') + ' / ' + (s.pieces?.total ?? '—') + ' (' + piecePct + ')\n' +
+    'Segments:   ' + (s.hlsSegments ?? 0) + ' on disk,  ' + (s.timelineCount ?? 0) + ' in timeline\n' +
+    'FFmpeg pos: ' + (s.mainLastTime != null ? s.mainLastTime.toFixed(1) + 's' : '—') + '\n' +
+    'RAM (store):' + ramStr + '\n' +
+    'Memory:     ' + (s.memoryUsedMB ?? '—') + ' MB\n' +
+    'Viewers:    ' + (s.viewers ?? 0);
   progressEl.value = s.progress ?? 0;
+
+  // Seek workers panel
+  renderSeekWorkers(s.seekWorkers ?? []);
 
   const dur = Number(s.duration);
   if (segPlayer && isFinite(dur) && dur > 0
@@ -2357,6 +2452,16 @@ function renderStatus(s) {
     segPlayer._applyDuration(dur);
     log('Duration updated from server: ' + Math.floor(dur) + 's', 'ok');
   }
+}
+
+function renderSeekWorkers(workers) {
+  const el = document.getElementById('seek-workers-body');
+  if (!el) return;
+  if (!workers.length) { el.textContent = 'No active seek workers.'; return; }
+  const rows = workers.map(w =>
+    `[${w.jobId}] t=${w.seekTime?.toFixed(1)}s state=${w.state} segs=${w.segmentsGenerated} age=${(w.elapsedMs/1000).toFixed(1)}s`
+  );
+  el.textContent = rows.join('\n');
 }
 
 function fmt(bytes) {
@@ -2372,7 +2477,9 @@ function cleanup() {
   if (activeEventSource) { activeEventSource.close(); activeEventSource = null; }
   if (segPlayer)         { segPlayer.destroy(); segPlayer = null; }
   clearInterval(pollTimer); pollTimer = null;
+  clearInterval(_timelineRefreshTimer); _timelineRefreshTimer = null;
   activeViewerId = null;
+  VIDEO_TIMESCALE = 90000; // reset to default
   resetTraceTables();
   player.src = '';
   if (timelineScrub) {
@@ -2381,6 +2488,8 @@ function cleanup() {
     timelineScrub.disabled = true;
   }
   if (timelineMeta) timelineMeta.textContent = 'Timeline: idle';
+  const swb = document.getElementById('seek-workers-body');
+  if (swb) swb.textContent = 'No active seek workers.';
 }
 
 log('Page ready.', 'ok');
