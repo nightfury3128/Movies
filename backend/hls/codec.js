@@ -23,6 +23,7 @@
  */
 
 import ffmpeg from 'fluent-ffmpeg';
+import { execFileSync } from 'child_process';
 
 // Codec strings ffprobe reports for browser-safe video.
 const SAFE_VIDEO_CODECS = new Set(['h264', 'avc1']);
@@ -49,7 +50,18 @@ const SAFE_AUDIO_CODECS = new Set(['aac', 'mp3']);
  * }>}
  */
 export async function detectCodecs(url, inputOptions = []) {
-  const data = await probeWithTimeout(url, inputOptions, 30_000);
+  // Prepend probe limits so ffprobe doesn't try to seek to the end of a 4+ GB
+  // MKV file to read cue tables — that blocks until the entire torrent downloads.
+  const probeOpts = [
+    // Prevent ffprobe from seeking to end-of-file for MKV Cues table — same
+    // issue as FFmpeg without -seekable 0: issues a range request for byte ~4.4 GB
+    // which blocks forever until those torrent pieces download.
+    '-seekable',        '0',
+    '-probesize',       '1000000',  // 1 MB — enough for any container header
+    '-analyzeduration', '500000',   // 500 ms — avoids waiting for A/V sync frames
+    ...inputOptions,
+  ];
+  const data = await probeWithTimeout(url, probeOpts, 30_000);
 
   const streams  = data.streams  ?? [];
   const format   = data.format   ?? {};
@@ -108,6 +120,54 @@ export async function detectCodecs(url, inputOptions = []) {
     duration,
     bitrate,
   };
+}
+
+/**
+ * Read MSE mimeType strings from an on-disk fMP4 init segment.
+ * Must match bytes in init.mp4 — hardcoded avc1/mp4a strings cause APPEND_FAILED.
+ *
+ * @param {string} initPath - Absolute path to init.mp4
+ * @returns {{ mimeType: string, videoMimeCodec: string, audioMimeCodec: string|null }}
+ */
+export function probeInitMimeType(initPath) {
+  let raw;
+  try {
+    raw = execFileSync('ffprobe', [
+      '-v', 'quiet', '-print_format', 'json', '-show_streams', initPath,
+    ], { encoding: 'utf8' });
+  } catch (err) {
+    throw new Error(`ffprobe init failed: ${err.message}`);
+  }
+
+  const streams = JSON.parse(raw).streams ?? [];
+  const video   = streams.find(s => s.codec_type === 'video');
+  if (!video) throw new Error('init.mp4 has no video stream');
+
+  const audio       = streams.find(s => s.codec_type === 'audio');
+  const videoMime   = video.mime_codec_string ?? avc1FromStream(video);
+  const audioMime   = audio?.mime_codec_string ?? (audio ? 'mp4a.40.2' : null);
+
+  const mimeType = audioMime
+    ? `video/mp4; codecs="${videoMime}, ${audioMime}"`
+    : `video/mp4; codecs="${videoMime}"`;
+
+  return { mimeType, videoMimeCodec: videoMime, audioMimeCodec: audioMime };
+}
+
+/** Build avc1.PPCCLL from ffprobe stream when mime_codec_string is absent. */
+function avc1FromStream(stream) {
+  const tag = stream.codec_tag_string ?? 'avc1';
+  if (tag !== 'avc1' && tag !== 'h264') return 'avc1.640028';
+  const ex = stream.extradata;
+  if (ex && typeof ex === 'string') {
+    const buf = Buffer.from(ex, 'base64');
+    if (buf.length >= 4) {
+      const profile = buf[1].toString(16).padStart(2, '0');
+      const level   = buf[3].toString(16).padStart(2, '0');
+      return `avc1.${profile}00${level}`;
+    }
+  }
+  return 'avc1.640028';
 }
 
 // ─── INTERNALS ───────────────────────────────────────────────────────────────

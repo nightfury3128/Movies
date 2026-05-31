@@ -11,37 +11,26 @@
  *       │  routes/torrent.js  — torrent lifecycle, codec detection
  *       │  routes/stream.js   — serve HLS files, update idle timer
  *       │
- *       │  One session per unique infoHash:
+ *       │  One session per active infoHash. HLS output goes to:
+ *       │    cache/segments/<infoHash>/   ← persistent across sessions
  *       │
  *       ▼
  *   SessionManager
  *       │  Map<sessionId, { torrentManager, generator, viewers, … }>
  *       │
- *       ├─► TorrentManager (one per session)
- *       │       │  WebTorrent client + EvictingMemoryStore (no disk writes)
- *       │       │  Internal HTTP server on port 0 (loopback only, OS-assigned)
- *       │       │  Serves the partially-downloaded video to FFmpeg via Range requests
+ *       ├─► TorrentManager (one per active session, null for cached sessions)
+ *       │       WebTorrent + EvictingMemoryStore + internal HTTP server
  *       │
- *       └─► HlsGenerator (one per session)
- *               │  FFmpeg reads from TorrentManager's internal HTTP server
- *               │  Decides remux vs transcode based on codec detection
- *               │  Writes fMP4 HLS segments → cache/hls/<sessionId>/
- *               │  Emits 'ffmpeg-time' → drives EvictingMemoryStore eviction
- *
- * KEY MULTI-USER DECISIONS:
- *   - No global manager/generator singletons — they're created per session.
- *   - Sessions keyed by sessionId — every /start request gets its own session.
- *     Two users watching the same torrent each get independent download + FFmpeg.
- *   - EvictingMemoryStore keeps only a ~20 MB sliding window per download,
- *     avoiding disk I/O and bounding RAM to O(active_users × 20 MB).
- *   - Idle cleanup destroys sessions with 0 viewers after 5 minutes, freeing
- *     CPU, RAM, and disk.
- *
- * WHY FASTIFY?
- * Fastify has schema-based validation, a fast JSON serialiser, and first-class
- * async/await. For a streaming server with low overhead per request, Fastify
- * is the better default choice over Express.
+ *       ├─► HlsGenerator (one per active session, null for cached sessions)
+ *       │       FFmpeg → cache/segments/<infoHash>/
+ *       │
+ *       └─► SegmentCache
+ *               LRU disk cache at cache/segments/.
+ *               Fully transcoded torrents skip download + FFmpeg on repeat views.
+ *               Evicts LRU segments when total exceeds maxBytes (default 50 GB).
  */
+
+import './logger.js';
 
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
@@ -51,28 +40,20 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 import { SessionManager } from './session/manager.js';
+import { SegmentCache } from './cache/segment-cache.js';
 import torrentRoutes from './routes/torrent.js';
 import streamRoutes from './routes/stream.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = path.join(__dirname, 'cache');
 
-// ─── Bootstrap cache directories ─────────────────────────────────────────────
-// These must exist before WebTorrent or FFmpeg write anything.
-// 'downloads' directory is no longer used (EvictingMemoryStore replaced disk writes)
-// but we keep it for backward compatibility in case any tooling inspects it.
-fs.mkdirSync(path.join(CACHE_DIR, 'downloads'), { recursive: true });
-fs.mkdirSync(path.join(CACHE_DIR, 'hls'),       { recursive: true });
+// ─── Persistent segment cache ─────────────────────────────────────────────────
+const segmentCache = new SegmentCache();
+segmentCache.start(); // creates cache/segments/, loads lru.json
 
 // ─── Session manager ──────────────────────────────────────────────────────────
-// Single SessionManager instance for the process lifetime.
-// All torrent/generator state lives inside it, keyed by infoHash.
-const sessionManager = new SessionManager(CACHE_DIR);
-
-// Start the idle-cleanup timer.
-// Sessions with zero viewers idle for more than 5 minutes are destroyed,
-// freeing RAM (EvictingMemoryStore), CPU (FFmpeg), and disk (HLS segments).
-sessionManager.startCleanup(5 * 60 * 1000);
+const sessionManager = new SessionManager(CACHE_DIR, segmentCache);
+sessionManager.startCleanup(2 * 60 * 1000);
 
 // ─── Fastify setup ────────────────────────────────────────────────────────────
 const fastify = Fastify({
@@ -85,10 +66,8 @@ const fastify = Fastify({
   },
 });
 
-// CORS — required so HLS.js (running in browser) can fetch segments from localhost.
 await fastify.register(cors, { origin: '*' });
 
-// Serve test.html and other static assets from the backend root directory.
 await fastify.register(staticPlugin, {
   root:  __dirname,
   prefix: '/',
@@ -97,35 +76,33 @@ await fastify.register(staticPlugin, {
 });
 
 // ─── Register route plugins ───────────────────────────────────────────────────
-// Pass sessionManager as a plugin option so routes don't need to import it
-// directly — this makes future testing and DI easier.
 await fastify.register(torrentRoutes, {
   prefix: '/torrent',
   sessionManager,
+  segmentCache,
 });
 
 await fastify.register(streamRoutes, {
   prefix: '/stream',
   sessionManager,
+  segmentCache,
 });
 
 // ─── Health check ─────────────────────────────────────────────────────────────
 fastify.get('/health', async () => ({
-  status:   'ok',
-  time:     new Date().toISOString(),
-  sessions: sessionManager.all().length,
+  status:      'ok',
+  time:        new Date().toISOString(),
+  sessions:    sessionManager.all().length,
+  cacheBytes:  segmentCache.totalBytes(),
 }));
 
 // ─── Graceful shutdown ────────────────────────────────────────────────────────
-// On SIGINT (Ctrl-C) or SIGTERM, we stop every active session cleanly before
-// exiting. Without this, FFmpeg processes and WebTorrent connections leak.
 async function shutdown(signal) {
   console.log(`\n[server] ${signal} received — shutting down`);
 
   sessionManager.stopCleanup();
+  segmentCache.stop();
 
-  // Destroy all sessions concurrently — each destroy() is safe to call in parallel
-  // because sessions don't share resources.
   const all = sessionManager.all();
   await Promise.allSettled(all.map(s => sessionManager.destroy(s.sessionId)));
 
@@ -136,6 +113,13 @@ async function shutdown(signal) {
 process.on('SIGINT',  () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 
+process.on('unhandledRejection', (reason) => {
+  console.error('[server] Unhandled rejection (non-fatal):', reason?.message ?? reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[server] Uncaught exception (non-fatal):', err.message);
+});
+
 // ─── Start listening ──────────────────────────────────────────────────────────
 try {
   await fastify.listen({ port: 3000, host: '0.0.0.0' });
@@ -145,6 +129,10 @@ try {
   console.log('  Stream      : http://localhost:3000/stream/<sessionId>/master.m3u8');
   console.log('  Status (all): http://localhost:3000/torrent/status');
   console.log('  Test page   : http://localhost:3000/test.html');
+  console.log(`  Cache       : ${(segmentCache.totalBytes() / 1024 ** 3).toFixed(2)} GB used`);
+  console.log('  Seek logs   : on (set SEEK_LOG=0 to disable)');
+  console.log('  Extreme logs: on (set EXTREME_LOG=0 to disable torrent/stream pump detail)');
+  console.log('  Server TS   : on (set SERVER_LOG_TS=0 to disable console timestamps)');
   console.log('─────────────────────────────────────────────────────\n');
 } catch (err) {
   fastify.log.error(err);

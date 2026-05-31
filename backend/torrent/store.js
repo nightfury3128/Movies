@@ -34,6 +34,8 @@
  * synchronously-or-next-tick to match the abstract-chunk-store contract.
  */
 
+import { instrLog } from '../logger.js';
+
 export class EvictingMemoryStore {
   /**
    * @param {number} chunkLength - Size in bytes of each chunk (WebTorrent sets this to pieceLength)
@@ -42,26 +44,17 @@ export class EvictingMemoryStore {
    */
   constructor(chunkLength, opts = {}) {
     this.chunkLength = chunkLength;
-
-    // Total file length — used to clamp the last chunk's size.
     this.length = opts.length ?? 0;
-
-    /**
-     * Map<chunkIndex, Buffer>
-     * Chunks are added by put() and removed by evictBefore().
-     */
     this.chunks = new Map();
-
-    /**
-     * Any chunk with index < evictBeforeIndex has been evicted and will NOT
-     * be served by get(). put() calls for indices below this value are silently
-     * dropped so WebTorrent doesn't refill evicted pieces from the network.
-     *
-     * WHY silently drop? Because WebTorrent may re-verify pieces at any time.
-     * Erroring on put() would cause WebTorrent to mark the piece as failed and
-     * attempt a re-download, consuming bandwidth for data we no longer need.
-     */
     this.evictBeforeIndex = 0;
+    /** @type {((index: number, size: number) => void)|null} */
+    this.onPut = null;
+
+    // Number of leading chunks to NEVER evict.
+    // The MKV/MP4 container header lives in the first 1-2 MB. FFmpeg must re-read
+    // it on every seek-restart (input -ss). Without preserving these chunks, any
+    // seek would fail immediately because the header has been evicted.
+    this.HEADER_PRESERVE_CHUNKS = Math.ceil(2 * 1024 * 1024 / chunkLength);
   }
 
   // ─── abstract-chunk-store API ────────────────────────────────────────────────
@@ -107,12 +100,13 @@ export class EvictingMemoryStore {
    * @param {Function} cb     - cb(err)
    */
   put(index, chunk, cb) {
-    if (index < this.evictBeforeIndex) {
-      // Silently discard — evicted range, we've already streamed past here.
+    // Always keep header chunks regardless of eviction boundary.
+    if (index < this.evictBeforeIndex && index >= this.HEADER_PRESERVE_CHUNKS) {
+      // Silently discard — evicted non-header chunk.
       return cb(null);
     }
-
     this.chunks.set(index, chunk);
+    if (this.onPut) this.onPut(index, chunk.length);
     cb(null);
   }
 
@@ -126,17 +120,63 @@ export class EvictingMemoryStore {
    */
   evictBefore(bytePos) {
     if (bytePos <= 0) return;
-
-    // The chunk whose END byte equals bytePos is at floor(bytePos / chunkLength).
-    // Chunks 0 … targetIndex-1 have their last byte < bytePos — safe to evict.
     const targetIndex = Math.floor(bytePos / this.chunkLength);
-    if (targetIndex <= this.evictBeforeIndex) return; // nothing new to evict
+    if (targetIndex <= this.evictBeforeIndex) return;
 
-    for (let i = this.evictBeforeIndex; i < targetIndex; i++) {
+    // Never evict the preserved header chunks.
+    const deleteFrom = Math.max(this.evictBeforeIndex, this.HEADER_PRESERVE_CHUNKS);
+    for (let i = deleteFrom; i < targetIndex; i++) {
       this.chunks.delete(i);
     }
-
     this.evictBeforeIndex = targetIndex;
+  }
+
+  /**
+   * Lower the eviction boundary so pieces in [bytePos, oldBoundary) can be
+   * re-stored when WebTorrent re-downloads them after a seek-back.
+   * Only lowers — never raises — the boundary.
+   *
+   * @param {number} bytePos - New lower bound (clamped to header preserve zone)
+   */
+  resetTo(bytePos, meta = {}) {
+    const oldIndex = this.evictBeforeIndex;
+    const targetIndex = Math.max(
+      Math.floor(bytePos / this.chunkLength),
+      this.HEADER_PRESERVE_CHUNKS,
+    );
+    if (targetIndex >= this.evictBeforeIndex) {
+      if (meta.log) {
+        instrLog('store', 'resetTo no-op (would raise boundary)', {
+          bytePos, oldChunk: oldIndex, targetChunk: targetIndex,
+        });
+      }
+      return { changed: false, oldIndex, newIndex: oldIndex };
+    }
+    this.evictBeforeIndex = targetIndex;
+    if (meta.log) {
+      instrLog('store', 'eviction boundary lowered', {
+        bytePos,
+        oldChunk: oldIndex,
+        newChunk: targetIndex,
+        oldByte:  oldIndex * this.chunkLength,
+        newByte:  targetIndex * this.chunkLength,
+        ...meta.extra,
+      });
+    } else {
+      console.log(`[store] Eviction reset to byte ${bytePos} (chunk ${targetIndex}, was ${oldIndex})`);
+    }
+    return { changed: true, oldIndex, newIndex: targetIndex, bytePos };
+  }
+
+  /** True if chunk index is present in RAM */
+  hasChunk(index) {
+    return this.chunks.has(index);
+  }
+
+  /** Check whether byte `pos` is inside a stored chunk */
+  hasByte(pos) {
+    const idx = Math.floor(pos / this.chunkLength);
+    return this.chunks.has(idx);
   }
 
   /**

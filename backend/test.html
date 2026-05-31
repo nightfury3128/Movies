@@ -3,310 +3,2387 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Torrent HLS — Multi-User Test Player</title>
+<title>Torrent Stream</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #111; color: #eee; font-family: system-ui, sans-serif; padding: 24px; }
-  h1 { font-size: 1.4rem; margin-bottom: 20px; color: #7df; }
-
-  .card { background: #1e1e1e; border: 1px solid #333; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-  .card h2 { font-size: 1rem; margin-bottom: 12px; color: #aaa; text-transform: uppercase; letter-spacing: 0.05em; }
-
-  input[type=text] {
-    width: 100%; padding: 10px 12px; background: #2a2a2a; border: 1px solid #444;
-    border-radius: 4px; color: #eee; font-size: 0.95rem; margin-bottom: 10px;
-  }
-  button {
-    padding: 10px 22px; border: none; border-radius: 4px; cursor: pointer;
-    font-size: 0.9rem; font-weight: 600; transition: opacity 0.15s;
-  }
-  button:hover { opacity: 0.85; }
-  button:disabled { opacity: 0.4; cursor: not-allowed; }
-  .btn-start { background: #2ecc71; color: #111; }
-  .btn-stop  { background: #e74c3c; color: #fff; }
-  .btn-load  { background: #3498db; color: #fff; }
-
-  video { width: 100%; border-radius: 6px; background: #000; }
-
-  #status-box { font-family: monospace; font-size: 0.82rem; line-height: 1.7;
-    background: #161616; padding: 14px; border-radius: 4px; min-height: 60px; }
-  .label { color: #888; }
-  .val   { color: #7df; }
-  .ok    { color: #2ecc71; }
-  .err   { color: #e74c3c; }
-  .warn  { color: #f39c12; }
-
-  progress { width: 100%; height: 6px; border-radius: 3px; margin-top: 8px; }
-
-  #toast { display:none; position:fixed; top:16px; left:50%; transform:translateX(-50%);
-    background:#c0392b; color:#fff; padding:10px 20px; border-radius:6px;
-    font-weight:600; font-size:0.9rem; z-index:999; max-width:90vw; text-align:center; }
-
-  #log { font-family: monospace; font-size: 0.78rem; background: #161616;
-    padding: 12px; border-radius: 4px; height: 140px; overflow-y: auto;
-    line-height: 1.6; white-space: pre-wrap; color: #aaa; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #111; color: #eee; font-family: system-ui, sans-serif; padding: 24px; max-width: 1280px; margin: 0 auto; }
+h1 { font-size: 1.3rem; margin-bottom: 20px; color: #7df; }
+.card { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 18px; margin-bottom: 16px; }
+.card h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: #777; margin-bottom: 12px; }
+input { width: 100%; padding: 9px 11px; background: #252525; border: 1px solid #444; border-radius: 4px; color: #eee; font-size: 0.9rem; margin-bottom: 10px; }
+input:focus { outline: 2px solid #7df; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+button { padding: 9px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+#btn-start { background: #2ecc71; color: #111; }
+#btn-stop  { background: #e74c3c; color: #fff; }
+video { width: 100%; border-radius: 6px; background: #000; display: block; }
+#status { font-family: monospace; font-size: 0.8rem; line-height: 1.8; background: #141414; padding: 12px; border-radius: 4px; white-space: pre; }
+#log-box { font-family: monospace; font-size: 0.78rem; background: #141414; padding: 12px; border-radius: 4px; height: 130px; overflow-y: auto; }
+.log-line { line-height: 1.6; }
+.ok   { color: #2ecc71; }
+.err  { color: #e74c3c; }
+.warn { color: #f0a500; }
+progress { width: 100%; height: 5px; margin-top: 8px; border-radius: 3px; }
+#timeline-scrub { width: 100%; margin-top: 10px; accent-color: #7df; cursor: pointer; }
+#timeline-meta { font-size: 0.75rem; color: #888; margin-top: 4px; font-family: monospace; }
+.player-layout { display: flex; gap: 14px; align-items: stretch; }
+.trace-stack {
+  flex: 0 0 46%;
+  max-width: 520px;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+.segment-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.player-main { flex: 1; min-width: 0; }
+.segment-panel-header {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #666;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.segment-panel-header.audio-header span:first-child { color: #a8d; }
+#segment-count, #audio-segment-count { color: #888; font-weight: normal; text-transform: none; letter-spacing: 0; }
+.segment-table-wrap {
+  flex: 1;
+  overflow: auto;
+  max-height: 200px;
+  background: #141414;
+  border: 1px solid #333;
+  border-radius: 4px;
+}
+.segment-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: ui-monospace, monospace;
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+.segment-table thead { position: sticky; top: 0; z-index: 1; background: #1c1c1c; }
+.segment-table th {
+  padding: 5px 6px;
+  text-align: left;
+  color: #7df;
+  font-weight: 600;
+  border-bottom: 1px solid #444;
+  white-space: nowrap;
+}
+.segment-table.audio-table th { color: #a8d; }
+.segment-table td {
+  padding: 3px 6px;
+  border-bottom: 1px solid #222;
+  white-space: nowrap;
+  vertical-align: top;
+}
+.segment-table tbody tr:hover { background: #1f1f1f; }
+.segment-table tr.row-active { background: #2a3528; }
+.segment-table tr.row-appended td:first-child { color: #2ecc71; }
+.segment-table tr.row-seek td:nth-child(2) { color: #f0a500; }
+.segment-table tr.row-av-bad { background: #352222; }
+.segment-table .stages { max-width: 120px; overflow: hidden; text-overflow: ellipsis; color: #999; }
+.segment-table td.col-display { font-variant-numeric: tabular-nums; }
+.segment-table td.col-display-slow { color: #e74c3c; }
+.segment-table td.col-display-ok { color: #2ecc71; }
+.segment-table td.col-av-warn { color: #e74c3c; }
+.segment-table td.col-av-ok { color: #888; }
+@media (max-width: 860px) {
+  .player-layout { flex-direction: column; }
+  .trace-stack { flex: none; max-width: none; width: 100%; }
+  .segment-table-wrap { max-height: 180px; }
+}
 </style>
 </head>
 <body>
-<div id="toast"></div>
-<h1>Torrent → HLS → Browser (Multi-User)</h1>
+<h1>Torrent → HLS</h1>
 
-<!-- ── Step 1: Submit magnet link ── -->
 <div class="card">
-  <h2>1. Start torrent</h2>
-  <input id="magnet" type="text" placeholder="magnet:?xt=urn:btih:..." />
-  <div style="display:flex;gap:10px;flex-wrap:wrap;">
-    <button type="button" class="btn-start" id="btn-start" onclick="startTorrent()">Start download</button>
-    <button type="button" class="btn-stop"  id="btn-stop"  onclick="stopTorrent()" disabled>Stop &amp; cleanup</button>
+  <h2>1 — Magnet link</h2>
+  <input id="magnet-input" type="text" placeholder="magnet:?xt=urn:btih:...">
+  <div class="btns">
+    <button id="btn-start">Start stream</button>
+    <button id="btn-stop" disabled>Stop</button>
   </div>
 </div>
 
-<!-- ── Step 2: Status ── -->
 <div class="card">
-  <h2>2. Status</h2>
-  <div id="status-box">Idle — paste a magnet link above and click Start download.</div>
-  <progress id="dl-progress" value="0" max="1"></progress>
+  <h2>2 — Status</h2>
+  <div id="status">Idle.</div>
+  <progress id="progress" value="0" max="1"></progress>
 </div>
 
-<!-- ── Step 3: Player ── -->
 <div class="card">
-  <h2>3. Player</h2>
-  <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
-    <input id="stream-url" type="text" placeholder="/stream/<sessionId>/master.m3u8" style="margin:0;flex:1;" />
-    <button type="button" class="btn-load" onclick="loadStream()">Load</button>
+  <h2>3 — Player</h2>
+  <div class="player-layout">
+    <div class="trace-stack">
+      <div class="segment-panel">
+        <div class="segment-panel-header">
+          <span>Video trace</span>
+          <span id="segment-count">0 segments</span>
+        </div>
+        <div class="segment-table-wrap">
+          <table id="segment-table" class="segment-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>filename</th>
+                <th>start</th>
+                <th>end</th>
+                <th>tfdt</th>
+                <th>dur</th>
+                <th>stages</th>
+                <th>at</th>
+                <th>fetched</th>
+                <th>display</th>
+              </tr>
+            </thead>
+            <tbody id="segment-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="segment-panel">
+        <div class="segment-panel-header audio-header">
+          <span>Audio trace</span>
+          <span id="audio-segment-count">0 segments</span>
+        </div>
+        <div class="segment-table-wrap">
+          <table id="audio-segment-table" class="segment-table audio-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>filename</th>
+                <th>start</th>
+                <th>end</th>
+                <th>tfdt</th>
+                <th>dur</th>
+                <th>A-V Δ</th>
+                <th>stages</th>
+                <th>at</th>
+                <th>fetched</th>
+                <th>display</th>
+              </tr>
+            </thead>
+            <tbody id="audio-segment-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="player-main">
+      <video id="player" controls></video>
+      <input type="range" id="timeline-scrub" min="0" max="100" step="0.05" value="0" disabled>
+      <div id="timeline-meta">Timeline: waiting for duration…</div>
+    </div>
   </div>
-  <video id="player" controls></video>
 </div>
 
-<!-- ── Log ── -->
 <div class="card">
   <h2>Log</h2>
-  <div id="log"></div>
+  <div id="log-box"></div>
 </div>
 
-<!--
-  HLS.js: enables HLS playback in Chrome/Firefox/Edge which don't support
-  HLS natively. Safari supports HLS natively so HLS.js falls back gracefully.
--->
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
 <script>
-let statusInterval = null;
-let hlsInstance    = null;
-let activeSessionId = null;
+'use strict';
 
-let toastTimer = null;
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.style.display = 'block';
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.style.display = 'none'; }, 5000);
+// ── constants ──────────────────────────────────────────────────────────────────
+const MAX_AHEAD       = 12;
+const PREFETCH_SEC    = 45;
+const MIN_BUFFER_AHEAD = 15;
+const EVICT_BEHIND    = 30;
+const SEEK_WINDOW_SEC = 30;  // only queue/fetch segments within this window during seek
+const MAX_MSE_BUFFER_SPAN = 90;   // max seconds of media retained in SourceBuffer
+const MAX_MSE_SEGMENTS    = 35;   // max appended segments before cleanup kicks in
+const CLEANUP_AGENT_MS    = 2000; // periodic MSE cleanup interval
+const BOOTSTRAP_SEC       = 120;  // only queue this much timeline on startup
+const MAX_FETCH_PARALLEL  = 6;    // concurrent segment fetches (network I/O)
+const VIDEO_TIMESCALE     = 16000; // must match backend fragment-timeline.js
+const AUDIO_TIMESCALE     = 48000; // AAC sample rate in fMP4 from this pipeline
+const AV_WARN_MS          = 200;   // flag A/V drift above this in trace table
+
+/** Shared request clock for video + audio trace tables. */
+const traceRequestClock = {
+  perf: null, kind: null, target: null,
+  begin(kind, target = null) {
+    this.perf = performance.now();
+    this.kind = kind;
+    this.target = target;
+  },
+  clear() {
+    this.perf = this.kind = this.target = null;
+  },
+};
+
+// ── state ──────────────────────────────────────────────────────────────────────
+let activeSession     = null;
+let activeViewerId    = null;
+let activeEventSource = null;
+let pollTimer         = null;
+let segPlayer         = null;
+let activeFeed        = null;
+
+// ── DOM refs ───────────────────────────────────────────────────────────────────
+const magnetInput = document.getElementById('magnet-input');
+const btnStart    = document.getElementById('btn-start');
+const btnStop     = document.getElementById('btn-stop');
+const statusEl    = document.getElementById('status');
+const progressEl  = document.getElementById('progress');
+const logBox      = document.getElementById('log-box');
+const player      = document.getElementById('player');
+const timelineScrub = document.getElementById('timeline-scrub');
+const timelineMeta  = document.getElementById('timeline-meta');
+const segmentTableBody = document.getElementById('segment-table-body');
+const segmentCountEl   = document.getElementById('segment-count');
+const audioSegmentTableBody = document.getElementById('audio-segment-table-body');
+const audioSegmentCountEl   = document.getElementById('audio-segment-count');
+
+/** Live segment trace table (client-side pipeline stages). */
+class SegmentTracker {
+  constructor(tbodyEl, countEl, { track = 'video', clock = traceRequestClock } = {}) {
+    this.tbody    = tbodyEl;
+    this.countEl  = countEl;
+    this.track    = track;
+    this.clock    = clock;
+    this.rows     = new Map();
+    this.order    = [];
+    this._active  = null;
+    this._counter = 0;
+  }
+
+  reset() {
+    this.rows.clear();
+    this.order = [];
+    this._active = null;
+    this._counter = 0;
+    this._render();
+  }
+
+  /** Start latency window from an explicit user action (Start, seek, rebuffer). */
+  beginUserRequest(kind, target = null) {
+    this.clock.begin(kind, target);
+  }
+
+  clearUserRequest() {
+    this.clock.clear();
+  }
+
+  get _userRequestPerf()   { return this.clock.perf; }
+  get _userRequestKind()   { return this.clock.kind; }
+  get _userRequestTarget() { return this.clock.target; }
+
+  _ts() {
+    return new Date().toTimeString().slice(0, 8);
+  }
+
+  _shouldAttachRequest(segmentId, row) {
+    if (this._userRequestKind === 'play') return true;
+    if (this._userRequestKind === 'wait') {
+      const t = this._userRequestTarget;
+      if (t == null) return true;
+      if (row.startTime != null) return row.endTime > t - 1;
+      return true;
+    }
+    if (this._userRequestKind === 'seek') {
+      if (/^segment_t/.test(segmentId)) return true;
+      const t = this._userRequestTarget;
+      if (t == null) return true;
+      if (row.startTime != null && row.endTime != null) {
+        return row.startTime <= t + 1 && row.endTime >= t - 5;
+      }
+      return false;
+    }
+    return false;
+  }
+
+  _attachRequest(segmentId, row) {
+    if (row.requestPerf != null || this._userRequestPerf == null) return;
+    if (this._shouldAttachRequest(segmentId, row)) {
+      row.requestPerf = this._userRequestPerf;
+      row.requestKind = this._userRequestKind;
+    }
+  }
+
+  /** Mark segment as visible to the user; compute display latency from request start. */
+  markDisplayed(segmentId) {
+    const row = this.rows.get(segmentId);
+    if (!row || row.displayMs != null) return;
+    row.displayedAt = this._ts();
+    if (row.requestPerf != null) {
+      row.displayMs = Math.round(performance.now() - row.requestPerf);
+    }
+    this._render();
+  }
+
+  /** @param {string} segmentId @param {object} patch @param {string} [stage] */
+  note(segmentId, patch = {}, stage = null) {
+    if (!segmentId) return;
+    let row = this.rows.get(segmentId);
+    if (!row) {
+      row = {
+        idx:        this._counter++,
+        segmentId,
+        startTime:  null,
+        endTime:    null,
+        tfdt:       null,
+        stages:     [],
+        receivedAt: this._ts(),
+        lastAt:     this._ts(),
+        requestPerf: null,
+        requestKind: null,
+        fetchedAt:   null,
+        displayedAt: null,
+        displayMs:   null,
+      };
+      this.rows.set(segmentId, row);
+      this.order.push(segmentId);
+    }
+    if (patch.startTime != null) row.startTime = patch.startTime;
+    if (patch.endTime != null)   row.endTime   = patch.endTime;
+    if (patch.tfdt != null)      row.tfdt      = patch.tfdt;
+    if (patch.avDeltaMs != null) row.avDeltaMs = patch.avDeltaMs;
+    if (patch.hasAudio === false) row.hasAudio = false;
+    if (patch.hasAudio === true)  row.hasAudio = true;
+    this._attachRequest(segmentId, row);
+    if (stage === 'fetching' && row.requestPerf == null) {
+      row.requestPerf = performance.now();
+      row.requestKind = 'fetch';
+    }
+    if (stage === 'fetched') row.fetchedAt = this._ts();
+    if (stage) {
+      const label = stage + '@' + this._ts();
+      const lastKind = row.stages.length
+        ? row.stages[row.stages.length - 1].split('@')[0]
+        : null;
+      if (lastKind !== stage) row.stages.push(label);
+    }
+    row.lastAt = this._ts();
+    this._render();
+  }
+
+  setActive(segmentId) {
+    this._active = segmentId;
+    this._render();
+  }
+
+  _fmtSec(v) {
+    if (v == null || !isFinite(v)) return '—';
+    return v.toFixed(v >= 100 ? 1 : 2);
+  }
+
+  _render() {
+    if (!this.tbody) return;
+    const sorted = [...this.order].sort((a, b) => {
+      const ra = this.rows.get(a);
+      const rb = this.rows.get(b);
+      const sa = ra?.startTime ?? Infinity;
+      const sb = rb?.startTime ?? Infinity;
+      return sa !== sb ? sa - sb : (ra?.idx ?? 0) - (rb?.idx ?? 0);
+    });
+
+    const frag = document.createDocumentFragment();
+    for (const id of sorted) {
+      const row = this.rows.get(id);
+      if (!row) continue;
+      const tr = document.createElement('tr');
+      const isSeek = /^segment_t\d+\.m4s$/.test(id);
+      const appended = row.stages.some(s => s.startsWith('appended'));
+      if (id === this._active) tr.classList.add('row-active');
+      if (appended) tr.classList.add('row-appended');
+      if (isSeek) tr.classList.add('row-seek');
+      const dur = row.startTime != null && row.endTime != null
+        ? row.endTime - row.startTime : null;
+      const showAudio = this.track !== 'audio' || row.hasAudio === true;
+      const cells = this.track === 'audio'
+        ? [
+            String(row.idx),
+            id.length > 20 ? id.slice(0, 18) + '…' : id,
+            showAudio ? this._fmtSec(row.startTime) : '—',
+            showAudio ? this._fmtSec(row.endTime) : '—',
+            showAudio ? this._fmtSec(row.tfdt) : '—',
+            showAudio && dur != null ? this._fmtSec(dur) : '—',
+            row.avDeltaMs != null ? (row.avDeltaMs >= 0 ? '+' : '') + row.avDeltaMs + 'ms' : '—',
+            row.stages.join(','),
+            row.receivedAt,
+            row.fetchedAt ?? '—',
+            row.displayMs != null ? row.displayMs + 'ms' : '—',
+          ]
+        : [
+            String(row.idx),
+            id.length > 20 ? id.slice(0, 18) + '…' : id,
+            this._fmtSec(row.startTime),
+            this._fmtSec(row.endTime),
+            this._fmtSec(row.tfdt),
+            dur != null ? this._fmtSec(dur) : '—',
+            row.stages.join(','),
+            row.receivedAt,
+            row.fetchedAt ?? '—',
+            row.displayMs != null ? row.displayMs + 'ms' : '—',
+          ];
+      cells.forEach((text, i) => {
+        const td = document.createElement('td');
+        td.textContent = text;
+        const stagesIdx = this.track === 'audio' ? 7 : 6;
+        const displayIdx = this.track === 'audio' ? 10 : 9;
+        if (i === stagesIdx) td.className = 'stages';
+        if (i === 1) td.title = id;
+        if (this.track === 'audio' && i === 6 && row.avDeltaMs != null) {
+          td.className = Math.abs(row.avDeltaMs) >= AV_WARN_MS ? 'col-av-warn' : 'col-av-ok';
+        }
+        if (i === displayIdx) {
+          td.className = 'col-display';
+          if (row.displayMs != null) {
+            td.classList.add(row.displayMs >= 3000 ? 'col-display-slow' : 'col-display-ok');
+          }
+        }
+        tr.appendChild(td);
+      });
+      if (this.track === 'audio' && row.avDeltaMs != null && Math.abs(row.avDeltaMs) >= AV_WARN_MS) {
+        tr.classList.add('row-av-bad');
+      }
+      frag.appendChild(tr);
+    }
+    this.tbody.replaceChildren(frag);
+    if (this.countEl) {
+      this.countEl.textContent = this.rows.size + ' segment' + (this.rows.size === 1 ? '' : 's');
+    }
+  }
 }
 
-function log(msg, cls = '') {
-  console.log(`[ui] ${msg}`);
-  const el = document.getElementById('log');
+const segmentTracker = new SegmentTracker(segmentTableBody, segmentCountEl, { track: 'video' });
+const audioSegmentTracker = new SegmentTracker(audioSegmentTableBody, audioSegmentCountEl, { track: 'audio' });
+
+function resetTraceTables() {
+  traceRequestClock.clear();
+  segmentTracker.reset();
+  audioSegmentTracker.reset();
+}
+
+/** Resolve full movie duration: stream payload → m3u8 tag → status API → EXTINF sum. */
+async function resolveMovieDuration(sessionId, streamUrl, hint) {
+  const h = hint != null ? Number(hint) : NaN;
+  if (isFinite(h) && h > 0) return h;
+
+  let m3u8Text = null;
+  try {
+    const url = streamUrl.startsWith('http') ? streamUrl : (window.location.origin + streamUrl);
+    m3u8Text = await fetch(url).then(r => r.text());
+    const tag = /^#EXT-X-TORRENT-DURATION:([\d.]+)/m.exec(m3u8Text);
+    if (tag) {
+      const d = parseFloat(tag[1]);
+      if (isFinite(d) && d > 0) return d;
+    }
+  } catch (_) {}
+
+  try {
+    const st = await fetch('/torrent/status?sessionId=' + encodeURIComponent(sessionId));
+    if (st.ok) {
+      const data = await st.json();
+      const d = Number(data.duration);
+      if (isFinite(d) && d > 0) return d;
+    }
+  } catch (_) {}
+
+  if (m3u8Text) {
+    let total = 0;
+    for (const line of m3u8Text.split('\n')) {
+      const m = /^#EXTINF:([\d.]+)/.exec(line.trim());
+      if (m) total += parseFloat(m[1]);
+    }
+    const hasEnd = m3u8Text.includes('#EXT-X-ENDLIST');
+    if (total > 0 && hasEnd) return total;
+  }
+
+  return isFinite(h) && h > 0 ? h : null;
+}
+
+function formatTime(sec) {
+  if (!isFinite(sec) || sec < 0) return '0:00';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return m + ':' + String(s).padStart(2, '0');
+}
+
+/** Parse video + audio tfdt/trun from an fMP4 media segment. */
+function parseFragmentTracks(data) {
+  const buf = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
+  const raw = { video: null, audio: null };
+
+  function parseTrunDuration(payload) {
+    if (payload.length < 8) return null;
+    const flags = ((payload[0] << 16) | (payload[1] << 8) | payload[2]) & 0xffffff;
+    const sampleCount = (payload[4] << 24) | (payload[5] << 16) | (payload[6] << 8) | payload[7];
+    const hasDuration = (flags & 0x100) !== 0;
+    const hasDefaultDur = (flags & 0x200) !== 0;
+    let offset = 8;
+    if (flags & 0x001) offset += 4;
+    if (hasDefaultDur) offset += 4;
+    if (sampleCount === 0) return null;
+    if (hasDuration) {
+      let total = 0;
+      for (let i = 0; i < sampleCount; i++) {
+        if (offset + 4 > payload.length) break;
+        total += (payload[offset] << 24) | (payload[offset + 1] << 16)
+          | (payload[offset + 2] << 8) | payload[offset + 3];
+        offset += 4;
+        if (flags & 0x400) offset += 4;
+        if (flags & 0x800) offset += 4;
+        if (flags & 0x010) offset += 4;
+        if (flags & 0x020) offset += 4;
+      }
+      return total > 0 ? total : null;
+    }
+    if (hasDefaultDur && payload.length >= 12) {
+      const defaultDur = (payload[8] << 24) | (payload[9] << 16)
+        | (payload[10] << 8) | payload[11];
+      return defaultDur * sampleCount;
+    }
+    return null;
+  }
+
+  function parseTraf(payload) {
+    let trackId = null;
+    let tfdt = null;
+    let trunDur = null;
+    let p = 0;
+    while (p + 8 <= payload.length) {
+      const psz = (payload[p] << 24) | (payload[p + 1] << 16)
+        | (payload[p + 2] << 8) | payload[p + 3];
+      if (psz < 8) break;
+      const ptype = String.fromCharCode(payload[p + 4], payload[p + 5], payload[p + 6], payload[p + 7]);
+      const pp = payload.subarray(p + 8, p + psz);
+      if (ptype === 'tfhd' && pp.length >= 8) {
+        trackId = (pp[4] << 24) | (pp[5] << 16) | (pp[6] << 8) | pp[7];
+      } else if (ptype === 'tfdt' && pp.length >= 8) {
+        const version = pp[0];
+        if (version === 1) {
+          const view = new DataView(pp.buffer, pp.byteOffset, pp.byteLength);
+          tfdt = Number(view.getBigUint64(4));
+        } else {
+          tfdt = (pp[4] << 24) | (pp[5] << 16) | (pp[6] << 8) | pp[7];
+        }
+      } else if (ptype === 'trun') {
+        trunDur = parseTrunDuration(pp);
+      }
+      p += psz;
+    }
+    return { trackId, tfdt, trunDur };
+  }
+
+  function walk(array) {
+    let o = 0;
+    while (o + 8 <= array.length) {
+      const sz = (array[o] << 24) | (array[o + 1] << 16) | (array[o + 2] << 8) | array[o + 3];
+      if (sz < 8) break;
+      const type = String.fromCharCode(array[o + 4], array[o + 5], array[o + 6], array[o + 7]);
+      const payload = array.subarray(o + 8, o + sz);
+      if (type === 'traf') {
+        const traf = parseTraf(payload);
+        if (traf.trackId === 1 || (traf.trackId == null && raw.video == null)) {
+          raw.video = traf;
+        } else if (traf.trackId === 2 || raw.audio == null) {
+          raw.audio = traf;
+        }
+      } else if (type === 'moof') {
+        walk(payload);
+      }
+      o += sz;
+    }
+  }
+
+  walk(buf);
+
+  const out = { video: null, audio: null, avDeltaMs: null };
+  if (raw.video?.tfdt != null) {
+    const startSec = raw.video.tfdt / VIDEO_TIMESCALE;
+    const durSec = raw.video.trunDur != null ? raw.video.trunDur / VIDEO_TIMESCALE : null;
+    out.video = {
+      tfdt: startSec,
+      startSec,
+      endSec: durSec != null ? startSec + durSec : null,
+      durSec,
+    };
+  }
+  if (raw.audio?.tfdt != null) {
+    const startSec = raw.audio.tfdt / AUDIO_TIMESCALE;
+    const durSec = raw.audio.trunDur != null ? raw.audio.trunDur / AUDIO_TIMESCALE : null;
+    out.audio = {
+      tfdt: startSec,
+      startSec,
+      endSec: durSec != null ? startSec + durSec : null,
+      durSec,
+    };
+  }
+  if (out.video && out.audio) {
+    out.avDeltaMs = Math.round((out.video.startSec - out.audio.startSec) * 1000);
+  }
+  return out;
+}
+
+/** Parse video tfdt baseMediaDecodeTime from an fMP4 media segment (ArrayBuffer). */
+function readFirstVideoTfdt(data) {
+  const tracks = parseFragmentTracks(data);
+  if (tracks.video?.tfdt == null) return null;
+  return tracks.video.tfdt * VIDEO_TIMESCALE;
+}
+
+// ── logging ────────────────────────────────────────────────────────────────────
+function log(msg, cls) {
+  const line = document.createElement('div');
+  line.className = 'log-line' + (cls ? ' ' + cls : '');
   const ts = new Date().toTimeString().slice(0, 8);
-  el.innerHTML += `<span class="${cls}">[${ts}] ${msg}\n</span>`;
-  el.scrollTop = el.scrollHeight;
+  line.textContent = '[' + ts + '] ' + msg;
+  logBox.appendChild(line);
+  logBox.scrollTop = logBox.scrollHeight;
 }
 
-function normalizeMagnet(raw) {
-  const s = raw.trim();
-  if (s.startsWith('magnet:')) return s;
-  if (s.startsWith('?xt='))    return 'magnet:' + s;
-  return s;
+/** Mirror MSE debug line to the Log card (console.log separately with exact format) */
+function msePageLog() {
+  const parts = [];
+  for (let i = 0; i < arguments.length; i++) {
+    const a = arguments[i];
+    parts.push(a != null && typeof a === 'object' ? JSON.stringify(a) : String(a));
+  }
+  log(parts.join(' '));
 }
 
-async function startTorrent() {
-  console.log('[ui] startTorrent() called');
-  const magnet = normalizeMagnet(document.getElementById('magnet').value);
+function dumpBuffered(video) {
+  const ranges = [];
+  for (let i = 0; i < video.buffered.length; i++) {
+    ranges.push({
+      start: video.buffered.start(i),
+      end:   video.buffered.end(i),
+    });
+  }
+  return ranges;
+}
+
+function isTimeBuffered(video, t) {
+  for (let i = 0; i < video.buffered.length; i++) {
+    if (t >= video.buffered.start(i) && t <= video.buffered.end(i)) return true;
+  }
+  return false;
+}
+
+/** True if any buffered range overlaps [start, end) (for seek completion after append). */
+function bufferedOverlapsRange(video, start, end) {
+  for (let i = 0; i < video.buffered.length; i++) {
+    const bs = video.buffered.start(i);
+    const be = video.buffered.end(i);
+    if (be > start && bs < end && be > start) return true;
+  }
+  return false;
+}
+
+function fmtBufferedRanges(video) {
+  return JSON.stringify(dumpBuffered(video));
+}
+
+/** Log video element state to console + Log card */
+function logVideoState(context) {
+  const v = player;
+  msePageLog(
+    '[VIDEO STATE]', context,
+    'currentTime=', v.currentTime.toFixed(3),
+    'readyState=', v.readyState,
+    'buffered=', fmtBufferedRanges(v),
+    'seeking=', v.seeking
+  );
+  console.log('[VIDEO STATE]', context, {
+    currentTime: v.currentTime,
+    readyState:  v.readyState,
+    buffered:    dumpBuffered(v),
+    seeking:     v.seeking,
+  });
+}
+
+function wireVideoEventLogs(video) {
+  const events = [
+    'seeking', 'seeked', 'waiting', 'canplay', 'canplaythrough', 'playing', 'stalled', 'error',
+  ];
+  for (const name of events) {
+    video.addEventListener(name, () => {
+      if (name === 'error') {
+        console.log('[VIDEO EVENT] error', video.error);
+        msePageLog('[VIDEO EVENT] error', video.error?.code ?? '', video.error?.message ?? '');
+      } else {
+        console.log('[VIDEO EVENT]', name, video.currentTime);
+        msePageLog('[VIDEO EVENT]', name, video.currentTime.toFixed(3));
+      }
+    });
+  }
+}
+
+// ── TimelineQueue — sorted segment store for continuity scheduling ────────────
+//
+// Every segment from playlist, GET /timeline, registry replay, or segment:ready
+// SSE is stored as { segmentId, startTime, endTime, duration } sorted by startTime.
+//
+class TimelineQueue {
+  constructor() {
+    /** @type {Array<{segmentId:string,file:string,startTime:number,endTime:number,duration:number}>} */
+    this.segments = [];
+    this._ids     = new Set();
+  }
+
+  insert(raw, { quiet = false } = {}) {
+    const segmentId = raw.segmentId ?? raw.file;
+    if (!segmentId) return false;
+    const startTime = raw.startTime ?? 0;
+    const endTime   = raw.endTime ?? (startTime + (raw.duration ?? 0));
+
+    const existingIdx = this.segments.findIndex(s => s.segmentId === segmentId);
+    if (existingIdx !== -1) {
+      const existing = this.segments[existingIdx];
+      if (Math.abs(existing.startTime - startTime) < 0.001
+          && Math.abs(existing.endTime - endTime) < 0.001) {
+        return false;
+      }
+      this.segments.splice(existingIdx, 1);
+      this._ids.delete(segmentId);
+    }
+
+    const seg = {
+      segmentId,
+      file:     raw.file ?? segmentId,
+      startTime,
+      endTime,
+      duration: raw.duration ?? (endTime - startTime),
+    };
+    this._ids.add(segmentId);
+    let i = this.segments.length;
+    while (i > 0 && this.segments[i - 1].startTime > startTime) i--;
+    this.segments.splice(i, 0, seg);
+    if (!quiet) {
+      const payload = { segmentId: seg.segmentId, startTime: seg.startTime, endTime: seg.endTime };
+      console.log('[QUEUE INSERT]', payload);
+      msePageLog('[QUEUE INSERT]', JSON.stringify(payload));
+    }
+    return true;
+  }
+
+  findCovering(time) {
+    for (const seg of this.segments) {
+      if (seg.startTime <= time && time < seg.endTime) return seg;
+    }
+    return null;
+  }
+
+  /** First queued segment whose registry range extends bufferedEnd. */
+  findExtending(bufferedEnd, { before = 0.5, after = 0.1 } = {}) {
+    for (const seg of this.segments) {
+      if (seg.startTime <= bufferedEnd + before && seg.endTime > bufferedEnd + after) {
+        return seg;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Nearest unappended segment that extends bufferedEnd or starts within maxGap after it.
+   */
+  findNextAfterBuffer(bufferedEnd, appendedIds, maxGap = 1.05) {
+    let nearest = null;
+    for (const seg of this.segments) {
+      if (appendedIds.has(seg.segmentId)) continue;
+      const gap = seg.startTime - bufferedEnd;
+      if (seg.startTime <= bufferedEnd + 0.5 && seg.endTime > bufferedEnd + 0.1) {
+        return seg;
+      }
+      if (seg.startTime > bufferedEnd - 0.05 && gap <= maxGap) {
+        if (!nearest || seg.startTime < nearest.startTime) nearest = seg;
+      }
+    }
+    return nearest;
+  }
+
+  findUpcoming(bufferedEnd) {
+    for (const seg of this.segments) {
+      if (seg.startTime > bufferedEnd + 0.1) return seg;
+    }
+    return null;
+  }
+
+  /** Contiguous chain from bufferedEnd — stops at gaps > maxGap. */
+  contiguousChain(bufferedEnd, appendedIds, maxCount = MAX_AHEAD, maxGap = 1.05) {
+    const chain  = [];
+    let cursor   = bufferedEnd;
+    const picked = new Set();
+    while (chain.length < maxCount) {
+      const next = this.findNextAfterBuffer(cursor, appendedIds, maxGap);
+      if (!next || picked.has(next.segmentId)) break;
+      const gap = next.startTime - cursor;
+      if (cursor > 0.05 && gap > maxGap) break;
+      chain.push(next);
+      picked.add(next.segmentId);
+      cursor = next.endTime;
+    }
+    return chain;
+  }
+
+  unappended(appendedIds) {
+    return this.segments.filter(s => !appendedIds.has(s.segmentId));
+  }
+
+  clear() {
+    this.segments = [];
+    this._ids.clear();
+  }
+
+  filterKeep(predicate) {
+    this.segments = this.segments.filter(predicate);
+    this._ids = new Set(this.segments.map(s => s.segmentId));
+  }
+}
+
+// ── MSE SegmentPlayer (timeline-driven) ───────────────────────────────────────
+//
+// Scheduling uses TimelineQueue + video.buffered continuity — never segment index.
+//
+class SegmentPlayer {
+  constructor(videoEl, initUrl, sessionId, mimeType, duration, timelineEl) {
+    this.video      = videoEl;
+    this.initUrl    = initUrl;
+    this.sessionId  = sessionId;
+    this.mimeType   = mimeType;
+    this.timelineEl = timelineEl;
+    this.duration   = duration != null ? Number(duration) : null;
+
+    this.ms          = null;
+    this.sb          = null;
+    this.ready       = false;
+
+    this.queue       = new TimelineQueue();
+    this.appendedIds = new Set();
+    this.buffers     = new Map();  // segmentId → ArrayBuffer
+    this.fetching    = new Set();  // segmentId in-flight
+
+    this._cleanupAgentTimer = null;
+    this._appendedTimeline  = [];  // { segmentId, startTime, endTime } in append order
+    this.sbQueue           = Promise.resolve();
+    this._generation       = 0;
+    this._abortControllers = new Map();
+    this._destroyed        = false;
+    this._seekTimer        = null;
+    this.pendingSeekTime   = null;
+    this.pendingSeekSeg    = null;
+    this.seekAnchor        = null;
+    this._seekPollTimer    = null;
+    this._lastAppendedSeg  = null;
+    this._lastPumpTime     = 0;
+    this._scrubUserActive  = false;
+    this._durationLock     = null;
+    this._gapPollTimer     = null;
+    this._gapPollBusy      = false;
+    this._fetchSlots       = 0;
+    this._timelineRetry    = null;
+    this._postSeekUntil    = 0;
+  }
+
+  _playheadTime() {
+    return this.pendingSeekTime ?? this.video.currentTime;
+  }
+
+  _isSeekArtifact(segmentId) {
+    return /^segment_t\d+\.m4s$/.test(segmentId ?? '');
+  }
+
+  _chainMaxGap() {
+    if (this.pendingSeekTime != null || Date.now() < this._postSeekUntil) return 45;
+    return 1.05;
+  }
+
+  _maxAppendGap(seg) {
+    if (seg && this._isSeekArtifact(seg.segmentId)) return 45;
+    if (Date.now() < this._postSeekUntil) return 45;
+    return 1.05;
+  }
+
+  _seekStillPending(bufEnd) {
+    const hasSeek = id => this._isSeekArtifact(id);
+    if ([...this.fetching].some(hasSeek)) return true;
+    if ([...this.buffers.keys()].some(hasSeek)) return true;
+    return this.queue.unappended(this.appendedIds).some(s =>
+      hasSeek(s.segmentId) && s.endTime > bufEnd - 0.5
+    );
+  }
+
+  /** Apply resolved movie duration to MSE + custom timeline scrubber. */
+  _applyDuration(seconds) {
+    if (seconds == null || !isFinite(seconds) || seconds <= 0) return;
+    this.duration = seconds;
+
+    if (this.timelineEl) {
+      this.timelineEl.max      = String(seconds);
+      this.timelineEl.disabled = false;
+      this._updateTimelineMeta();
+    }
+
+    this._ensureFullDuration();
+  }
+
+  _updateTimelineMeta() {
+    if (!timelineMeta) return;
+    const ct  = this.video.currentTime;
+    const dur = this.duration ?? 0;
+    const buf = this._bufferedEndTime();
+    timelineMeta.textContent =
+      'Timeline: ' + formatTime(ct) + ' / ' + formatTime(dur)
+      + '  |  buffered to ' + formatTime(buf)
+      + '  |  video.duration=' + (isFinite(this.video.duration) ? formatTime(this.video.duration) : '?');
+  }
+
+  _wireTimelineScrubber() {
+    if (!this.timelineEl) return;
+
+    this.timelineEl.addEventListener('pointerdown', () => { this._scrubUserActive = true; });
+    this.timelineEl.addEventListener('pointerup',   () => { this._scrubUserActive = false; });
+    this.timelineEl.addEventListener('input', () => {
+      const t = parseFloat(this.timelineEl.value);
+      if (isFinite(t) && isTimeBuffered(this.video, t)) {
+        this.video.currentTime = t;
+      }
+    });
+    this.timelineEl.addEventListener('change', () => {
+      const t = parseFloat(this.timelineEl.value);
+      if (!isFinite(t)) return;
+      this.seek(t);
+    });
+  }
+
+  /** MSE shrinks duration to buffered end — re-apply full movie length. */
+  _ensureFullDuration() {
+    if (this.duration == null || !isFinite(this.duration)) return;
+    if (!this.ms || this.ms.readyState !== 'open') return;
+    try {
+      this.ms.duration = this.duration;
+    } catch (_) {}
+  }
+
+  _bufferedEndTime() {
+    const t = this._playheadTime();
+    for (let i = 0; i < this.video.buffered.length; i++) {
+      const start = this.video.buffered.start(i);
+      const end   = this.video.buffered.end(i);
+      if (t >= start - 0.05 && t < end + 0.05) return end;
+    }
+    // Playhead not in any range — extend from the nearest range at/before t.
+    let best = 0;
+    for (let i = 0; i < this.video.buffered.length; i++) {
+      const start = this.video.buffered.start(i);
+      const end   = this.video.buffered.end(i);
+      if (start <= t + 0.5) best = Math.max(best, end);
+    }
+    return best;
+  }
+
+  /** Normalize feed / seek payload into a timeline segment object. */
+  _normalizeSegment(data) {
+    const segmentId = data.segmentId ?? data.file;
+    if (!segmentId) return null;
+    const startTime = data.startTime ?? 0;
+    const endTime   = data.endTime ?? (startTime + (data.duration ?? 0));
+    return {
+      segmentId,
+      file:      data.file ?? segmentId,
+      startTime,
+      endTime,
+      duration:  data.duration ?? (endTime - startTime),
+    };
+  }
+
+  _segmentUrl(segmentId) {
+    return `/stream/${this.sessionId}/by-id/${encodeURIComponent(segmentId)}`;
+  }
+
+  _trackSeg(seg, stage, extra = {}) {
+    const id = typeof seg === 'string' ? seg : seg?.segmentId;
+    if (!id || id === 'init') return;
+    const base = {
+      startTime: typeof seg === 'object' ? seg.startTime : undefined,
+      endTime:   typeof seg === 'object' ? seg.endTime : undefined,
+      ...extra,
+    };
+    segmentTracker.note(id, base, stage);
+    audioSegmentTracker.note(id, {
+      startTime: extra.audioStart,
+      endTime:   extra.audioEnd,
+      tfdt:      extra.audioTfdt,
+      avDeltaMs: extra.avDeltaMs,
+      hasAudio:  extra.hasAudio,
+    }, stage);
+  }
+
+  _markDisplayedBoth(segmentId) {
+    segmentTracker.markDisplayed(segmentId);
+    audioSegmentTracker.markDisplayed(segmentId);
+  }
+
+  /** Drop append tracking for segments no longer near the playhead (after seek purge). */
+  _syncAppendedIdsToBuffer() {
+    const ct = this._playheadTime();
+    const keepStart = ct - 5;
+    for (const seg of this._appendedTimeline) {
+      if (seg.endTime < keepStart - 0.5) this.appendedIds.delete(seg.segmentId);
+    }
+    this._appendedTimeline = this._appendedTimeline.filter(s => s.endTime >= keepStart - 0.5);
+  }
+
+  /** After seek lands, keep fetching the chain ahead of bufferedEnd. */
+  _ensurePostSeekContinuation() {
+    if (this._destroyed) return;
+    this._ensureGapRecoveryPoll();
+    const bufferedEnd = this._bufferedEndTime();
+    for (const seg of this.queue.contiguousChain(bufferedEnd, this.appendedIds, MAX_AHEAD, this._chainMaxGap())) {
+      if (this.appendedIds.has(seg.segmentId) || this.buffers.has(seg.segmentId)
+          || this.fetching.has(seg.segmentId)) continue;
+      this._fetchSegment(seg, this._generation);
+    }
+    this._pump();
+  }
+
+  _enqueueSegment(seg) {
+    if (!seg) return;
+    const ct = this._playheadTime();
+    const bufEnd = this._bufferedEndTime();
+
+    if (this._isSeekArtifact(seg.segmentId)) {
+      const activeSeek = this.pendingSeekTime != null;
+      const postSeek   = Date.now() < this._postSeekUntil;
+      const nearCt     = this._segmentNearSeek(seg, ct);
+      const extendsBuf = seg.startTime <= bufEnd + 1.0 && seg.endTime > bufEnd - 0.1;
+      if (!activeSeek && !postSeek && !nearCt && !extendsBuf) return;
+      if (!activeSeek && seg.endTime < ct - EVICT_BEHIND) return;
+      if (activeSeek) {
+        this.pendingSeekSeg = seg.segmentId;
+        for (const id of [...this._abortControllers.keys()]) {
+          if (this._isSeekArtifact(id) && id !== seg.segmentId) {
+            this._abortControllers.get(id)?.abort();
+          }
+        }
+      }
+    } else if (this.pendingSeekTime != null) {
+      if (!this._segmentNearSeek(seg, this.pendingSeekTime)) return;
+    } else if (seg.startTime > ct + PREFETCH_SEC + 30 || seg.endTime < ct - EVICT_BEHIND - 5) {
+      return;
+    }
+    this.queue.insert(seg);
+    this._trackSeg(seg, 'queued');
+    this._pump();
+  }
+
+  /** Predict seek-worker filename from POST /torrent/seek startTime (ms-rounded). */
+  _predictSeekSegmentId(startTime) {
+    return `segment_t${Math.round(startTime * 1000)}.m4s`;
+  }
+
+  /** Highest main-pipeline segment index known from queue + append state. */
+  _highestMainSegmentIndex() {
+    let maxIdx = -1;
+    let lastEnd = 0;
+    const consider = id => {
+      const m = /^segment_(\d+)\.m4s$/.exec(id);
+      if (!m) return;
+      const idx = parseInt(m[1], 10);
+      if (idx > maxIdx) maxIdx = idx;
+    };
+    for (const seg of this.queue.segments) {
+      if (this._isSeekArtifact(seg.segmentId)) continue;
+      consider(seg.segmentId);
+      const m = /^segment_(\d+)\.m4s$/.exec(seg.segmentId);
+      if (m) lastEnd = Math.max(lastEnd, seg.endTime);
+    }
+    for (const id of this.appendedIds) consider(id);
+    for (const seg of this._appendedTimeline) consider(seg.segmentId);
+    return { maxIdx, lastEnd };
+  }
+
+  /** Start fetch for the next sequential main segment (stream route blocks until ready). */
+  _prefetchNextMainSegment() {
+    if (this._destroyed || this.pendingSeekTime != null) return;
+    const ct = this.video.currentTime;
+    const { maxIdx, lastEnd } = this._highestMainSegmentIndex();
+    if (maxIdx < 0) {
+      this._ensureGapRecoveryPoll();
+      return;
+    }
+    // Main encoder far behind playhead — gap recovery / seek tail, not index+1.
+    if (lastEnd > 0 && lastEnd < ct - 10) {
+      this._ensureGapRecoveryPoll();
+      return;
+    }
+    const nextIdx = maxIdx + 1;
+    const nextId  = `segment_${String(nextIdx).padStart(5, '0')}.m4s`;
+    if (this.appendedIds.has(nextId) || this.buffers.has(nextId) || this.fetching.has(nextId)) return;
+    if (this.queue.segments.some(s => s.segmentId === nextId)) {
+      const seg = this.queue.segments.find(s => s.segmentId === nextId);
+      if (seg && !this.buffers.has(nextId) && !this.fetching.has(nextId)) {
+        this._fetchSegment(seg, this._generation);
+      }
+      return;
+    }
+    const startTime = lastEnd > 0 ? lastEnd : maxIdx * 2;
+    const seg = {
+      segmentId: nextId,
+      file:      nextId,
+      startTime,
+      endTime:   startTime + 2,
+      duration:  2,
+    };
+    msePageLog('[PREFETCH]', JSON.stringify({ segmentId: nextId, afterIndex: maxIdx }));
+    this._fetchSegment(seg, this._generation);
+  }
+
+  /** Segment covers a media time point. */
+  _coversTime(seg, time) {
+    return seg && seg.startTime <= time && time <= seg.endTime + 0.05;
+  }
+
+  /** Segments covering seek target — seek artifacts first, then narrowest range. */
+  _seekCoveringSegments(seekTime) {
+    return this.queue.unappended(this.appendedIds)
+      .filter(seg => this._coversTime(seg, seekTime))
+      .sort((a, b) => {
+        const aArt = this._isSeekArtifact(a.segmentId) ? 0 : 1;
+        const bArt = this._isSeekArtifact(b.segmentId) ? 0 : 1;
+        if (aArt !== bArt) return aArt - bArt;
+        return (a.endTime - a.startTime) - (b.endTime - b.startTime);
+      });
+  }
+
+  /** Align fMP4 decode timestamps with registry startTime (seek worker TFDT is often relative). */
+  _syncTimestampOffset(buf, seg) {
+    if (!this.sb || !seg || seg === 'init') return;
+    const tracks = parseFragmentTracks(buf);
+    const bmdt = tracks.video?.tfdt != null ? tracks.video.tfdt * VIDEO_TIMESCALE : readFirstVideoTfdt(buf);
+    if (bmdt == null) return;
+    const fragmentStart = bmdt / VIDEO_TIMESCALE;
+    const offset = seg.startTime - fragmentStart;
+    const payload = {
+      segmentId: seg.segmentId,
+      fragmentStart: +fragmentStart.toFixed(3),
+      registryStart: +seg.startTime.toFixed(3),
+      offset: +offset.toFixed(3),
+    };
+    if (tracks.avDeltaMs != null) {
+      payload.avDeltaMs = tracks.avDeltaMs;
+      if (Math.abs(tracks.avDeltaMs) >= AV_WARN_MS) {
+        msePageLog('[A/V DRIFT]', JSON.stringify(payload));
+      }
+    }
+    if (Math.abs(offset) > 0.02) {
+      this.sb.timestampOffset = offset;
+      msePageLog('[TIMESTAMP OFFSET]', JSON.stringify(payload));
+    } else {
+      this.sb.timestampOffset = 0;
+    }
+  }
+
+  _logContinuityCheck(seg, bufferedEnd) {
+    const gap = seg.startTime - bufferedEnd;
+    const payload = {
+      segmentId: seg.segmentId,
+      startTime: seg.startTime,
+      endTime:   seg.endTime,
+      bufferedEnd,
+      gap,
+    };
+    console.log('[CONTINUITY CHECK]', payload);
+    msePageLog('[CONTINUITY CHECK]', JSON.stringify({
+      bufferedEnd,
+      segmentStart: seg.startTime,
+      segmentEnd:   seg.endTime,
+      gap,
+      segmentId:    seg.segmentId,
+    }));
+    return gap;
+  }
+
+  _logAppendDecision(segmentId, action, reason) {
+    const payload = { segmentId, action, reason };
+    console.log('[APPEND DECISION]', payload);
+    msePageLog('[APPEND DECISION]', JSON.stringify(payload));
+  }
+
+  /**
+   * Pick the next segment that extends the current MSE buffer.
+   * During seek, the covering anchor may bypass the gap gate once.
+   */
+  _nextToAppend() {
+    const bufferedEnd = this._bufferedEndTime();
+    const maxGap      = this._chainMaxGap();
+
+    if (this.pendingSeekTime != null) {
+      const seekTime = this.pendingSeekTime;
+      const covering = this._seekCoveringSegments(seekTime);
+      if (covering.length) {
+        const seg = covering[0];
+        this._logContinuityCheck(seg, bufferedEnd);
+        this._logAppendDecision(seg.segmentId, 'append', 'seek target coverage');
+        return seg;
+      }
+      const ext = this.queue.findNextAfterBuffer(bufferedEnd, this.appendedIds, maxGap);
+      if (ext) {
+        const gap = this._logContinuityCheck(ext, bufferedEnd);
+        if (bufferedEnd <= 0.05 || gap <= maxGap) {
+          this._logAppendDecision(ext.segmentId, 'append', 'continuity after seek');
+          return ext;
+        }
+        this._logAppendDecision(ext.segmentId, 'wait', 'gap > ' + maxGap + 's after seek');
+      }
+      return null;
+    }
+
+    if (this.video.buffered.length === 0) {
+      const start = this.queue.findCovering(0)
+        ?? this.queue.findExtending(0, { before: 0.5, after: 0.1 });
+      if (!start || this.appendedIds.has(start.segmentId)) return null;
+      this._logContinuityCheck(start, bufferedEnd);
+      this._logAppendDecision(start.segmentId, 'append', 'startup segment at t=0');
+      return start;
+    }
+
+    const next = this.queue.findNextAfterBuffer(bufferedEnd, this.appendedIds, maxGap);
+    if (!next) {
+      msePageLog('[APPEND DECISION]', JSON.stringify({
+        action: 'wait', reason: 'no segment extends buffer yet', bufferedEnd,
+      }));
+      this._ensureGapRecoveryPoll();
+      return null;
+    }
+
+    const gap = this._logContinuityCheck(next, bufferedEnd);
+    const allowGap = this._maxAppendGap(next);
+    if (bufferedEnd > 0.05 && gap > allowGap) {
+      this._logAppendDecision(next.segmentId, 'wait',
+        'gap ' + gap.toFixed(2) + 's — waiting for missing segment');
+      this._ensureGapRecoveryPoll();
+      return null;
+    }
+    this._stopGapPoll();
+    this._logAppendDecision(next.segmentId, 'append',
+      gap > 1.05 ? 'seek tail gap ok' : 'continuity ok');
+    return next;
+  }
+
+  _segmentExtendsBuffer(seg, bufferedEnd) {
+    return seg.startTime <= bufferedEnd + 0.5 && seg.endTime > bufferedEnd + 0.1;
+  }
+
+  _stopGapPoll() {
+    clearInterval(this._gapPollTimer);
+    this._gapPollTimer = null;
+  }
+
+  /** Keep gap poll alive until we have enough prefetched segments ahead of playhead. */
+  _bufferChainReady(bufferedEnd, ahead) {
+    if (ahead < MIN_BUFFER_AHEAD) return false;
+    const chain = this.queue.contiguousChain(bufferedEnd, this.appendedIds, 3, this._chainMaxGap());
+    const ready = chain.filter(s =>
+      this.buffers.has(s.segmentId) || this.appendedIds.has(s.segmentId)
+    ).length;
+    return ready >= 2;
+  }
+
+  /** Poll server for the segment covering bufferedEnd when the queue has a timeline hole. */
+  _ensureGapRecoveryPoll() {
+    if (this._destroyed || this.pendingSeekTime != null) return;
+    if (this._gapPollTimer) return;
+    this._gapPollTimer = setInterval(() => this._pollGapFill(), 400);
+    this._pollGapFill();
+  }
+
+  async _pollGapFill() {
+    if (this._destroyed || this._gapPollBusy || this.pendingSeekTime != null) return;
+    const bufferedEnd = this._bufferedEndTime();
+    const ct          = this.video.currentTime;
+    const ahead       = bufferedEnd - ct;
+
+    if (this.duration && bufferedEnd >= this.duration - 0.5) {
+      this._stopGapPoll();
+      return;
+    }
+
+    const extending = this.queue.findNextAfterBuffer(bufferedEnd, this.appendedIds, this._chainMaxGap());
+    if (extending) {
+      if (!this.buffers.has(extending.segmentId) && !this.fetching.has(extending.segmentId)) {
+        this._fetchSegment(extending, this._generation);
+      }
+      this._pump();
+      if (this._bufferChainReady(bufferedEnd, ahead)) this._stopGapPoll();
+      return;
+    }
+
+    if (this._bufferChainReady(bufferedEnd, ahead) && !this.video.paused && !this.video.waiting) {
+      this._stopGapPoll();
+      return;
+    }
+
+    this._gapPollBusy = true;
+    try {
+      const params = new URLSearchParams({
+        sessionId: this.sessionId,
+        after:     String(bufferedEnd),
+        wait:      '4000',
+      });
+      const r = await fetch('/torrent/covering?' + params);
+      if (!r.ok || this._destroyed) return;
+      const data = await r.json();
+      const seg  = this._normalizeSegment(data.segment);
+      if (seg?.segmentId && !this.appendedIds.has(seg.segmentId)) {
+        const gap = seg.startTime - bufferedEnd;
+        if (gap > this._chainMaxGap()) return;
+        msePageLog('[GAP RECOVERY]', JSON.stringify({
+          bufferedEnd, segmentId: seg.segmentId, startTime: seg.startTime, endTime: seg.endTime,
+        }));
+        this.queue.insert(seg);
+        if (!this.buffers.has(seg.segmentId) && !this.fetching.has(seg.segmentId)) {
+          this._fetchSegment(seg, this._generation);
+        }
+        this._pump();
+        return;
+      }
+      this._prefetchNextMainSegment();
+      this._pump();
+    } catch (_) {
+    } finally {
+      this._gapPollBusy = false;
+    }
+  }
+
+  /** Fetch only segments in the contiguous chain ahead of bufferedEnd. */
+  _fetchCandidates() {
+    const bufferedEnd = this._bufferedEndTime();
+    const maxGap      = this._chainMaxGap();
+
+    if (this.pendingSeekTime != null) {
+      const seekTime = this.pendingSeekTime;
+      const candidates = [...this._seekCoveringSegments(seekTime)];
+      for (const seg of this.queue.unappended(this.appendedIds)) {
+        if (!this._isSeekArtifact(seg.segmentId)) continue;
+        if (!this._segmentNearSeek(seg, seekTime)) continue;
+        if (!candidates.some(c => c.segmentId === seg.segmentId)) candidates.push(seg);
+      }
+      candidates.sort((a, b) => a.startTime - b.startTime);
+      const chainFrom = Math.max(bufferedEnd, candidates[0]?.startTime ?? seekTime);
+      for (const seg of this.queue.contiguousChain(chainFrom, this.appendedIds, MAX_AHEAD, maxGap)) {
+        if (!candidates.some(c => c.segmentId === seg.segmentId)) candidates.push(seg);
+      }
+      return candidates
+        .filter(s => !this.buffers.has(s.segmentId) && !this.fetching.has(s.segmentId))
+        .slice(0, MAX_AHEAD);
+    }
+
+    let chain;
+    if (Date.now() < this._postSeekUntil) {
+      chain = [];
+      for (const seg of this.queue.unappended(this.appendedIds)) {
+        if (this._isSeekArtifact(seg.segmentId) && seg.startTime <= bufferedEnd + 60) {
+          chain.push(seg);
+        }
+      }
+      chain.sort((a, b) => a.startTime - b.startTime);
+      for (const seg of this.queue.contiguousChain(bufferedEnd, this.appendedIds, MAX_AHEAD, maxGap)) {
+        if (!chain.some(c => c.segmentId === seg.segmentId)) chain.push(seg);
+      }
+    } else if (this.video.buffered.length === 0) {
+      const start = this.queue.findCovering(0)
+        ?? this.queue.findExtending(0, { before: 0.5, after: 0.1 });
+      chain = start ? [start] : [];
+      for (const seg of this.queue.contiguousChain(start?.endTime ?? 0, this.appendedIds, MAX_AHEAD, maxGap)) {
+        if (!chain.some(c => c.segmentId === seg.segmentId)) chain.push(seg);
+      }
+    } else {
+      chain = this.queue.contiguousChain(bufferedEnd, this.appendedIds, MAX_AHEAD, maxGap);
+    }
+
+    return chain
+      .filter(s => !this.appendedIds.has(s.segmentId)
+        && !this.buffers.has(s.segmentId)
+        && !this.fetching.has(s.segmentId))
+      .slice(0, MAX_AHEAD);
+  }
+
+  _logAfterAppendEnd(seg) {
+    const video = this.video;
+    const label = seg.segmentId + '@' + seg.startTime.toFixed(2) + 's';
+    msePageLog(
+      '[VIDEO STATE]', `append-end ${label}`,
+      'currentTime=', video.currentTime.toFixed(3),
+      'buffered=', fmtBufferedRanges(video)
+    );
+
+    if (this.pendingSeekTime != null) {
+      const target = this.pendingSeekTime;
+      const bufferedAtSeek = isTimeBuffered(video, target);
+      const overlapsSeg = this._lastAppendedSeg
+        && bufferedOverlapsRange(video, this._lastAppendedSeg.startTime, this._lastAppendedSeg.endTime);
+      msePageLog('[SEEK CHECK]', JSON.stringify({
+        seekTime: target,
+        seekSeg:  this.pendingSeekSeg,
+        bufferedAtSeek,
+        overlapsSeg,
+        lastSeg: this._lastAppendedSeg?.segmentId,
+      }));
+      if (bufferedAtSeek || overlapsSeg) {
+        const bufEnd = this._bufferedEndTime();
+        const ahead  = bufEnd - target;
+        const seekPending = this._seekStillPending(bufEnd);
+        if (ahead < MIN_BUFFER_AHEAD && seekPending) {
+          msePageLog('[SEEK PARTIAL]', JSON.stringify({
+            seekTime: target, ahead: +ahead.toFixed(2), seekPending: true,
+          }));
+          this._pump();
+          return;
+        }
+        msePageLog('[SEEK TARGET BUFFERED]', JSON.stringify({
+          seekTime: target,
+          currentTime: video.currentTime,
+          ahead: +ahead.toFixed(2),
+        }));
+        if (bufferedAtSeek) {
+          const visibleId = this.pendingSeekSeg ?? seg.segmentId;
+          this._markDisplayedBoth(visibleId);
+          if (this._lastAppendedSeg?.segmentId
+              && this._lastAppendedSeg.segmentId !== visibleId) {
+            this._markDisplayedBoth(this._lastAppendedSeg.segmentId);
+          }
+        }
+        this._clearSeekWait();
+        if (video.seeking || Math.abs(video.currentTime - target) > 0.5) {
+          video.currentTime = target;
+        }
+        if (video.paused) video.play().catch(() => {});
+      }
+    } else {
+      this._maybeMarkDisplayed(seg);
+      this._prefetchNextMainSegment();
+    }
+  }
+
+  /** Record display latency when playhead can show this segment's frames. */
+  _maybeMarkDisplayed(seg) {
+    if (!seg?.segmentId) return;
+    const ct = this._playheadTime();
+    const coversPlayhead = seg.startTime <= ct + 0.15 && seg.endTime > ct - 0.15;
+    if (coversPlayhead && isTimeBuffered(this.video, ct)) {
+      this._markDisplayedBoth(seg.segmentId);
+    }
+  }
+
+  _clearSeekWait() {
+    clearInterval(this._seekPollTimer);
+    this._seekPollTimer = null;
+    this.pendingSeekTime = null;
+    this.pendingSeekSeg  = null;
+    this.seekAnchor      = null;
+    this._lastAppendedSeg = null;
+    this._postSeekUntil   = Date.now() + 180_000;
+    if (segmentTracker._userRequestKind === 'seek') {
+      segmentTracker.clearUserRequest();
+    }
+    this._stopGapPoll();
+    const ct = this.video.currentTime;
+    this.queue.filterKeep(seg => {
+      if (!this._isSeekArtifact(seg.segmentId)) return true;
+      return seg.endTime > ct - 2 && seg.startTime < ct + PREFETCH_SEC + 45;
+    });
+    this._syncAppendedIdsToBuffer();
+    this.sbQueue = this.sbQueue.then(async () => {
+      await this._purgeOrphanRanges();
+      this._ensurePostSeekContinuation();
+    });
+  }
+
+  _startSeekCoveringPoll(gen, toTime) {
+    clearInterval(this._seekPollTimer);
+    const poll = async () => {
+      if (this._destroyed || this._generation !== gen || this.pendingSeekTime == null) return;
+      try {
+        const params = new URLSearchParams({
+          sessionId: this.sessionId,
+          time: String(this.pendingSeekTime),
+          wait: '5000',
+        });
+        const r = await fetch('/torrent/covering?' + params);
+        if (!r.ok || this._generation !== gen || this.pendingSeekTime == null) return;
+        const data = await r.json();
+        const seg = this._normalizeSegment(data.segment);
+        if (!seg?.segmentId) return;
+        if (!this._segmentNearSeek(seg, this.pendingSeekTime)) return;
+        this._enqueueSegment(seg);
+        if (!this.buffers.has(seg.segmentId) && !this.fetching.has(seg.segmentId)) {
+          this._fetchSegment(seg, gen);
+        }
+        this._pump();
+      } catch (_) {}
+    };
+    poll();
+    this._seekPollTimer = setInterval(poll, 600);
+  }
+
+  _wireVideoEvents() {
+    if (this._videoEventsWired) return;
+    this._videoEventsWired = true;
+    wireVideoEventLogs(this.video);
+    this.video.addEventListener('waiting', () => {
+      segmentTracker.beginUserRequest('wait', this._playheadTime());
+    });
+    this.video.addEventListener('playing', () => {
+      if (segmentTracker._userRequestKind === 'wait') {
+        segmentTracker.clearUserRequest();
+      }
+      if (!this._playStarted) {
+        this._playStarted = true;
+        if (segmentTracker._userRequestKind === 'play') {
+          segmentTracker.clearUserRequest();
+        }
+      }
+    });
+  }
+
+  async init() {
+    this._wireVideoEvents();
+    this._wireTimelineScrubber();
+
+    this.ms = new MediaSource();
+    this.video.src = URL.createObjectURL(this.ms);
+
+    await new Promise(resolve =>
+      this.ms.addEventListener('sourceopen', resolve, { once: true })
+    );
+
+    // Set duration BEFORE addSourceBuffer — Chrome uses this as the VOD timeline extent.
+    if (this.duration != null && isFinite(this.duration)) {
+      try { this.ms.duration = this.duration; } catch (_) {}
+    }
+
+    this.sb = this.ms.addSourceBuffer(this.mimeType);
+    this.sb.mode = 'segments';
+    if (this.duration != null && isFinite(this.duration)) {
+      try {
+        this.sb.appendWindowStart = 0;
+        this.sb.appendWindowEnd   = this.duration + 1;
+      } catch (_) {}
+    }
+
+    const initBuf = await fetch(this.initUrl).then(r => r.arrayBuffer());
+    await this._append(initBuf, 0, 'init');
+    if (this.video.error) {
+      throw new Error(this.video.error.message || 'init segment rejected by MSE');
+    }
+    this._ensureFullDuration();
+    this._applyDuration(this.duration);
+    this.ready = true;
+
+    this.video.addEventListener('durationchange', () => this._ensureFullDuration());
+    this.video.addEventListener('waiting', () => {
+      this._ensureGapRecoveryPoll();
+      this._pump();
+    });
+    this.video.addEventListener('timeupdate', () => {
+      if (!this._scrubUserActive && this.timelineEl) {
+        this.timelineEl.value = String(this.video.currentTime);
+      }
+      this._updateTimelineMeta();
+      const now = Date.now();
+      if (now - this._lastPumpTime < 250) return;
+      this._lastPumpTime = now;
+      this._pump();
+      if (this.pendingSeekTime == null && this._needsMseCleanup()) {
+        this.sbQueue = this.sbQueue.then(() => this._runCleanupAgent());
+      }
+    });
+
+    this._durationLock = setInterval(() => this._ensureFullDuration(), 200);
+    this._startCleanupAgent();
+
+    if (this.duration != null && isFinite(this.duration)) {
+      log('Duration set: ' + Math.floor(this.duration) + 's', 'ok');
+    } else {
+      log('Duration unknown — use timeline scrubber once resolved', 'warn');
+    }
+    log('MSE SourceBuffer ready', 'ok');
+  }
+
+  /** Bootstrap from GET /torrent/timeline before SSE feed replay. */
+  async loadTimeline() {
+    try {
+      const r = await fetch('/torrent/timeline?sessionId=' + encodeURIComponent(this.sessionId));
+      if (!r.ok) {
+        log('Timeline bootstrap failed: HTTP ' + r.status, 'warn');
+        return;
+      }
+      const entries = await r.json();
+      if (!Array.isArray(entries)) return;
+      const ct = this.video.currentTime || 0;
+      const windowEnd = ct + BOOTSTRAP_SEC;
+      let inserted = 0;
+      for (const e of entries) {
+        const seg = this._normalizeSegment(e);
+        if (!seg || this._isSeekArtifact(seg.segmentId)) continue;
+        if (seg.startTime > windowEnd) continue;
+        if (this.queue.insert(seg, { quiet: true })) {
+          inserted++;
+          this._trackSeg(seg, 'bootstrap');
+        }
+      }
+      log('Timeline bootstrap: ' + inserted + '/' + entries.length + ' segment(s) near t='
+        + Math.floor(ct) + 's', 'ok');
+      this._pump();
+      if (inserted === 0 && entries.length === 0 && !this._timelineRetry) {
+        this._timelineRetry = setTimeout(() => {
+          this._timelineRetry = null;
+          this.loadTimeline();
+        }, 5000);
+      }
+    } catch (err) {
+      log('Timeline bootstrap error: ' + err.message, 'warn');
+    }
+  }
+
+  onSegmentReady(data) {
+    const seg = this._normalizeSegment(data);
+    if (!seg) return;
+    this._trackSeg(seg, 'sse');
+    this._enqueueSegment(seg);
+  }
+
+  /** True if segment is close enough to pending seek to fetch/append. */
+  _segmentNearSeek(seg, seekTime) {
+    return seg.endTime > seekTime - 5 && seg.startTime < seekTime + SEEK_WINDOW_SEC;
+  }
+
+  _pump() {
+    if (this._destroyed) return;
+    const gen = this._generation;
+
+    for (const seg of this._fetchCandidates()) {
+      if (this.fetching.has(seg.segmentId) || this.buffers.has(seg.segmentId)) continue;
+      if (this.appendedIds.has(seg.segmentId)) continue;
+      this._fetchSegment(seg, gen);
+    }
+
+    const next = this._nextToAppend();
+    if (!next) return;
+
+    if (this.ready && this.sb && !this.sb.updating && this.buffers.has(next.segmentId)) {
+      const buf = this.buffers.get(next.segmentId);
+      this.buffers.delete(next.segmentId);
+      this.appendedIds.add(next.segmentId);
+
+      const wasSeekAnchor = this.seekAnchor && this.seekAnchor.segmentId === next.segmentId;
+
+      this.sbQueue = this.sbQueue.then(async () => {
+        if (this._needsMseCleanup()) await this._ensureMseCapacity();
+        let appended = false;
+        try {
+          await this._append(buf, gen, next);
+          appended = true;
+        } catch (e) {
+          log('MSE append error: ' + (e.message ?? e), 'warn');
+          this.appendedIds.delete(next.segmentId);
+          this.buffers.set(next.segmentId, buf);
+          if (!this._isQuotaError(e)) return;
+          await this._purgeOrphanRanges({ aggressive: true });
+          await this._ensureMseCapacity({ aggressive: true });
+          this.appendedIds.add(next.segmentId);
+          try {
+            await this._append(buf, gen, next);
+            appended = true;
+          } catch (e2) {
+            log('MSE append retry failed: ' + (e2.message ?? e2), 'warn');
+            this.appendedIds.delete(next.segmentId);
+            this.buffers.set(next.segmentId, buf);
+            return;
+          }
+        }
+        if (appended) this._registerAppendedSeg(next);
+        if (this._generation !== gen) return;
+        if (wasSeekAnchor) this.seekAnchor = null;
+        this._lastAppendedSeg = next;
+        const bufEnd = this._bufferedEndTime();
+        const ahead  = bufEnd - this.video.currentTime;
+        if (this.video.paused && ahead >= MIN_BUFFER_AHEAD && this.video.readyState >= 2) {
+          this.video.play().catch(() => {});
+        }
+        this._pump();
+      });
+    }
+  }
+
+  _fetchSegment(seg, gen) {
+    if (this._fetchSlots >= MAX_FETCH_PARALLEL) return;
+    this._fetchSlots++;
+    this.fetching.add(seg.segmentId);
+    this._trackSeg(seg, 'fetching');
+    const controller = new AbortController();
+    this._abortControllers.set(seg.segmentId, controller);
+    const url = this._segmentUrl(seg.segmentId);
+
+    fetch(url, { signal: controller.signal })
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      .then(buf => {
+        if (this._destroyed) return;
+        this.fetching.delete(seg.segmentId);
+        this._abortControllers.delete(seg.segmentId);
+        if (!this.queue.segments.some(s => s.segmentId === seg.segmentId)) {
+          const bmdt = readFirstVideoTfdt(buf);
+          let startTime = seg.startTime;
+          if (bmdt != null && !this._isSeekArtifact(seg.segmentId)) {
+            startTime = bmdt / VIDEO_TIMESCALE;
+          }
+          if (Number.isFinite(startTime)) {
+            const endTime = seg.endTime > startTime ? seg.endTime : startTime + 2;
+            this.queue.insert({
+              segmentId: seg.segmentId,
+              file:      seg.segmentId,
+              startTime,
+              endTime,
+              duration:  endTime - startTime,
+            }, { quiet: true });
+          }
+        }
+        const queued = this.queue.segments.find(s => s.segmentId === seg.segmentId);
+        const tracks = parseFragmentTracks(buf);
+        const tfdt = tracks.video?.tfdt ?? null;
+        const regStart = queued?.startTime ?? seg.startTime;
+        const vTfdt = tracks.video?.tfdt ?? 0;
+        let audioStart = null;
+        let audioEnd = null;
+        let audioTfdt = null;
+        let hasAudio = false;
+        if (tracks.audio) {
+          hasAudio = true;
+          audioTfdt = tracks.audio.tfdt;
+          if (regStart != null && Number.isFinite(vTfdt)) {
+            audioStart = regStart + (tracks.audio.startSec - vTfdt);
+            audioEnd = tracks.audio.durSec != null
+              ? audioStart + tracks.audio.durSec
+              : (queued?.endTime ?? seg.endTime);
+          } else {
+            audioStart = tracks.audio.startSec;
+            audioEnd = tracks.audio.endSec;
+          }
+        }
+        this._trackSeg(queued ?? seg, 'fetched', {
+          startTime: queued?.startTime ?? seg.startTime,
+          endTime:   queued?.endTime ?? seg.endTime,
+          tfdt,
+          audioStart,
+          audioEnd,
+          audioTfdt,
+          avDeltaMs: tracks.avDeltaMs,
+          hasAudio: !!tracks.audio,
+        });
+        if (tracks.avDeltaMs != null && Math.abs(tracks.avDeltaMs) >= AV_WARN_MS) {
+          msePageLog('[A/V DRIFT]', JSON.stringify({
+            segmentId: seg.segmentId, avDeltaMs: tracks.avDeltaMs,
+          }));
+        }
+        const t = queued?.startTime ?? seg.startTime ?? 0;
+        msePageLog('[FETCH DONE]', seg.segmentId, t.toFixed(2) + 's', 'gen=', gen);
+        this.buffers.set(seg.segmentId, buf);
+        this._pump();
+      })
+      .catch(e => {
+        if (this._destroyed || e.name === 'AbortError') return;
+        this.fetching.delete(seg.segmentId);
+        this._abortControllers.delete(seg.segmentId);
+        setTimeout(() => this._pump(), 1000);
+      })
+      .finally(() => {
+        this._fetchSlots = Math.max(0, this._fetchSlots - 1);
+        if (!this._destroyed) this._pump();
+      });
+  }
+
+  _append(buf, gen, seg) {
+    return new Promise((resolve, reject) => {
+      if (this._destroyed) { resolve(); return; }
+      if (gen !== 0 && this._generation !== gen) { resolve(); return; }
+      if (!this.sb || this.ms.readyState !== 'open') { resolve(); return; }
+
+      const label = typeof seg === 'string' ? seg : seg.segmentId;
+      msePageLog('[APPEND START]', label);
+      if (typeof seg === 'object' && seg !== null && seg !== 'init') {
+        this._trackSeg(seg, 'appending');
+        segmentTracker.setActive(seg.segmentId);
+        audioSegmentTracker.setActive(seg.segmentId);
+      }
+
+      const onEnd = () => {
+        if (typeof seg === 'object' && seg !== 'init') this._ensureFullDuration();
+        msePageLog('[APPEND END]', label);
+        if (typeof seg === 'object') this._logAfterAppendEnd(seg);
+        resolve();
+      };
+      const onErr = e => reject(e);
+      this.sb.addEventListener('updateend', onEnd, { once: true });
+      this.sb.addEventListener('error',     onErr, { once: true });
+      try {
+        if (typeof seg === 'object' && seg !== null && seg !== 'init') {
+          this._syncTimestampOffset(buf, seg);
+        }
+        this.sb.appendBuffer(buf);
+      } catch (e) {
+        this.sb.removeEventListener('updateend', onEnd);
+        this.sb.removeEventListener('error',     onErr);
+        reject(e);
+      }
+    });
+  }
+
+  /** Track segment metadata so the cleanup agent can remove oldest entries. */
+  _registerAppendedSeg(seg) {
+    if (!seg?.segmentId || seg === 'init') return;
+    const entry = {
+      segmentId: seg.segmentId,
+      startTime: seg.startTime,
+      endTime:   seg.endTime,
+    };
+    const idx = this._appendedTimeline.findIndex(s => s.segmentId === seg.segmentId);
+    if (idx >= 0) this._appendedTimeline[idx] = entry;
+    else this._appendedTimeline.push(entry);
+    this._appendedTimeline.sort((a, b) => a.startTime - b.startTime);
+    this._trackSeg(seg, 'appended');
+    this._maybeMarkDisplayed(seg);
+    segmentTracker.setActive(null);
+    audioSegmentTracker.setActive(null);
+  }
+
+  _startCleanupAgent() {
+    clearInterval(this._cleanupAgentTimer);
+    this._cleanupAgentTimer = setInterval(() => {
+      if (this._destroyed || !this.sb) return;
+      this.sbQueue = this.sbQueue.then(() => this._runCleanupAgent());
+    }, CLEANUP_AGENT_MS);
+  }
+
+  /** Drop segments from the timeline registry after an sb.remove(). */
+  _pruneAppendedTimeline(removedStart, removedEnd) {
+    this._appendedTimeline = this._appendedTimeline.filter(seg => {
+      if (seg.endTime <= removedStart + 0.01 || seg.startTime >= removedEnd - 0.01) return true;
+      this.appendedIds.delete(seg.segmentId);
+      msePageLog('[MSE CLEANUP]', JSON.stringify({
+        action: 'drop-tracked', segmentId: seg.segmentId,
+        startTime: seg.startTime, endTime: seg.endTime,
+      }));
+      return false;
+    });
+  }
+
+  /** True when buffered ranges exist far from the playhead (e.g. after seek). */
+  _hasOrphanRanges() {
+    const ct = this._playheadTime();
+    const keepStart = ct - EVICT_BEHIND;
+    const keepEnd   = ct + PREFETCH_SEC + 15;
+    for (let i = 0; i < this.video.buffered.length; i++) {
+      const start = this.video.buffered.start(i);
+      const end   = this.video.buffered.end(i);
+      if (end <= keepStart + 0.05 || start >= keepEnd - 0.05) return true;
+    }
+    return false;
+  }
+
+  _needsMseCleanup() {
+    return this._hasOrphanRanges()
+      || this._bufferedSpan() > MAX_MSE_BUFFER_SPAN * 0.75
+      || this._appendedTimeline.length > MAX_MSE_SEGMENTS * 0.85;
+  }
+
+  /** Drop buffered ranges outside the playhead window (frees quota after seeks). */
+  async _purgeOrphanRanges({ aggressive = false } = {}) {
+    if (this._destroyed || !this.sb || !this.video.buffered.length) return 0;
+    const ct = this._playheadTime();
+    const keepBehind = aggressive ? 5 : EVICT_BEHIND;
+    const keepAhead  = aggressive ? 30 : PREFETCH_SEC + 15;
+    const keepStart  = ct - keepBehind;
+    const keepEnd    = ct + keepAhead;
+    let removed = 0;
+
+    const ranges = [];
+    for (let i = 0; i < this.video.buffered.length; i++) {
+      ranges.push({
+        start: this.video.buffered.start(i),
+        end:   this.video.buffered.end(i),
+      });
+    }
+
+    for (const { start, end } of ranges) {
+      if (end <= keepStart + 0.05 || start >= keepEnd - 0.05) {
+        const ok = await this._sbRemove(start, end);
+        if (ok) {
+          this._pruneAppendedTimeline(start, end);
+          removed++;
+          msePageLog('[MSE CLEANUP]', JSON.stringify({
+            action: 'purge-orphan', range: [start, end], currentTime: ct,
+          }));
+        }
+      }
+    }
+    return removed;
+  }
+
+  /**
+   * Remove the oldest segment (or buffered range) that is safely behind playhead.
+   * @returns {Promise<boolean>} true if something was removed
+   */
+  async _removeOldestSegment({ keepBehind = EVICT_BEHIND } = {}) {
+    if (this._destroyed || !this.sb || !this.video.buffered.length) return false;
+    const ct = this.video.currentTime;
+    const cutoff = ct - keepBehind;
+
+    for (const seg of this._appendedTimeline) {
+      if (seg.endTime > cutoff + 0.05) continue;
+      const ok = await this._sbRemove(seg.startTime, seg.endTime);
+      if (ok) {
+        this._pruneAppendedTimeline(seg.startTime, seg.endTime);
+        msePageLog('[MSE CLEANUP]', JSON.stringify({
+          action: 'remove-segment', segmentId: seg.segmentId,
+          range: [seg.startTime, seg.endTime], currentTime: ct,
+        }));
+        return true;
+      }
+    }
+
+    for (let i = 0; i < this.video.buffered.length; i++) {
+      const start = this.video.buffered.start(i);
+      const end   = this.video.buffered.end(i);
+      if (end <= cutoff + 0.05) {
+        const ok = await this._sbRemove(start, end);
+        if (ok) {
+          this._pruneAppendedTimeline(start, end);
+          msePageLog('[MSE CLEANUP]', JSON.stringify({
+            action: 'remove-range', range: [start, end], currentTime: ct,
+          }));
+          return true;
+        }
+      }
+      if (start < cutoff - 0.05 && end > cutoff) {
+        const ok = await this._sbRemove(start, cutoff);
+        if (ok) {
+          this._pruneAppendedTimeline(start, cutoff);
+          msePageLog('[MSE CLEANUP]', JSON.stringify({
+            action: 'trim-range', range: [start, cutoff], currentTime: ct,
+          }));
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /** Remove oldest segments until MSE is within span/count limits (or quota freed). */
+  async _ensureMseCapacity({ aggressive = false } = {}) {
+    if (this._destroyed || !this.sb) return;
+    await this._purgeOrphanRanges({ aggressive });
+    const maxSpan     = aggressive ? 45 : MAX_MSE_BUFFER_SPAN;
+    const maxSegments = aggressive ? 20 : MAX_MSE_SEGMENTS;
+    const keepBehind  = aggressive ? 5 : EVICT_BEHIND;
+    let removed = 0;
+
+    while (removed < 40) {
+      const span     = this._bufferedSpan();
+      const segCount = this._appendedTimeline.length;
+      const overSpan = span > maxSpan;
+      const overCount = segCount > maxSegments;
+      if (!aggressive && !overSpan && !overCount) break;
+      if (aggressive && removed >= 5 && !overSpan && !overCount) break;
+
+      if (!await this._removeOldestSegment({ keepBehind })) break;
+      removed++;
+    }
+
+    if (removed > 0) {
+      msePageLog('[MSE CLEANUP]', JSON.stringify({
+        action: 'capacity-pass', removed, span: this._bufferedSpan(),
+        segments: this._appendedTimeline.length, aggressive,
+      }));
+    }
+  }
+
+  async _runCleanupAgent() {
+    if (this._destroyed || !this.sb || !this.video.buffered.length) return;
+    if (this._needsMseCleanup()) await this._ensureMseCapacity();
+  }
+
+  _bufferedSpan() {
+    const v = this.video;
+    let span = 0;
+    for (let i = 0; i < v.buffered.length; i++) {
+      span += v.buffered.end(i) - v.buffered.start(i);
+    }
+    return span;
+  }
+
+  _isQuotaError(e) {
+    const msg = e?.message ?? String(e ?? '');
+    return e?.name === 'QuotaExceededError' || /SourceBuffer is full/i.test(msg);
+  }
+
+  _sbRemove(start, end) {
+    return new Promise(resolve => {
+      if (this._destroyed || !this.sb || end <= start) { resolve(false); return; }
+      const done = () => resolve(true);
+      this.sb.addEventListener('updateend', done, { once: true });
+      this.sb.addEventListener('error', done, { once: true });
+      try {
+        this.sb.remove(start, end);
+      } catch {
+        this.sb.removeEventListener('updateend', done);
+        this.sb.removeEventListener('error', done);
+        resolve(false);
+      }
+    });
+  }
+
+  seek(toTime) {
+    if (this._destroyed) return;
+
+    const bufferedAtSeek = isTimeBuffered(this.video, toTime);
+    if (bufferedAtSeek) {
+      this.video.currentTime = toTime;
+      log('Seek skipped — already buffered at ' + Math.floor(toTime) + 's', 'ok');
+      return;
+    }
+
+    segmentTracker.beginUserRequest('seek', toTime);
+
+    this._stopGapPoll();
+    this._generation++;
+    const gen = this._generation;
+
+    for (const controller of this._abortControllers.values()) controller.abort();
+    this._abortControllers.clear();
+    this.buffers.clear();
+    this.fetching.clear();
+
+    this.pendingSeekTime = toTime;
+    this.pendingSeekSeg  = null;
+    this.seekAnchor      = null;
+
+    this.queue.clear();
+    this.appendedIds.clear();
+    this._appendedTimeline = [];
+    for (const id of [...this.buffers.keys()]) this.buffers.delete(id);
+
+    this.sbQueue = this.sbQueue.then(async () => {
+      await this._purgeOrphanRanges({ aggressive: true });
+      this._syncAppendedIdsToBuffer();
+    });
+
+    msePageLog('[SEEK REQUEST]', JSON.stringify({ seekTime: toTime, gen }));
+    log('Seek → t=' + Math.floor(toTime) + 's (waiting for server)', 'ok');
+
+    clearTimeout(this._seekTimer);
+    this._seekTimer = setTimeout(() => {
+      if (this._generation !== gen) return;
+
+      fetch('/torrent/seek', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ sessionId: this.sessionId, seekTime: toTime }),
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (this._generation !== gen) return;
+          msePageLog('[SEEK RESPONSE]', JSON.stringify(d));
+
+          const seg = this._normalizeSegment(d);
+
+          if (d.action === 'cached' && seg?.segmentId && this._coversTime(seg, toTime)) {
+            this.pendingSeekSeg = seg.segmentId;
+            this._enqueueSegment(seg);
+
+            if (this.appendedIds.has(seg.segmentId) && isTimeBuffered(this.video, toTime)) {
+              this._clearSeekWait();
+              this.video.currentTime = toTime;
+              log('Seek: cached — already buffered at ' + Math.floor(toTime) + 's', 'ok');
+            } else if (this.appendedIds.has(seg.segmentId)) {
+              this.seekAnchor = seg;
+              this._fetchSegment(seg, gen);
+              log('Seek: cached — re-fetch ' + seg.segmentId
+                + ' [' + seg.startTime.toFixed(1) + '–' + seg.endTime.toFixed(1) + 's]', 'ok');
+            } else {
+              this.seekAnchor = seg;
+              this._fetchSegment(seg, gen);
+              log('Seek: cached → ' + seg.segmentId
+                + ' [' + seg.startTime.toFixed(1) + '–' + seg.endTime.toFixed(1) + 's]', 'ok');
+            }
+            this._pump();
+            return;
+          }
+
+          if (d.action === 'started' || d.action === 'waiting') {
+            this.seekAnchor = null;
+            const start = d.startTime ?? Math.max(0, toTime - 2);
+            const end   = d.endTime ?? start + (d.duration ?? 2);
+            const segId = this._predictSeekSegmentId(start);
+            const hintSeg = {
+              segmentId: segId,
+              file:      segId,
+              startTime: start,
+              endTime:   end,
+              duration:  end - start,
+            };
+            this.pendingSeekSeg = segId;
+            this.queue.insert(hintSeg);
+            if (!this.buffers.has(segId) && !this.fetching.has(segId)) {
+              msePageLog('[SEEK PREFETCH]', JSON.stringify({ segmentId: segId, startTime: start, endTime: end }));
+              this._fetchSegment(hintSeg, gen);
+            }
+            log('Seek: ' + d.action + ' — worker/feed will deliver segment near '
+              + Math.floor(toTime) + 's', 'ok');
+            this._startSeekCoveringPoll(gen, toTime);
+            this._pump();
+            return;
+          }
+
+          if (seg?.segmentId) {
+            log('Seek: unexpected response for t=' + Math.floor(toTime) + 's — '
+              + seg.segmentId + ' does not cover target', 'warn');
+          }
+        })
+        .catch(err => log('Seek POST failed: ' + err.message, 'warn'));
+    }, 150);
+  }
+
+  destroy() {
+    this._destroyed = true;
+    clearInterval(this._cleanupAgentTimer);
+    clearInterval(this._durationLock);
+    clearInterval(this._seekPollTimer);
+    clearInterval(this._gapPollTimer);
+    clearTimeout(this._seekTimer);
+    clearTimeout(this._timelineRetry);
+    for (const controller of this._abortControllers.values()) controller.abort();
+    this._abortControllers.clear();
+    try {
+      if (this.ms && this.ms.readyState === 'open') this.ms.endOfStream();
+    } catch {}
+    this.video.src = '';
+    this.buffers.clear();
+    this.fetching.clear();
+  }
+}
+
+// ── start ──────────────────────────────────────────────────────────────────────
+btnStart.addEventListener('click', async function () {
+  const magnet = magnetInput.value.trim();
   if (!magnet.startsWith('magnet:')) {
-    toast('Paste a valid magnet link first (magnet:?xt=urn:btih:...)');
-    log('No valid magnet link entered.', 'err');
+    log('Enter a valid magnet link first.', 'err');
     return;
   }
 
-  document.getElementById('btn-start').disabled = true;
-  document.getElementById('btn-stop').disabled  = false;
-  log('Sending magnet to server...');
+  segmentTracker.beginUserRequest('play');
+  btnStart.disabled = true;
+  btnStop.disabled  = false;
+  statusEl.textContent = 'Connecting to peers…';
+  log('POST /torrent/start');
 
+  let data;
   try {
     const resp = await fetch('/torrent/start', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ magnet }),
     });
-
-    const data = await resp.json();
-    if (!resp.ok) {
-      toast(`Server error: ${data.error}`);
-      log(`Server error: ${data.error}`, 'err');
-      document.getElementById('btn-start').disabled = false;
-      return;
-    }
-
-    activeSessionId = data.sessionId;
-
-    const statusLabel = data.status === 'joined' ? 'Joined existing stream' : 'Stream ready';
-    log(`${statusLabel}: ${data.streamUrl} [mode=${data.mode}, viewers=${data.viewers}]`, 'ok');
-    document.getElementById('stream-url').value = data.streamUrl;
-    loadStream(data.streamUrl);
-    startPolling(data.sessionId);
+    data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || resp.statusText);
   } catch (err) {
-    toast(`Fetch error: ${err.message}`);
-    log(`Fetch error: ${err.message}`, 'err');
-    document.getElementById('btn-start').disabled = false;
-  }
-}
-
-async function stopTorrent() {
-  clearInterval(statusInterval);
-  if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
-  document.getElementById('player').src    = '';
-  document.getElementById('btn-start').disabled = false;
-  document.getElementById('btn-stop').disabled  = true;
-
-  if (activeSessionId) {
-    try {
-      const r = await fetch('/torrent/stop', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ sessionId: activeSessionId, clean: true }),
-      });
-      const d = await r.json();
-      log(`Stopped. Cleaned: ${d.cleaned}`, 'ok');
-    } catch (err) {
-      log(`Stop error: ${err.message}`, 'err');
-    }
-    activeSessionId = null;
-  }
-
-  document.getElementById('status-box').textContent = 'Stopped.';
-  document.getElementById('dl-progress').value      = 0;
-}
-
-function loadStream(url) {
-  url = url ?? document.getElementById('stream-url').value.trim();
-  if (!url) return;
-
-  if (typeof Hls === 'undefined') {
-    log('HLS.js failed to load from CDN — check your connection and reload.', 'err');
+    log('Request failed: ' + err.message, 'err');
+    statusEl.textContent = 'Error: ' + err.message;
+    btnStart.disabled = false;
+    btnStop.disabled  = true;
     return;
   }
 
-  const video = document.getElementById('player');
-  if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
-  document.getElementById('log').innerHTML = '';
+  activeSession = data.sessionId;
+  const verb = data.status === 'joining' ? 'Joining existing session' : 'Created session';
+  log(verb + ' ' + activeSession, 'ok');
 
-  const fullUrl = url.startsWith('http') ? url : (window.location.origin + url);
+  const es = new EventSource(data.eventsUrl);
+  activeEventSource = es;
 
-  if (Hls.isSupported()) {
-    /*
-     * VOD-mode HLS.js config — hls_list_size 0 keeps all segments in the
-     * playlist so HLS.js sees #EXT-X-ENDLIST (eventually) and uses VOD buffering.
-     * Each user has their own independent session/FFmpeg process, so there's no
-     * shared rolling window that would delete segments out from under a lagging viewer.
-     *
-     * backBufferLength: 60 s — keep a generous back-buffer for rewinding.
-     * maxBufferLength / maxMaxBufferLength: standard VOD values.
-     */
-    hlsInstance = new Hls({
-      enableWorker:            true,
-      startPosition:           0,
-      maxBufferLength:         30,
-      maxMaxBufferLength:      120,
-      backBufferLength:        60,
-      startFragPrefetch:       true,
-      nudgeOffset:             0.1,
-      nudgeMaxRetry:           3,
-      manifestLoadingTimeOut:  20000,
-      manifestLoadingMaxRetry: 10,
-      levelLoadingTimeOut:     20000,
-      levelLoadingMaxRetry:    10,
-      fragLoadingTimeOut:      60000,
-      fragLoadingMaxRetry:     6,
-    });
-    hlsInstance.loadSource(fullUrl);
-    hlsInstance.attachMedia(video);
+  es.addEventListener('progress', function (e) {
+    const p = JSON.parse(e.data);
+    const pct = p.total ? ((p.downloaded / p.total) * 100).toFixed(1) : '0.0';
+    statusEl.textContent =
+      'State:      downloading\n' +
+      'Downloaded: ' + fmt(p.downloaded) + ' / ' + fmt(p.total) + ' (' + pct + '%)\n' +
+      'Speed:      ' + fmt(p.speed) + '/s';
+    progressEl.value = p.total ? p.downloaded / p.total : 0;
+  });
 
-    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-      log('Manifest loaded — starting playback', 'ok');
-      video.muted  = false;
-      video.volume = 1.0;
-      video.play().catch(e => log(`Autoplay blocked — click the video to play (${e.message})`, 'warn'));
-    });
+  es.addEventListener('stream:ready', function (e) {
+    const payload = JSON.parse(e.data);
+    activeViewerId = payload.viewerId;
+    es.close();
+    activeEventSource = null;
+    log('Stream ready — loading MSE player', 'ok');
+    launchMsePlayer(payload);
+    startPolling(activeSession);
+  });
 
-    hlsInstance.on(Hls.Events.ERROR, (ev, data) => {
-      const underlying = data.error?.message ?? data.err?.message ?? '';
-      log(
-        `HLS ${data.fatal ? 'fatal' : 'warn'} [${data.type}] ${data.details}${underlying ? ': ' + underlying : ''}`,
-        data.fatal ? 'err' : ''
-      );
-      if (!data.fatal) return;
-      if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-        log('Network error — retrying...');
-        hlsInstance.startLoad();
-      } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-        log('Media error — attempting recovery...');
-        hlsInstance.recoverMediaError();
-      } else {
-        log('Unrecoverable HLS error — destroying player', 'err');
-        hlsInstance.destroy();
-        hlsInstance = null;
-      }
-    });
-  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-    // Safari — native HLS support (no HLS.js needed)
-    video.src = fullUrl;
-    video.play();
-    log('Using native Safari HLS', 'ok');
-  } else {
-    log('Browser does not support HLS. Install HLS.js manually.', 'err');
+  es.addEventListener('error', function (e) {
+    let msg = 'SSE connection error';
+    try { msg = JSON.parse(e.data).message; } catch {}
+    log('Error: ' + msg, 'err');
+    es.close();
+    activeEventSource = null;
+    btnStart.disabled = false;
+    btnStop.disabled  = true;
+  });
+});
+
+function launchMsePlayer(payload) {
+  const { feedUrl, initUrl, mimeType, streamUrl, duration } = payload;
+
+  if (!window.MediaSource || !MediaSource.isTypeSupported(mimeType)) {
+    log('MSE not supported — using native HLS', 'warn');
+    player.src = window.location.origin + streamUrl;
+    player.play().catch(() => {});
+    return;
   }
+
+  resolveMovieDuration(activeSession, streamUrl, duration).then(resolvedDur => {
+    resetTraceTables();
+    if (resolvedDur == null) {
+      log('Could not resolve movie duration', 'warn');
+    } else {
+      log('Movie duration: ' + Math.floor(resolvedDur) + 's', 'ok');
+    }
+    log('MSE mimeType: ' + mimeType, 'ok');
+
+    segPlayer = new SegmentPlayer(player, initUrl, activeSession, mimeType, resolvedDur, timelineScrub);
+    return segPlayer.init().then(() => segPlayer.loadTimeline());
+  }).then(() => {
+    openFeed(feedUrl);
+  }).catch(err => {
+    log('MSE init failed: ' + (err?.message || err || 'unknown'), 'err');
+  });
 }
 
-function startPolling(sessionId) {
-  const url = sessionId ? `/torrent/status?sessionId=${sessionId}` : '/torrent/status';
-  statusInterval = setInterval(async () => {
+function openFeed(feedUrl) {
+  if (activeFeed) { activeFeed.close(); activeFeed = null; }
+  const feed = new EventSource(feedUrl);
+  activeFeed = feed;
+
+  feed.addEventListener('segment:ready', function (e) {
+    const data = JSON.parse(e.data);
+    if (segPlayer) segPlayer.onSegmentReady(data);
+  });
+
+  feed.onerror = () => log('Segment feed SSE error', 'warn');
+}
+
+// ── stop ───────────────────────────────────────────────────────────────────────
+btnStop.addEventListener('click', async function () {
+  log('Stop clicked');
+  cleanup();
+
+  if (activeSession) {
     try {
-      const resp = await fetch(url);
+      const resp = await fetch('/torrent/stop', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ sessionId: activeSession, viewerId: activeViewerId }),
+      });
+      const d = await resp.json();
+      log('Stopped. cleaned=' + d.cleaned + ' viewers=' + d.viewers, 'ok');
+    } catch (err) {
+      log('Stop error: ' + err.message, 'err');
+    }
+    activeSession = null;
+  }
+
+  statusEl.textContent = 'Stopped.';
+  progressEl.value = 0;
+  btnStart.disabled = false;
+  btnStop.disabled  = true;
+});
+
+// ── seek ───────────────────────────────────────────────────────────────────────
+// VIDEO EVENT seeking/seeked logged by wireVideoEventLogs() in SegmentPlayer.init()
+player.addEventListener('seeking', function () {
+  if (!segPlayer) return;
+  const t = player.currentTime;
+  for (let i = 0; i < player.buffered.length; i++) {
+    if (player.buffered.start(i) <= t + 0.1 && t <= player.buffered.end(i) + 0.1) return;
+  }
+  segPlayer.seek(t);
+});
+
+// ── status polling ─────────────────────────────────────────────────────────────
+function startPolling(sessionId) {
+  clearInterval(pollTimer);
+  pollTimer = setInterval(async function () {
+    try {
+      const params = new URLSearchParams({ sessionId });
+      if (activeViewerId) params.set('viewerId', activeViewerId);
+      if (player.currentTime > 0) params.set('currentTime', Math.floor(player.currentTime));
+      const resp = await fetch('/torrent/status?' + params);
+      if (!resp.ok) return;
       const data = await resp.json();
-      // Status endpoint returns an array when no sessionId is given,
-      // or a single object when sessionId is given.
-      const s = Array.isArray(data) ? (data[0] ?? {}) : data;
-      renderStatus(s);
-    } catch { /* server may be restarting */ }
-  }, 1500);
+      renderStatus(data);
+    } catch (_) {}
+  }, 2000);
 }
 
 function renderStatus(s) {
-  const pct   = s.total ? ((s.downloaded / s.total) * 100).toFixed(1) : 0;
-  const speed = fmt(s.downloadSpeed) + '/s';
-  const box   = document.getElementById('status-box');
+  const pct = s.total ? ((s.downloaded / s.total) * 100).toFixed(1) : '0.0';
+  statusEl.textContent =
+    'State:      ' + (s.state ?? '—') + '\n' +
+    'Mode:       ' + (s.mode  ?? '—') + '\n' +
+    'Downloaded: ' + fmt(s.downloaded ?? 0) + ' / ' + fmt(s.total ?? 0) + ' (' + pct + '%)\n' +
+    'Speed:      ' + fmt(s.downloadSpeed ?? 0) + '/s\n' +
+    'Peers:      ' + (s.numPeers ?? 0) + '\n' +
+    'Segments:   ' + (s.hlsSegments ?? 0) + '\n' +
+    'Memory:     ' + (s.memoryUsedMB ?? '—') + ' MB';
+  progressEl.value = s.progress ?? 0;
 
-  box.innerHTML = `
-<span class="label">State       </span><span class="val ${s.state === 'streaming' ? 'ok' : ''}">${s.state ?? '—'}</span>
-<span class="label">Mode        </span><span class="val">${s.mode ?? '—'}</span>
-<span class="label">Viewers     </span><span class="val">${s.viewers ?? '—'}</span>
-<span class="label">File        </span><span class="val">${s.name ?? '—'}</span>
-<span class="label">Downloaded  </span><span class="val">${fmt(s.downloaded ?? 0)} / ${fmt(s.total ?? 0)} (${pct}%)</span>
-<span class="label">Speed       </span><span class="val">${speed}</span>
-<span class="label">Peers       </span><span class="val">${s.numPeers ?? 0}</span>
-<span class="label">HLS segments</span><span class="val">${s.hlsSegments ?? 0}</span>
-<span class="label">Memory (MB) </span><span class="val">${s.memoryUsedMB ?? '—'}</span>
-<span class="label">Stream URL  </span><span class="val">${s.streamUrl ?? '—'}</span>
-`.trim();
-  document.getElementById('dl-progress').value = s.progress ?? 0;
+  const dur = Number(s.duration);
+  if (segPlayer && isFinite(dur) && dur > 0
+      && (segPlayer.duration == null || Math.abs(segPlayer.duration - dur) > 1)) {
+    segPlayer._applyDuration(dur);
+    log('Duration updated from server: ' + Math.floor(dur) + 's', 'ok');
+  }
 }
 
 function fmt(bytes) {
   if (!bytes) return '0 B';
-  if (bytes < 1024)       return bytes + ' B';
-  if (bytes < 1024 ** 2)  return (bytes / 1024).toFixed(1) + ' KB';
-  if (bytes < 1024 ** 3)  return (bytes / 1024 ** 2).toFixed(1) + ' MB';
+  if (bytes < 1024)        return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  if (bytes < 1024 ** 3)   return (bytes / 1024 ** 2).toFixed(1) + ' MB';
   return (bytes / 1024 ** 3).toFixed(2) + ' GB';
 }
+
+function cleanup() {
+  if (activeFeed)        { activeFeed.close(); activeFeed = null; }
+  if (activeEventSource) { activeEventSource.close(); activeEventSource = null; }
+  if (segPlayer)         { segPlayer.destroy(); segPlayer = null; }
+  clearInterval(pollTimer); pollTimer = null;
+  activeViewerId = null;
+  resetTraceTables();
+  player.src = '';
+  if (timelineScrub) {
+    timelineScrub.value = '0';
+    timelineScrub.max = '100';
+    timelineScrub.disabled = true;
+  }
+  if (timelineMeta) timelineMeta.textContent = 'Timeline: idle';
+}
+
+log('Page ready.', 'ok');
 </script>
 </body>
 </html>

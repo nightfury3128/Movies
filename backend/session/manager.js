@@ -1,44 +1,37 @@
 /**
  * session/manager.js — Per-user session registry
  *
- * WHY PER-USER SESSIONS (NOT SHARED BY infoHash)?
- * The previous design keyed sessions by infoHash so two users requesting the
- * same movie would share one download and one FFmpeg process. This caused a
- * fatal interaction with the rolling HLS window (-hls_list_size 6): FFmpeg
- * deleted old segments as it advanced, so the first user's player got 404s on
- * segments the second user's progress had already caused to be purged — the
- * stream died after ~24 seconds for whoever fell behind.
- *
- * The fix is to give every /torrent/start request its own independent session:
- * its own WebTorrent client, its own FFmpeg process, its own HLS directory.
- * Sessions are therefore keyed by sessionId (a timestamp-based opaque token)
- * rather than infoHash.
- *
- * RESOURCE COST:
- * Two users watching the same torrent will each download it independently and
- * each run a separate FFmpeg process. That doubles bandwidth and CPU compared
- * to a shared-session model. For 5–10 users watching DIFFERENT content (the
- * stated goal), this is a non-issue.
+ * Sessions are keyed by sessionId. Multiple users watching the same torrent
+ * share one session (the second user joins via getByInfoHash). The HLS output
+ * directory for every session is the persistent segment cache directory
+ * (cache/segments/<infoHash>/), so transcoded segments survive session teardown
+ * and can be served to future viewers without re-running FFmpeg.
  *
  * LIFECYCLE:
  *   create() → torrentManager.start() → generator.start() → viewers > 0
  *   removeViewer() → viewers reaches 0 → idle timer fires → destroy()
+ *
+ * destroy() stops FFmpeg + WebTorrent but does NOT delete the HLS directory —
+ * that lives in the persistent SegmentCache and is managed by SegmentCache.evict().
  */
 
-import path from 'path';
-import fs   from 'fs';
+import fs              from 'fs';
+import crypto           from 'crypto';
+import { EventEmitter }  from 'events';
+import { SegmentRegistry } from '../cache/segment-registry.js';
+import { SegmentTimelineRegistry } from '../timeline/segment-registry.js';
+import { SegmentTrace } from '../instrumentation/segment-trace.js';
+import { seekLog } from '../logger.js';
 
 export class SessionManager {
   /**
-   * @param {string} cacheDir - Absolute path to the cache root (e.g. <root>/cache)
+   * @param {string}        cacheDir     - Absolute path to the cache root
+   * @param {SegmentCache}  segmentCache - Persistent segment cache instance
    */
-  constructor(cacheDir) {
-    this.cacheDir = cacheDir;
-
-    // Primary (and only) index: sessionId → session.
-    // infoHash is stored inside the session for logging but is NOT a lookup key.
-    this._sessions = new Map();
-
+  constructor(cacheDir, segmentCache) {
+    this.cacheDir     = cacheDir;
+    this.segmentCache = segmentCache;
+    this._sessions    = new Map();
     this._cleanupTimer = null;
   }
 
@@ -59,6 +52,20 @@ export class SessionManager {
     return this._sessions.get(sessionId);
   }
 
+  /**
+   * Find the first non-errored session for the given infoHash.
+   * Used to share a session between multiple users watching the same torrent.
+   * @returns {object|undefined}
+   */
+  getByInfoHash(infoHash) {
+    for (const session of this._sessions.values()) {
+      if (session.infoHash === infoHash && session.state !== 'error') {
+        return session;
+      }
+    }
+    return undefined;
+  }
+
   /** @returns {object[]} */
   all() {
     return [...this._sessions.values()];
@@ -75,23 +82,35 @@ export class SessionManager {
    */
   create(magnetUri) {
     const sessionId = Date.now().toString();
-    const infoHash  = extractInfoHash(magnetUri); // stored for display only
+    const infoHash  = extractInfoHash(magnetUri);
 
     const session = {
-      infoHash,                  // reference only — NOT a lookup key
+      infoHash,
       magnetUri,
       sessionId,
       torrentManager: null,
       generator:      null,
       viewers:        0,
-      hlsPath:        path.join(this.cacheDir, 'hls', sessionId),
+      // Points to the persistent cache dir — shared across all sessions for this torrent.
+      hlsPath:        this.segmentCache.dir(infoHash),
       codecInfo:      null,
-      mode:           null,      // 'remux' | 'transcode'
+      mode:           null,      // 'remux' | 'transcode' | 'cached'
       state:          'initializing',
       videoFile:      null,
       internalUrl:    null,
       createdAt:      Date.now(),
       lastAccessed:   Date.now(),
+      events:         new EventEmitter(),
+      lastProgress:   null,
+      viewerTimes:    new Map(),
+      lastSegmentIdx: -1,      // compat: highest index registered (derived from TFDT)
+      mainLastTime:   0,       // authoritative: latest ffmpeg-time in seconds
+      seekWorkers:    new Map(),   // jobId → { gen, tempDir, segStart, lastUsed }
+      _ffmpegSpeed:   5.0,         // video-seconds per real-second; updated in wireMainFfmpegTime
+      registry:       new SegmentRegistry(),
+      timeline:       new SegmentTimelineRegistry(), // THE clock — one per session
+      segmentTrace:   new SegmentTrace(sessionId),
+      unwatchMainHls: null,
     };
 
     this._sessions.set(sessionId, session);
@@ -105,20 +124,40 @@ export class SessionManager {
     if (s) s.lastAccessed = Date.now();
   }
 
+  /**
+   * Register a new viewer. Returns a unique viewerId the client must include
+   * in all subsequent status polls and the stop request.
+   * @returns {string} viewerId
+   */
   addViewer(sessionId) {
     const s = this._sessions.get(sessionId);
-    if (s) {
-      s.viewers += 1;
-      s.lastAccessed = Date.now();
-      console.log(`[session] ${sessionId} viewers: ${s.viewers}`);
+    if (!s) return null;
+    s.viewers += 1;
+    s.lastAccessed = Date.now();
+    const viewerId = crypto.randomBytes(6).toString('hex');
+    s.viewerTimes.set(viewerId, 0);
+    console.log(`[session] ${sessionId} viewers: ${s.viewers}`);
+    return viewerId;
+  }
+
+  /**
+   * Update the recorded playback position for one viewer.
+   * Called on every status poll — used to track active viewer ranges for
+   * SegmentCache eviction protection.
+   */
+  updateViewerTime(sessionId, viewerId, currentTime) {
+    const s = this._sessions.get(sessionId);
+    if (s && viewerId && s.viewerTimes.has(viewerId)) {
+      s.viewerTimes.set(viewerId, currentTime);
     }
   }
 
-  removeViewer(sessionId) {
+  removeViewer(sessionId, viewerId = null) {
     const s = this._sessions.get(sessionId);
     if (s && s.viewers > 0) {
       s.viewers -= 1;
       s.lastAccessed = Date.now();
+      if (viewerId) s.viewerTimes.delete(viewerId);
       console.log(`[session] ${sessionId} viewers: ${s.viewers}`);
     }
   }
@@ -126,17 +165,33 @@ export class SessionManager {
   // ─── LIFECYCLE ────────────────────────────────────────────────────────────────
 
   /**
-   * Fully tear down a session:
+   * Tear down a session:
    *   1. Stop FFmpeg
    *   2. Stop WebTorrent + internal HTTP server
-   *   3. Delete the HLS output directory
-   *   4. Remove from the Map
+   *   3. Remove from the Map
+   *
+   * Does NOT delete the HLS directory — segments live in the persistent cache
+   * and are managed by SegmentCache.evict().
    */
   async destroy(sessionId) {
     const session = this._sessions.get(sessionId);
     if (!session) return;
 
     console.log(`[session] Destroying ${sessionId}`);
+
+    if (session.seekWorker) {
+      seekLog('session', 'destroy: stopping seek worker', {
+        sessionId, tempDir: session.seekWorkerTempDir,
+      });
+      try { session.seekWorker.stop(); } catch (e) { console.warn('[session] seekWorker.stop():', e.message); }
+      if (session.seekWorkerTempDir) {
+        try { fs.rmSync(session.seekWorkerTempDir, { recursive: true, force: true }); } catch {}
+      }
+    }
+
+    for (const [, w] of session.seekWorkers) {
+      try { w.gen.stop(); } catch (e) { console.warn('[session] seekWorker.stop():', e.message); }
+    }
 
     if (session.generator) {
       try { session.generator.stop(); } catch (e) { console.warn('[session] generator.stop():', e.message); }
@@ -146,11 +201,8 @@ export class SessionManager {
       try { await session.torrentManager.stop(); } catch (e) { console.warn('[session] torrentManager.stop():', e.message); }
     }
 
-    try {
-      fs.rmSync(session.hlsPath, { recursive: true, force: true });
-    } catch (e) {
-      console.warn('[session] rmSync:', e.message);
-    }
+    session.unwatchMainHls?.();
+    session.segmentTrace?.summary('session destroy');
 
     this._sessions.delete(sessionId);
     console.log(`[session] ${sessionId} destroyed`);
@@ -160,8 +212,7 @@ export class SessionManager {
 
   /**
    * Start a background interval that destroys sessions idle for `idleMs`.
-   * This is the safety net for users who close their browser tab without
-   * calling /torrent/stop.
+   * Safety net for users who close their browser tab without calling /torrent/stop.
    */
   startCleanup(idleMs = 5 * 60 * 1000) {
     if (this._cleanupTimer) return;
@@ -181,10 +232,7 @@ export class SessionManager {
   }
 
   stopCleanup() {
-    if (this._cleanupTimer) {
-      clearInterval(this._cleanupTimer);
-      this._cleanupTimer = null;
-    }
+    if (this._cleanupTimer) { clearInterval(this._cleanupTimer); this._cleanupTimer = null; }
   }
 }
 
@@ -192,7 +240,6 @@ export class SessionManager {
 
 /**
  * Extract the lower-cased infoHash from a magnet URI.
- * Used for validation (400 on invalid magnet) and display only.
  *
  * @param {string} magnetUri
  * @returns {string|null}
