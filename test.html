@@ -15,11 +15,182 @@ input:focus { outline: 2px solid #7df; }
 .btns { display: flex; gap: 8px; flex-wrap: wrap; }
 button { padding: 9px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
 button:disabled { opacity: 0.4; cursor: not-allowed; }
+select { padding: 8px 10px; background: #252525; border: 1px solid #444; border-radius: 4px; color: #eee; font-size: 0.85rem; }
 #btn-start { background: #2ecc71; color: #111; }
 #btn-stop  { background: #e74c3c; color: #fff; }
 video { width: 100%; border-radius: 6px; background: #000; display: block; }
 #status { font-family: monospace; font-size: 0.8rem; line-height: 1.8; background: #141414; padding: 12px; border-radius: 4px; white-space: pre; }
 #log-box { font-family: monospace; font-size: 0.78rem; background: #141414; padding: 12px; border-radius: 4px; height: 130px; overflow-y: auto; }
+#seek-log-box {
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  background: #101820;
+  border: 1px solid #2a3a44;
+  padding: 10px 12px;
+  border-radius: 4px;
+  height: 280px;
+  overflow-y: auto;
+  overflow-anchor: none;
+}
+.seek-log-line { line-height: 1.55; white-space: pre-wrap; word-break: break-all; }
+.seek-log-seek     { color: #f0a500; }
+.seek-log-request  { color: #7df; }
+.seek-log-received { color: #2ecc71; }
+.seek-log-sse      { color: #a8d; }
+.seek-log-warn     { color: #e74c3c; }
+.seek-log-muted    { color: #666; }
+.seek-log-trace    { color: #9cf; font-size: 0.68rem; }
+.seek-log-timer    { color: #ff6; font-weight: 700; }
+.seek-av-analysis-card {
+  padding: 0;
+  overflow: hidden;
+}
+.seek-av-analysis-card > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  cursor: pointer;
+  border-bottom: 1px solid #2a2a2a;
+}
+.seek-av-analysis-card > summary::-webkit-details-marker { display: none; }
+.seek-av-analysis-card > summary h2 { margin: 0; }
+.seek-av-analysis-card > summary::before {
+  content: "▾";
+  color: #777;
+  font-size: 0.75rem;
+}
+.seek-av-analysis-card:not([open]) > summary::before { content: "▸"; }
+.seek-av-analysis-body {
+  padding: 12px 18px 18px;
+}
+.seek-av-status {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  background: #101820;
+  border: 1px solid #2a3a44;
+  border-radius: 4px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.seek-av-status-title {
+  color: #7df;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.seek-av-status span { color: #888; display: block; margin-bottom: 2px; }
+.seek-av-status strong { color: #ddd; font-weight: 700; overflow-wrap: anywhere; }
+.seek-av-status.sync-ok { border-color: #2ecc71; }
+.seek-av-status.sync-warn { border-color: #f0a500; }
+.seek-av-status.sync-bad { border-color: #e74c3c; }
+.seek-av-analysis-log {
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  background: #0d1117;
+  border: 1px solid #263241;
+  color: #9cf;
+  border-radius: 4px;
+  padding: 10px 12px;
+  min-height: 120px;
+  max-height: 360px;
+  overflow-y: auto;
+  overflow-anchor: none;
+}
+.seek-av-entry {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.45;
+  border-bottom: 1px solid #17202a;
+  padding: 7px 0;
+}
+.seek-av-entry:first-child { padding-top: 0; }
+.seek-av-entry.sync-ok { color: #7f7; }
+.seek-av-entry.sync-warn { color: #f0a500; }
+.seek-av-entry.sync-bad { color: #ff7b72; }
+.seek-av-entry.sync-neutral { color: #9cf; }
+.seek-root-analysis-log {
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  background: #11140f;
+  border: 1px solid #334126;
+  color: #ddd;
+  border-radius: 4px;
+  padding: 10px 12px;
+  min-height: 160px;
+  max-height: 420px;
+  overflow-y: auto;
+  overflow-anchor: none;
+}
+.seek-root-entry {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.45;
+  border-bottom: 1px solid #20281b;
+  padding: 7px 0;
+}
+.seek-root-entry:first-child { padding-top: 0; }
+.seek-root-entry.sync-ok { color: #7f7; }
+.seek-root-entry.sync-warn { color: #f0a500; }
+.seek-root-entry.sync-bad { color: #ff7b72; }
+.seek-root-entry.sync-neutral { color: #ddd; }
+.seek-root-summary {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  border: 1px solid #334126;
+  background: #151b12;
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  white-space: pre-wrap;
+}
+.seek-latency-panel {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background: linear-gradient(135deg, #1a1a10 0%, #141820 100%);
+  font-family: ui-monospace, monospace;
+}
+.seek-latency-panel.seek-latency-active {
+  border-color: #f0a500;
+  box-shadow: 0 0 12px rgba(240, 165, 0, 0.15);
+}
+.seek-latency-panel.seek-latency-done {
+  border-color: #2ecc71;
+  box-shadow: 0 0 12px rgba(46, 204, 113, 0.12);
+}
+.seek-latency-main {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.seek-latency-label { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+#seek-latency-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #f0a500;
+  font-variant-numeric: tabular-nums;
+}
+.seek-latency-panel.seek-latency-done #seek-latency-value { color: #2ecc71; }
+.seek-latency-target { font-size: 0.75rem; color: #aaa; }
+.seek-latency-phase { font-size: 0.72rem; color: #7df; margin-top: 4px; }
+.seek-latency-phases {
+  margin-top: 8px;
+  max-height: 88px;
+  overflow-y: auto;
+  font-size: 0.65rem;
+  line-height: 1.45;
+  color: #888;
+}
+.seek-latency-phases div { white-space: nowrap; }
+.seek-latency-phases .phase-ms { color: #f0a500; }
 .log-line { line-height: 1.6; }
 .ok   { color: #2ecc71; }
 .err  { color: #e74c3c; }
@@ -92,7 +263,8 @@ progress { width: 100%; height: 5px; margin-top: 8px; border-radius: 3px; }
 .segment-table tr.row-appended td:first-child { color: #2ecc71; }
 .segment-table tr.row-seek td:nth-child(2) { color: #f0a500; }
 .segment-table tr.row-av-bad { background: #352222; }
-.segment-table .stages { max-width: 120px; overflow: hidden; text-overflow: ellipsis; color: #999; }
+.segment-table .stages { color: #999; }
+.segment-table td { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
 .segment-table td.col-display { font-variant-numeric: tabular-nums; }
 .segment-table td.col-display-slow { color: #e74c3c; }
 .segment-table td.col-display-ok { color: #2ecc71; }
@@ -103,6 +275,58 @@ progress { width: 100%; height: 5px; margin-top: 8px; border-radius: 3px; }
   .trace-stack { flex: none; max-width: none; width: 100%; }
   .segment-table-wrap { max-height: 180px; }
 }
+/* ── Telemetry Dashboard ──────────────────────────────────────────────────── */
+.telem-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 0 16px 16px;
+}
+.trace-log-box {
+  max-height: 180px;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 0.72rem;
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  padding: 6px;
+  color: #777;
+}
+.trace-line { padding: 1px 2px; border-bottom: 1px solid #181818; white-space: pre-wrap; word-break: break-all; }
+.tl-seek { color: #7df !important; }
+.tl-ok   { color: #7f7 !important; }
+.tl-warn { color: #fa0 !important; }
+.tl-err  { color: #f55 !important; }
+.tl-dim  { color: #444 !important; }
+.gate-stat-row { display: flex; gap: 14px; align-items: center; margin-bottom: 8px; font-family: monospace; font-size: 0.78rem; flex-wrap: wrap; }
+.gate-stat-row .gate-lbl { color: #555; font-size: 0.67rem; text-transform: uppercase; }
+#gate-store    { color: #7df; font-weight: bold; }
+#gate-verified { color: #7f7; font-weight: bold; }
+#gate-elapsed  { color: #fa0; }
+#piece-gate-badge { font-size: 0.67rem; font-weight: normal; letter-spacing: 0; text-transform: none; margin-left: 8px; padding: 2px 7px; border-radius: 10px; vertical-align: middle; }
+.pg-idle    { background: #2a2a2a; color: #555; }
+.pg-wait    { background: #2e2800; color: #fa0; }
+.pg-ready   { background: #0a2a0a; color: #7f7; }
+.pg-timeout { background: #2a0a0a; color: #f55; }
+.gate-bars  { margin-bottom: 6px; }
+.gate-bar-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.gate-bar-row > .gbl { width: 52px; color: #555; text-align: right; font-family: monospace; font-size: 0.67rem; }
+.gate-bar-track { flex: 1; background: #222; border-radius: 2px; height: 7px; overflow: hidden; }
+.gbar { height: 100%; width: 0%; transition: width 0.3s ease; border-radius: 2px; }
+.gbar-store    { background: #7df; }
+.gbar-verified { background: #7f7; }
+.gate-bar-row > .gbn { width: 36px; color: #888; font-family: monospace; font-size: 0.67rem; }
+#dl-rate-pre { font-family: monospace; font-size: 0.78rem; background: #141414; padding: 10px; border-radius: 4px; color: #aaa; margin: 0; }
+#seek-breakdown-pre { font-family: monospace; font-size: 0.72rem; background: #141414; padding: 10px; border-radius: 4px; color: #aaa; margin: 0; white-space: pre-wrap; }
+#diagnostics-perf-pre { font-family: monospace; font-size: 0.72rem; background: #141414; padding: 10px; border-radius: 4px; color: #aaa; margin: 0; white-space: pre-wrap; }
+@media (max-width: 860px) { .telem-grid { grid-template-columns: 1fr; } }
+.cp-btn { font-size: 0.7rem; padding: 2px 9px; background: #1c2c1c; border: 1px solid #3a4a3a; color: #7f7; border-radius: 4px; cursor: pointer; flex-shrink: 0; line-height: 1.6; }
+.cp-btn:hover { background: #2a3e2a; }
+.panel-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.panel-hdr h2 { margin: 0; }
+#btn-copy-all-fab { position: fixed; bottom: 24px; right: 24px; z-index: 9999; background: #1a2e3e; border: 1px solid #7df; color: #7df; padding: 9px 16px; font-size: 0.82rem; border-radius: 6px; cursor: pointer; box-shadow: 0 2px 14px rgba(0,0,0,0.55); font-weight: 600; }
+#btn-copy-all-fab:hover { background: #253e54; }
 </style>
 </head>
 <body>
@@ -119,6 +343,14 @@ progress { width: 100%; height: 5px; margin-top: 8px; border-radius: 3px; }
 
 <div class="card">
   <h2>2 — Status</h2>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:0.78rem;color:#888;">
+    <label for="diagnostics-level" style="text-transform:uppercase;letter-spacing:0.05em;">Diagnostics</label>
+    <select id="diagnostics-level">
+      <option value="0">OFF</option>
+      <option value="1" selected>NORMAL</option>
+      <option value="2">VERBOSE</option>
+    </select>
+  </div>
   <div id="status">Idle.</div>
   <progress id="progress" value="0" max="1"></progress>
 </div>
@@ -183,9 +415,61 @@ progress { width: 100%; height: 5px; margin-top: 8px; border-radius: 3px; }
       <video id="player" controls></video>
       <input type="range" id="timeline-scrub" min="0" max="100" step="0.05" value="0" disabled>
       <div id="timeline-meta">Timeline: waiting for duration…</div>
+      <div id="seek-latency-panel" class="seek-latency-panel seek-latency-idle">
+        <div class="seek-latency-main">
+          <span class="seek-latency-label">Seek → play</span>
+          <span id="seek-latency-value">—</span>
+          <span id="seek-latency-target" class="seek-latency-target"></span>
+        </div>
+        <div id="seek-latency-phase" class="seek-latency-phase">Idle — scrub or seek to measure</div>
+        <div id="seek-latency-phases" class="seek-latency-phases"></div>
+      </div>
     </div>
   </div>
 </div>
+
+<div class="card">
+  <h2>Seek &amp; segment trace</h2>
+  <div id="seek-log-box"></div>
+</div>
+
+<details class="card seek-av-analysis-card" id="card-seek-av-analysis" open>
+  <summary>
+    <h2>Seek A/V Sync Analysis</h2>
+    <button id="btn-copy-seek-av-analysis" class="cp-btn" type="button">Copy Panel</button>
+  </summary>
+  <div class="seek-av-analysis-body" id="seek-av-sync-analysis-panel">
+    <div id="seek-av-sync-status" class="seek-av-status sync-neutral">
+      <div class="seek-av-status-title">Seek A/V Status</div>
+      <div><span>Latest drift</span><strong id="seek-av-status-drift">—</strong></div>
+      <div><span>Source</span><strong id="seek-av-status-source">—</strong></div>
+      <div><span>Result</span><strong id="seek-av-status-result">—</strong></div>
+    </div>
+    <div id="seek-av-sync-analysis-log" class="seek-av-analysis-log">No seek A/V sync telemetry yet.</div>
+  </div>
+</details>
+
+<details class="card seek-av-analysis-card" id="card-seek-root-analysis" open>
+  <summary>
+    <h2>Seek Root Cause Analysis</h2>
+    <button id="btn-copy-seek-root-analysis" class="cp-btn" type="button">Copy Panel</button>
+  </summary>
+  <div class="seek-av-analysis-body" id="seek-root-cause-analysis-panel">
+    <div id="seek-root-summary" class="seek-root-summary">No seek root-cause summary yet.</div>
+    <div id="seek-root-log" class="seek-root-analysis-log">No seek root-cause telemetry yet.</div>
+  </div>
+</details>
+
+<details class="card seek-av-analysis-card" id="card-seek-worker-spawn-analysis" open>
+  <summary>
+    <h2>Seek Worker Spawn Analysis</h2>
+    <button id="btn-copy-seek-worker-spawn-analysis" class="cp-btn" type="button">Copy Panel</button>
+  </summary>
+  <div class="seek-av-analysis-body" id="seek-worker-spawn-analysis-panel">
+    <div id="seek-worker-spawn-summary" class="seek-root-summary">No seek worker spawn report yet.</div>
+    <div id="seek-worker-spawn-log" class="seek-root-analysis-log">No seek worker spawn telemetry yet.</div>
+  </div>
+</details>
 
 <div class="card">
   <h2>Log</h2>
@@ -216,6 +500,89 @@ progress { width: 100%; height: 5px; margin-top: 8px; border-radius: 3px; }
   </div>
 </div>
 
+<!-- ── Telemetry Dashboard ───────────────────────────────────────────────── -->
+
+<div class="card" id="card-piece-gate">
+  <h2>Piece Gate Live <span id="piece-gate-badge" class="pg-idle">idle</span></h2>
+  <div class="gate-stat-row">
+    <span class="gate-lbl">Required</span><span id="gate-required">—</span>
+    <span class="gate-lbl">Store</span><span id="gate-store">—</span>
+    <span class="gate-lbl">Verified</span><span id="gate-verified">—</span>
+    <span class="gate-lbl">Waited</span><span id="gate-elapsed">—</span>
+    <span class="gate-lbl">Budget</span><span id="gate-budget">—</span>
+    <span class="gate-lbl">seekByte</span><span id="gate-seekbyte" style="color:#888">—</span>
+  </div>
+  <div class="gate-bars">
+    <div class="gate-bar-row"><span class="gbl">Store</span><div class="gate-bar-track"><div id="gbar-store" class="gbar gbar-store"></div></div><span id="gbar-store-n" class="gbn"></span></div>
+    <div class="gate-bar-row"><span class="gbl">Verified</span><div class="gate-bar-track"><div id="gbar-verified" class="gbar gbar-verified"></div></div><span id="gbar-verified-n" class="gbn"></span></div>
+  </div>
+  <div id="gate-history" class="trace-log-box" style="max-height:90px;"></div>
+</div>
+
+<div class="card">
+  <h2>Download Rate</h2>
+  <pre id="dl-rate-pre">Waiting for torrent data…</pre>
+</div>
+
+<div class="telem-grid">
+
+  <div class="card">
+    <h2>Seek Lifecycle</h2>
+    <div id="seek-lifecycle-log" class="trace-log-box"></div>
+  </div>
+
+  <div class="card">
+    <h2>Byte Estimation</h2>
+    <div id="seek-byte-log" class="trace-log-box"></div>
+  </div>
+
+  <div class="card">
+    <h2>Piece Prioritize</h2>
+    <div id="priority-log" class="trace-log-box"></div>
+  </div>
+
+  <div class="card">
+    <h2>Cluster Scan</h2>
+    <div id="cluster-log" class="trace-log-box"></div>
+  </div>
+
+  <div class="card">
+    <h2>FFmpeg Lifecycle</h2>
+    <div id="ffmpeg-log" class="trace-log-box"></div>
+  </div>
+
+  <div class="card">
+    <h2>Segment Generation</h2>
+    <div id="segment-gen-log" class="trace-log-box"></div>
+  </div>
+
+  <div class="card">
+    <h2>Video Events</h2>
+    <div id="video-events-log" class="trace-log-box"></div>
+  </div>
+
+  <div class="card">
+    <h2>Seek Breakdown</h2>
+    <pre id="seek-breakdown-pre">No seeks yet.</pre>
+  </div>
+
+  <div class="card">
+    <h2>Diagnostics Performance</h2>
+    <pre id="diagnostics-perf-pre">Waiting for diagnostics...</pre>
+  </div>
+
+</div>
+
+<div class="card" id="card-seek-debug" style="margin:0 16px 16px;">
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+    <h2 style="margin:0;">Seek Debug Log</h2>
+    <button id="btn-copy-seek-debug" style="font-size:0.75rem;padding:4px 10px;background:#2a2a2a;border:1px solid #444;color:#ccc;border-radius:4px;cursor:pointer;">Copy All</button>
+    <button id="btn-clear-seek-debug" style="font-size:0.75rem;padding:4px 10px;background:#2a2a2a;border:1px solid #444;color:#ccc;border-radius:4px;cursor:pointer;">Clear</button>
+    <span id="seek-debug-count" style="font-size:0.72rem;color:#555;font-family:monospace;"></span>
+  </div>
+  <div id="seek-debug-log" style="max-height:480px;overflow-y:auto;font-family:monospace;font-size:0.73rem;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:4px;padding:8px;color:#aaa;white-space:pre;"></div>
+</div>
+
 <script>
 'use strict';
 
@@ -223,18 +590,22 @@ progress { width: 100%; height: 5px; margin-top: 8px; border-radius: 3px; }
 const MAX_AHEAD       = 12;
 const PREFETCH_SEC    = 45;
 const MIN_BUFFER_AHEAD = 15;
-const EVICT_BEHIND    = 30;
+const EVICT_BEHIND    = 15;
 const SEEK_WINDOW_SEC = 30;  // only queue/fetch segments within this window during seek
-const MAX_MSE_BUFFER_SPAN = 90;   // max seconds of media retained in SourceBuffer
+const MAX_MSE_BUFFER_SPAN = 60;   // max seconds of media retained in SourceBuffer
 const MAX_MSE_SEGMENTS    = 35;   // max appended segments before cleanup kicks in
 const CLEANUP_AGENT_MS    = 2000; // periodic MSE cleanup interval
 const BOOTSTRAP_SEC       = 120;  // only queue this much timeline on startup
 const MAX_FETCH_PARALLEL  = 6;    // concurrent segment fetches (network I/O)
+const DebugLevel          = Object.freeze({ OFF: 0, NORMAL: 1, VERBOSE: 2 });
+const MAX_VISIBLE_LOGS    = 500;
+const MAX_RENDER_QUEUE    = 5000;
 // Video timescale is set per-session from the stream:ready payload.
 // The backend reads it from init.mp4 (mdhd box) after FFmpeg starts.
 let   VIDEO_TIMESCALE     = 90000; // updated at stream:ready from server
 const AUDIO_TIMESCALE     = 48000; // AAC sample rate in fMP4 from this pipeline
 const AV_WARN_MS          = 200;   // flag A/V drift above this in trace table
+const SEEK_AV_WARN_MS     = 100;   // flag seek A/V drift above this in telemetry
 
 /** Shared request clock for video + audio trace tables. */
 const traceRequestClock = {
@@ -257,6 +628,120 @@ let pollTimer         = null;
 let segPlayer         = null;
 let activeFeed        = null;
 
+const diagnostics = {
+  level: DebugLevel.NORMAL,
+  seekBurstUntil: 0,
+  queue: [],
+  droppedLogs: 0,
+  renderedLogs: 0,
+  queuedLogs: 0,
+  sseMessages: 0,
+  sseEvents: 0,
+  _lastSseMessages: 0,
+  _lastSseEvents: 0,
+  _raf: null,
+
+  effectiveLevel() {
+    return performance.now() < this.seekBurstUntil
+      ? Math.max(this.level, DebugLevel.VERBOSE)
+      : this.level;
+  },
+
+  setLevel(level) {
+    this.level = Number(level);
+    this.updatePerformancePanel();
+  },
+
+  startSeekBurst() {
+    this.seekBurstUntil = performance.now() + 30_000;
+  },
+
+  endSeekBurst() {
+    this.seekBurstUntil = 0;
+  },
+
+  recordSse(events = 1) {
+    this.sseMessages++;
+    this.sseEvents += Math.max(1, events);
+  },
+
+  categoryLevel(name) {
+    const n = String(name ?? '');
+  if (/fatal|error|failed|failure|worker_failed|seek failed/i.test(n)) return DebugLevel.OFF;
+    if (/seek\.root\.|seek\.worker_spawn\.|SEEK_WORKER_SPAWN_|SEEK_ROOT_|SEEK_RESET_START|SEEK_TARGET|SEEK_COVERING_SELECTED|SEEK_COVERING_PLAYABLE|COVERING_FOUND|SEEK_AV_REPORT|SEEK_AV_VALIDATION|APPEND_END|UPDATEEND|FETCH_ERROR|APPEND_ERROR|seek\.segment\.promoted|segment\.promoted|worker_started|spawned|end$|ready$|stalled|playing|resumed/i.test(n)) {
+      return DebugLevel.NORMAL;
+    }
+    if (/progress|stderr|CACHE_|GEN_|QUEUE_|SOURCEBUFFER_STATE|BUFFERED_RANGES|MEDIA_STATE|CONTINUITY|APPEND DECISION|timeline|piece_gate\.progress|download_rate|bytes_sent|dir\.file_|tfdt|MP4_TIMELINE|FFMPEG_FRAGMENT|SEGMENT_METADATA|FETCH_START|FETCH_DONE|APPEND_START|APPEND_SUCCESS|VIDEO_STATE/i.test(n)) {
+      return DebugLevel.VERBOSE;
+    }
+    return DebugLevel.NORMAL;
+  },
+
+  shouldLog(name) {
+    return this.categoryLevel(name) <= this.effectiveLevel();
+  },
+
+  enqueue(fn, level = DebugLevel.NORMAL) {
+    if (level > this.effectiveLevel()) return;
+    if (this.queue.length > MAX_RENDER_QUEUE) {
+      if (level >= DebugLevel.VERBOSE) {
+        this.droppedLogs++;
+        return;
+      }
+      const idx = this.queue.findIndex(item => item.level >= DebugLevel.VERBOSE);
+      if (idx >= 0) {
+        this.queue.splice(idx, 1);
+        this.droppedLogs++;
+      }
+    }
+    this.queue.push({ fn, level });
+    this.queuedLogs = this.queue.length;
+    this.scheduleFlush();
+  },
+
+  scheduleFlush() {
+    if (this._raf) return;
+    this._raf = requestAnimationFrame(() => this.flush());
+  },
+
+  flush() {
+    this._raf = null;
+    const budget = 80;
+    let count = 0;
+    while (count < budget && this.queue.length) {
+      const item = this.queue.shift();
+      item.fn();
+      this.renderedLogs++;
+      count++;
+    }
+    this.queuedLogs = this.queue.length;
+    if (this.queue.length) this.scheduleFlush();
+  },
+
+  updatePerformancePanel() {
+    const el = document.getElementById('diagnostics-perf-pre');
+    if (!el) return;
+    const sseMessagesDelta = this.sseMessages - this._lastSseMessages;
+    const sseEventsDelta = this.sseEvents - this._lastSseEvents;
+    this._lastSseMessages = this.sseMessages;
+    this._lastSseEvents = this.sseEvents;
+    const domNodes = document.getElementsByTagName('*').length;
+    const mem = performance.memory?.usedJSHeapSize
+      ? (performance.memory.usedJSHeapSize / 1048576).toFixed(1) + ' MB'
+      : 'unavailable';
+    el.textContent =
+      'SSE Messages/sec: ' + (sseMessagesDelta / 2).toFixed(1) + '\n' +
+      'Events/sec:       ' + (sseEventsDelta / 2).toFixed(1) + '\n' +
+      'Logs Rendered:    ' + this.renderedLogs + '\n' +
+      'Queued Logs:      ' + this.queuedLogs + '\n' +
+      'Dropped Logs:     ' + this.droppedLogs + '\n' +
+      'DOM Nodes:        ' + domNodes + '\n' +
+      'Memory Estimate:  ' + mem + '\n' +
+      'Debug Level:      ' + ['OFF', 'NORMAL', 'VERBOSE'][this.level] +
+      (performance.now() < this.seekBurstUntil ? ' (seek burst)' : '');
+  },
+};
+
 // ── DOM refs ───────────────────────────────────────────────────────────────────
 const magnetInput = document.getElementById('magnet-input');
 const btnStart    = document.getElementById('btn-start');
@@ -264,6 +749,8 @@ const btnStop     = document.getElementById('btn-stop');
 const statusEl    = document.getElementById('status');
 const progressEl  = document.getElementById('progress');
 const logBox      = document.getElementById('log-box');
+const seekLogBox  = document.getElementById('seek-log-box');
+const diagnosticsLevelEl = document.getElementById('diagnostics-level');
 const player      = document.getElementById('player');
 const timelineScrub = document.getElementById('timeline-scrub');
 const timelineMeta  = document.getElementById('timeline-meta');
@@ -431,7 +918,7 @@ class SegmentTracker {
       const cells = this.track === 'audio'
         ? [
             String(row.idx),
-            id.length > 20 ? id.slice(0, 18) + '…' : id,
+            id,
             showAudio ? this._fmtSec(row.startTime) : '—',
             showAudio ? this._fmtSec(row.endTime) : '—',
             showAudio ? this._fmtSec(row.tfdt) : '—',
@@ -444,7 +931,7 @@ class SegmentTracker {
           ]
         : [
             String(row.idx),
-            id.length > 20 ? id.slice(0, 18) + '…' : id,
+            id,
             this._fmtSec(row.startTime),
             this._fmtSec(row.endTime),
             this._fmtSec(row.tfdt),
@@ -547,32 +1034,22 @@ function parseFragmentTracks(data) {
     if (payload.length < 8) return null;
     const flags = ((payload[0] << 16) | (payload[1] << 8) | payload[2]) & 0xffffff;
     const sampleCount = (payload[4] << 24) | (payload[5] << 16) | (payload[6] << 8) | payload[7];
-    const hasDuration = (flags & 0x100) !== 0;
-    const hasDefaultDur = (flags & 0x200) !== 0;
+    if ((flags & 0x100) === 0 || sampleCount === 0) return null;
+    // ISO BMFF 8.8.8: pre-table optional fields.
     let offset = 8;
-    if (flags & 0x001) offset += 4;
-    if (hasDefaultDur) offset += 4;
-    if (sampleCount === 0) return null;
-    if (hasDuration) {
-      let total = 0;
-      for (let i = 0; i < sampleCount; i++) {
-        if (offset + 4 > payload.length) break;
-        total += (payload[offset] << 24) | (payload[offset + 1] << 16)
-          | (payload[offset + 2] << 8) | payload[offset + 3];
-        offset += 4;
-        if (flags & 0x400) offset += 4;
-        if (flags & 0x800) offset += 4;
-        if (flags & 0x010) offset += 4;
-        if (flags & 0x020) offset += 4;
-      }
-      return total > 0 ? total : null;
+    if (flags & 0x001) offset += 4; // data_offset
+    if (flags & 0x004) offset += 4; // first_sample_flags
+    let total = 0;
+    for (let i = 0; i < sampleCount; i++) {
+      if (offset + 4 > payload.length) break;
+      total += (payload[offset] << 24) | (payload[offset + 1] << 16)
+        | (payload[offset + 2] << 8) | payload[offset + 3];
+      offset += 4; // sample_duration (0x100, always present here)
+      if (flags & 0x200) offset += 4; // sample_size
+      if (flags & 0x400) offset += 4; // sample_flags
+      if (flags & 0x800) offset += 4; // sample_composition_time_offset
     }
-    if (hasDefaultDur && payload.length >= 12) {
-      const defaultDur = (payload[8] << 24) | (payload[9] << 16)
-        | (payload[10] << 8) | payload[11];
-      return defaultDur * sampleCount;
-    }
-    return null;
+    return total > 0 ? total : null;
   }
 
   function parseTraf(payload) {
@@ -662,23 +1139,1371 @@ function readFirstVideoTfdt(data) {
 }
 
 // ── logging ────────────────────────────────────────────────────────────────────
+/** Live seek → playback latency timer + phase trace. */
+const seekLatency = {
+  _active:    null,
+  _raf:       null,
+  _gen:       0,
+  _valueEl:   null,
+  _targetEl:  null,
+  _phaseEl:   null,
+  _phasesEl:  null,
+  _panelEl:   null,
+
+  _els() {
+    if (!this._valueEl) {
+      this._valueEl  = document.getElementById('seek-latency-value');
+      this._targetEl = document.getElementById('seek-latency-target');
+      this._phaseEl  = document.getElementById('seek-latency-phase');
+      this._phasesEl = document.getElementById('seek-latency-phases');
+      this._panelEl = document.getElementById('seek-latency-panel');
+    }
+  },
+
+  _fmtMs(ms) {
+    if (ms == null || !isFinite(ms)) return '—';
+    if (ms < 1000) return ms.toFixed(0) + ' ms';
+    return (ms / 1000).toFixed(2) + ' s';
+  },
+
+  _elapsed() {
+    return this._active ? performance.now() - this._active.t0 : null;
+  },
+
+  begin(target, source = 'unknown', gen = null) {
+    this._els();
+    this._gen++;
+    const id = this._gen;
+    this._active = {
+      id,
+      gen: gen ?? id,
+      target,
+      source,
+      t0: performance.now(),
+      phases: [],
+      segmentId: null,
+    };
+    if (this._panelEl) {
+      this._panelEl.classList.remove('seek-latency-idle', 'seek-latency-done');
+      this._panelEl.classList.add('seek-latency-active');
+    }
+    if (this._targetEl) {
+      this._targetEl.textContent = '→ ' + target.toFixed(2) + 's (' + source + ')';
+    }
+    if (this._valueEl) this._valueEl.textContent = '0 ms';
+    if (this._phasesEl) this._phasesEl.replaceChildren();
+    this.phase('seek_start', { target, source, gen: this._active.gen });
+    this._startRaf();
+    return id;
+  },
+
+  phase(name, detail = {}) {
+    if (!this._active) return;
+    const ms = Math.round(performance.now() - this._active.t0);
+    const entry = { name, ms, detail, at: new Date().toTimeString().slice(0, 8) };
+    this._active.phases.push(entry);
+    if (detail.segmentId) this._active.segmentId = detail.segmentId;
+    this._els();
+    if (this._phaseEl) {
+      this._phaseEl.textContent = '+' + this._fmtMs(ms) + '  ' + name
+        + (detail.segmentId ? '  ' + detail.segmentId : '');
+    }
+    if (this._phasesEl) {
+      const line = document.createElement('div');
+      line.innerHTML = '<span class="phase-ms">+' + this._fmtMs(ms) + '</span> '
+        + name + (Object.keys(detail).length ? ' ' + JSON.stringify(detail) : '');
+      this._phasesEl.appendChild(line);
+    }
+    seekSegmentLog.trace(name, detail, ms);
+  },
+
+  complete(reason, detail = {}) {
+    if (!this._active) return;
+    const ms = Math.round(performance.now() - this._active.t0);
+    this.phase('PLAYING', { reason, totalMs: ms, ...detail });
+    this._els();
+    if (this._valueEl) this._valueEl.textContent = this._fmtMs(ms);
+    if (this._phaseEl) {
+      this._phaseEl.textContent = '✓ played @' + (detail.currentTime?.toFixed?.(2) ?? '?')
+        + 's in ' + this._fmtMs(ms) + ' (' + reason + ')';
+    }
+    if (this._panelEl) {
+      this._panelEl.classList.remove('seek-latency-active');
+      this._panelEl.classList.add('seek-latency-done');
+    }
+    seekSegmentLog.timer('DONE ' + this._fmtMs(ms) + ' — ' + reason
+      + ' target=' + this._active.target.toFixed(2) + 's'
+      + (detail.segmentId ? ' seg=' + detail.segmentId : ''));
+    console.log('[SEEK LATENCY]', {
+      target: this._active.target,
+      totalMs: ms,
+      reason,
+      source: this._active.source,
+      segmentId: detail.segmentId ?? this._active.segmentId,
+      phases: this._active.phases,
+    });
+    renderSeekBreakdown(this._active.target, ms, this._active.phases);
+    this._active = null;
+    this._stopRaf();
+  },
+
+  skip(reason, detail = {}) {
+    if (!this._active) return;
+    const ms = Math.round(performance.now() - this._active.t0);
+    this.phase('skipped', { reason, ms, ...detail });
+    this.complete(reason, detail);
+  },
+
+  isActive() { return !!this._active; },
+  target()  { return this._active?.target ?? null; },
+  gen()     { return this._active?.gen ?? null; },
+
+  _startRaf() {
+    this._stopRaf();
+    const tick = () => {
+      if (!this._active) return;
+      const ms = performance.now() - this._active.t0;
+      if (this._valueEl) this._valueEl.textContent = this._fmtMs(ms);
+      this._raf = requestAnimationFrame(tick);
+    };
+    this._raf = requestAnimationFrame(tick);
+  },
+
+  _stopRaf() {
+    if (this._raf != null) cancelAnimationFrame(this._raf);
+    this._raf = null;
+  },
+
+  reset() {
+    this._active = null;
+    this._stopRaf();
+    this._els();
+    if (this._panelEl) {
+      this._panelEl.classList.remove('seek-latency-active', 'seek-latency-done');
+      this._panelEl.classList.add('seek-latency-idle');
+    }
+    if (this._valueEl) this._valueEl.textContent = '—';
+    if (this._targetEl) this._targetEl.textContent = '';
+    if (this._phaseEl) this._phaseEl.textContent = 'Idle — scrub or seek to measure';
+    if (this._phasesEl) this._phasesEl.replaceChildren();
+  },
+};
+
+/** Dedicated seek + segment request/receive log (separate from general Log card). */
+const seekSegmentLog = {
+  /** segmentId → performance.now() at REQ (after seek only). */
+  _reqAt: new Map(),
+  write(kind, msg) {
+    const level = kind === 'warn' ? DebugLevel.OFF
+      : kind === 'trace' || kind === 'muted' ? DebugLevel.VERBOSE
+      : DebugLevel.NORMAL;
+    diagnostics.enqueue(() => {
+      if (!seekLogBox) return;
+      const line = document.createElement('div');
+      const cls = {
+        seek:     'seek-log-seek',
+        request:  'seek-log-request',
+        received: 'seek-log-received',
+        sse:      'seek-log-sse',
+        warn:     'seek-log-warn',
+        muted:    'seek-log-muted',
+        trace:    'seek-log-trace',
+        timer:    'seek-log-timer',
+      }[kind] ?? 'seek-log-muted';
+      line.className = 'seek-log-line ' + cls;
+      const ts = new Date().toTimeString().slice(0, 8);
+      const tag = {
+        seek: 'SEEK',
+        request: 'REQ',
+        received: 'RX',
+        sse: 'SSE',
+        warn: 'WARN',
+        muted: '···',
+        trace: 'TRACE',
+        timer: 'TIMER',
+      }[kind] ?? '···';
+      line.textContent = '[' + ts + '][' + tag + '] ' + msg;
+      seekLogBox.appendChild(line);
+      while (seekLogBox.childElementCount > MAX_VISIBLE_LOGS) seekLogBox.removeChild(seekLogBox.firstChild);
+    }, level);
+  },
+  seek(msg)     { this.write('seek', msg); },
+  trace(phase, detail, ms) {
+    if (!diagnostics.shouldLog(phase)) return;
+    const detailStr = detail && Object.keys(detail).length
+      ? ' ' + JSON.stringify(detail) : '';
+    const msg = '+' + (ms != null ? (ms < 1000 ? ms + 'ms' : (ms / 1000).toFixed(2) + 's') : '?')
+      + ' ' + phase + detailStr;
+    this.write('trace', msg);
+    if (diagnostics.effectiveLevel() >= DebugLevel.VERBOSE) console.log('[SEEK-TRACE]', msg);
+  },
+  timer(msg)    { this.write('timer', msg); },
+  request(segmentId, msg, trackTimer = false) {
+    if (trackTimer && segmentId) this._reqAt.set(segmentId, performance.now());
+    this.write('request', msg);
+    if (seekLatency.isActive()) {
+      seekLatency.phase('fetch_start', { segmentId, url: msg });
+    }
+  },
+  received(segmentId, msg) {
+    let suffix = '';
+    const t0 = segmentId && this._reqAt.get(segmentId);
+    if (t0 != null) {
+      suffix = ' in ' + ((performance.now() - t0) / 1000).toFixed(3) + 's';
+      this._reqAt.delete(segmentId);
+    }
+    this.write('received', msg + suffix);
+    if (seekLatency.isActive()) {
+      seekLatency.phase('fetch_done', { segmentId, msg: msg + suffix });
+    }
+  },
+  clearTimer(segmentId) {
+    if (segmentId) this._reqAt.delete(segmentId);
+  },
+  sse(msg)      { this.write('sse', msg); },
+  muted(msg)    { this.write('muted', msg); },
+  warn(msg)     { this.write('warn', msg); },
+  clear() {
+    if (!seekLogBox) return;
+    seekLogBox.replaceChildren();
+    this._reqAt.clear();
+    seekLatency.reset();
+  },
+};
+
+function logServerTrace(data, { feed = 'feed' } = {}) {
+  const phase = data.phase ?? 'server.unknown';
+  const compact = { ...data };
+  delete compact.phase;
+  delete compact.ns;
+  delete compact.at;
+  delete compact.sessionId;
+
+  seekSegmentLog.trace('SERVER ' + phase, { feed, ...compact }, null);
+  appendSeekRootCauseEvent(phase, data);
+  appendSeekWorkerSpawnEvent(phase, data);
+  if (seekLatency.isActive()) {
+    seekLatency.phase('server.' + phase, compact);
+  }
+  dispatchTraceTelemetry(phase, data);
+}
+
+// ── Telemetry Dashboard ───────────────────────────────────────────────────────
+
+const _TELEM_MAX_LINES = MAX_VISIBLE_LOGS;
+
+function _traceAppend(boxId, text, cls) {
+  const level = cls === 'tl-err' ? DebugLevel.OFF
+    : cls === 'tl-ok' || cls === 'tl-seek' ? DebugLevel.NORMAL
+    : DebugLevel.VERBOSE;
+  diagnostics.enqueue(() => {
+    const box = document.getElementById(boxId);
+    if (!box) return;
+    const ts = new Date().toTimeString().slice(0, 8);
+    const el = document.createElement('div');
+    el.className = 'trace-line' + (cls ? ' ' + cls : '');
+    el.textContent = '[' + ts + '] ' + text;
+    box.appendChild(el);
+    while (box.childElementCount > _TELEM_MAX_LINES) box.removeChild(box.firstChild);
+    box.scrollTop = box.scrollHeight;
+  }, level);
+}
+
+function _fmtB(b) {
+  if (b == null) return '?';
+  if (b < 1024) return b + 'B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + 'KB';
+  if (b < 1073741824) return (b / 1048576).toFixed(1) + 'MB';
+  return (b / 1073741824).toFixed(2) + 'GB';
+}
+
+function _setText(id, v) { const e = document.getElementById(id); if (e) e.textContent = v; }
+
+function _fmtSec(v) {
+  return v == null || !isFinite(v) ? '?' : Number(v).toFixed(3);
+}
+
+function _fmtMs(v) {
+  return v == null || !isFinite(v) ? '?' : Math.round(v) + 'ms';
+}
+
+function _driftClass(ms) {
+  if (ms == null || !isFinite(ms)) return 'sync-neutral';
+  const abs = Math.abs(ms);
+  if (abs < 100) return 'sync-ok';
+  if (abs <= 300) return 'sync-warn';
+  return 'sync-bad';
+}
+
+function _formatBufferedForSeekAv(ranges) {
+  if (!Array.isArray(ranges) || !ranges.length) return '[]';
+  return '[' + ranges.map(r => _fmtSec(r.start) + ' → ' + _fmtSec(r.end)).join(', ') + ']';
+}
+
+function _setSeekAvStatus({ driftMs = null, firstVideoSource = null, firstAudioSource = null, result = null } = {}) {
+  const status = document.getElementById('seek-av-sync-status');
+  if (status) {
+    status.classList.remove('sync-ok', 'sync-warn', 'sync-bad', 'sync-neutral');
+    status.classList.add(_driftClass(driftMs));
+  }
+  _setText('seek-av-status-drift', driftMs == null ? '—' : _fmtMs(driftMs));
+  _setText(
+    'seek-av-status-source',
+    firstVideoSource || firstAudioSource ? (firstVideoSource ?? '?') + ' vs ' + (firstAudioSource ?? '?') : '—'
+  );
+  _setText('seek-av-status-result', result ?? '—');
+}
+
+function appendSeekAvAnalysisEvent(name, data = {}) {
+  const names = new Set([
+    'SEEK_APPEND_FRAGMENT',
+    'SEEK_APPEND_RESULT',
+    'SEEK_AV_REPORT_INPUTS',
+    'SEEK_AV_VALIDATION',
+  ]);
+  if (!names.has(name)) return;
+
+  let text = '';
+  let driftMs = null;
+  if (name === 'SEEK_APPEND_FRAGMENT') {
+    driftMs = data.avDeltaMs;
+    text =
+      'SEEK_APPEND_FRAGMENT\n' +
+      (data.segmentId ?? '?') + '\n\n' +
+      'Raw:\n' +
+      'videoTfdt=' + _fmtSec(data.videoTfdt) + '\n' +
+      'audioTfdt=' + _fmtSec(data.audioTfdt) + '\n' +
+      'delta=' + _fmtMs(data.avDeltaMs) + '\n\n' +
+      'Rebased:\n' +
+      'video=' + _fmtSec(data.rebasedVideoStart) + '\n' +
+      'audio=' + _fmtSec(data.rebasedAudioStart) + '\n\n' +
+      'timestampOffset=' + _fmtSec(data.timestampOffset) + '\n' +
+      'generation=' + (data.generation ?? '?') + ' pendingSeekTime=' + _fmtSec(data.pendingSeekTime);
+  } else if (name === 'SEEK_APPEND_RESULT') {
+    text =
+      'SEEK_APPEND_RESULT\n' +
+      (data.segmentId ?? '?') + '\n\n' +
+      'currentTime=' + _fmtSec(data.currentTime) + '\n' +
+      'timestampOffset=' + _fmtSec(data.timestampOffset) + '\n' +
+      'buffered=' + _formatBufferedForSeekAv(data.mediaElementBuffered) + '\n' +
+      'generation=' + (data.generation ?? '?');
+  } else if (name === 'SEEK_AV_REPORT_INPUTS') {
+    text =
+      'SEEK_AV_REPORT_INPUTS\n\n' +
+      'firstVideo=' + _fmtSec(data.firstVideo) + '\n' +
+      'source=' + (data.firstVideoSource ?? '?') + '\n\n' +
+      'firstAudio=' + _fmtSec(data.firstAudio) + '\n' +
+      'source=' + (data.firstAudioSource ?? '?') + '\n\n' +
+      'generation=' + (data.generation ?? '?') + '\n' +
+      'pendingSeekTime=' + _fmtSec(data.pendingSeekTime);
+  } else if (name === 'SEEK_AV_VALIDATION') {
+    driftMs = data.computedDriftMs;
+    text =
+      'SEEK_AV_VALIDATION\n\n' +
+      'target=' + _fmtSec(data.targetTime) + '\n\n' +
+      'video=' + _fmtSec(data.rebasedVideoStart) + '\n' +
+      'audio=' + _fmtSec(data.rebasedAudioStart) + '\n\n' +
+      'drift=' + _fmtMs(data.computedDriftMs) + '\n\n' +
+      (data.result ?? '?');
+    _setSeekAvStatus({
+      driftMs: data.computedDriftMs,
+      firstVideoSource: data.firstVideoSource,
+      firstAudioSource: data.firstAudioSource,
+      result: data.result,
+    });
+  }
+
+  diagnostics.enqueue(() => {
+    const box = document.getElementById('seek-av-sync-analysis-log');
+    if (!box) return;
+    if (box.childElementCount === 0 || box.textContent === 'No seek A/V sync telemetry yet.') {
+      box.replaceChildren();
+    }
+    const ts = new Date().toTimeString().slice(0, 8);
+    const el = document.createElement('div');
+    el.className = 'seek-av-entry ' + _driftClass(driftMs);
+    el.textContent = '[' + ts + '] ' + text;
+    box.insertBefore(el, box.firstChild);
+    while (box.childElementCount > MAX_VISIBLE_LOGS) box.removeChild(box.lastChild);
+  }, _driftClass(driftMs) === 'sync-bad' ? DebugLevel.NORMAL : DebugLevel.VERBOSE);
+}
+
+let _seekRootState = null;
+
+function _rootGapClass(gapSeconds) {
+  if (gapSeconds == null || !isFinite(gapSeconds)) return 'sync-neutral';
+  if (gapSeconds < 5) return 'sync-ok';
+  if (gapSeconds <= 15) return 'sync-warn';
+  return 'sync-bad';
+}
+
+function _rootDriftClass(ms) {
+  return _driftClass(ms);
+}
+
+function _rootCauseCandidate(state) {
+  const bad = ms => ms != null && isFinite(ms) && Math.abs(ms) > SEEK_AV_WARN_MS;
+  if (bad(state.firstAvDeltaMs)) return 'FFmpeg packet generation';
+  if (state.firstKeptSegment && (!state.firstKeptSegment.containsVideo || !state.firstKeptSegment.containsAudio)) {
+    return 'Segment generation';
+  }
+  if (bad(state.trackDeltaMs)) return 'Track TFDT values';
+  if (bad(state.rebasedDeltaMs)) return 'Timestamp rebasing';
+  if (state.appendedSegment && !state.appendedSegment.buffered?.length) return 'MSE append';
+  if (bad(state.playbackDeltaMs)) return 'Playback clock';
+  return 'No drift detected in captured stages';
+}
+
+function _seekRootRenderSummary() {
+  if (!_seekRootState) return;
+  const s = _seekRootState;
+  const result = Math.abs(s.playbackDeltaMs ?? s.rebasedDeltaMs ?? s.trackDeltaMs ?? s.firstAvDeltaMs ?? 0) > SEEK_AV_WARN_MS
+    ? 'DESYNCED'
+    : 'SYNCED';
+  const candidate = _rootCauseCandidate(s);
+  s.result = result;
+  s.rootCauseCandidate = candidate;
+  const text =
+    'SEEK SUMMARY\n\n' +
+    'Requested:      ' + _fmtSec(s.requestedTime) + '\n' +
+    'Decode Point:   ' + _fmtSec(s.decodePoint) + '\n' +
+    'Gap:            ' + _fmtSec(s.gapSeconds) + 's\n\n' +
+    'First Video:    ' + _fmtSec(s.firstVideoPts) + '\n' +
+    'First Audio:    ' + _fmtSec(s.firstAudioPts) + '\n\n' +
+    'First Kept:\n' +
+    (s.firstKeptSegment?.segment ?? '?') + '\n\n' +
+    'Track Delta:\n' +
+    _fmtMs(s.trackDeltaMs) + '\n\n' +
+    'Playback Delta:\n' +
+    _fmtMs(s.playbackDeltaMs) + '\n\n' +
+    result + '\n\n' +
+    'ROOT CAUSE CANDIDATE:\n' +
+    candidate;
+  const el = document.getElementById('seek-root-summary');
+  if (el) {
+    el.textContent = text;
+    el.classList.remove('sync-ok', 'sync-warn', 'sync-bad', 'sync-neutral');
+    el.classList.add(_rootDriftClass(s.playbackDeltaMs ?? s.rebasedDeltaMs ?? s.trackDeltaMs ?? s.firstAvDeltaMs));
+  }
+}
+
+function appendSeekRootEntry(title, body, cls = 'sync-neutral') {
+  diagnostics.enqueue(() => {
+    const box = document.getElementById('seek-root-log');
+    if (!box) return;
+    if (box.childElementCount === 0 || box.textContent === 'No seek root-cause telemetry yet.') box.replaceChildren();
+    const ts = new Date().toTimeString().slice(0, 8);
+    const el = document.createElement('div');
+    el.className = 'seek-root-entry ' + cls;
+    el.textContent = '[' + ts + '] ' + title + '\n\n' + body;
+    box.insertBefore(el, box.firstChild);
+    while (box.childElementCount > MAX_VISIBLE_LOGS) box.removeChild(box.lastChild);
+  }, DebugLevel.NORMAL);
+}
+
+function appendSeekRootCauseEvent(name, data = {}) {
+  if (name === 'seek.root.gap') {
+    _seekRootState = {
+      requestedTime: data.requestedTime,
+      decodePoint: data.decodePoint,
+      gapSeconds: data.gapSeconds,
+      segments: [],
+    };
+    appendSeekRootEntry(
+      'SEEK GAP',
+      'Requested: ' + _fmtSec(data.requestedTime) + '\n' +
+      'Decode:    ' + _fmtSec(data.decodePoint) + '\n' +
+      'Gap:       ' + _fmtSec(data.gapSeconds) + 's',
+      _rootGapClass(data.gapSeconds)
+    );
+    _seekRootRenderSummary();
+    return;
+  }
+  if (!_seekRootState) _seekRootState = { segments: [] };
+
+  const s = _seekRootState;
+  if (name === 'seek.root.first_av_packets') {
+    s.firstVideoPts = data.firstVideoPts;
+    s.firstAudioPts = data.firstAudioPts;
+    s.firstAvDeltaMs = data.deltaMs;
+    appendSeekRootEntry(
+      'FIRST AV PACKETS',
+      'Video PTS: ' + _fmtSec(data.firstVideoPts) + '\n' +
+      'Audio PTS: ' + _fmtSec(data.firstAudioPts) + '\n\n' +
+      'Delta: ' + _fmtMs(data.deltaMs),
+      _rootDriftClass(data.deltaMs)
+    );
+  } else if (name === 'seek.root.segment') {
+    const item = {
+      segment: data.segment,
+      absoluteStart: data.absoluteStart,
+      absoluteEnd: data.absoluteEnd,
+      containsVideo: !!data.containsVideo,
+      containsAudio: !!data.containsAudio,
+      decision: data.decision,
+    };
+    s.segments.push(item);
+    appendSeekRootEntry(
+      'SEGMENT',
+      (data.segment ?? '?') + '\n\n' +
+      _fmtSec(data.absoluteStart) + ' → ' + _fmtSec(data.absoluteEnd) + '\n\n' +
+      'video=' + (data.containsVideo ? 'yes' : 'no') + '\n' +
+      'audio=' + (data.containsAudio ? 'yes' : 'no') + '\n\n' +
+      data.decision,
+      data.decision === 'keep' ? 'sync-ok' : 'sync-neutral'
+    );
+  } else if (name === 'seek.root.first_kept_segment') {
+    s.firstKeptSegment = {
+      segment: data.segment,
+      absoluteStart: data.absoluteStart,
+      absoluteEnd: data.absoluteEnd,
+      containsVideo: !!data.containsVideo,
+      containsAudio: !!data.containsAudio,
+    };
+    appendSeekRootEntry(
+      'FIRST KEPT SEGMENT',
+      (data.segment ?? '?') + '\n' +
+      _fmtSec(data.absoluteStart) + ' → ' + _fmtSec(data.absoluteEnd) + '\n\n' +
+      'video=' + (data.containsVideo ? 'yes' : 'no') + '\n' +
+      'audio=' + (data.containsAudio ? 'yes' : 'no'),
+      data.containsVideo && data.containsAudio ? 'sync-ok' : 'sync-bad'
+    );
+  } else if (name === 'seek.root.track_starts') {
+    s.videoStart = data.videoStart;
+    s.audioStart = data.audioStart;
+    s.trackDeltaMs = data.trackDeltaMs;
+    appendSeekRootEntry(
+      'TRACK STARTS',
+      'segment = ' + (data.segment ?? '?') + '\n\n' +
+      'video = ' + _fmtSec(data.videoStart) + '\n' +
+      'audio = ' + _fmtSec(data.audioStart) + '\n\n' +
+      'delta = ' + _fmtMs(data.trackDeltaMs),
+      _rootDriftClass(data.trackDeltaMs)
+    );
+  } else if (name === 'SEEK_APPEND_FRAGMENT') {
+    s.appendSegment = data.segmentId;
+    s.timestampOffset = data.timestampOffset;
+    s.rebasedVideoStart = data.rebasedVideoStart;
+    s.rebasedAudioStart = data.rebasedAudioStart;
+    s.rebasedDeltaMs = data.rebasedVideoStart != null && data.rebasedAudioStart != null
+      ? Math.round((data.rebasedAudioStart - data.rebasedVideoStart) * 1000)
+      : data.avDeltaMs;
+    appendSeekRootEntry(
+      'APPEND',
+      (data.segmentId ?? '?') + '\n\n' +
+      'video = ' + _fmtSec(data.rebasedVideoStart) + '\n' +
+      'audio = ' + _fmtSec(data.rebasedAudioStart) + '\n\n' +
+      'delta = ' + _fmtMs(s.rebasedDeltaMs) + '\n\n' +
+      'timestampOffset = ' + _fmtSec(data.timestampOffset),
+      _rootDriftClass(s.rebasedDeltaMs)
+    );
+  } else if (name === 'SEEK_APPEND_RESULT') {
+    s.appendedSegment = {
+      segment: data.segmentId,
+      buffered: data.mediaElementBuffered,
+    };
+    appendSeekRootEntry(
+      'SEGMENT APPENDED',
+      (data.segmentId ?? '?') + '\n\n' +
+      'currentTime = ' + _fmtSec(data.currentTime) + '\n' +
+      'buffered = ' + _formatBufferedForSeekAv(data.mediaElementBuffered),
+      'sync-ok'
+    );
+  } else if (name === 'SEEK_ROOT_PLAYBACK_START') {
+    s.currentTime = data.currentTime;
+    s.videoFrameTime = data.videoFrameTime;
+    s.audioClockTime = data.audioClockTime;
+    s.playbackDeltaMs = data.deltaMs;
+    appendSeekRootEntry(
+      'PLAYBACK START',
+      'CurrentTime: ' + _fmtSec(data.currentTime) + '\n\n' +
+      'Video: ' + _fmtSec(data.videoFrameTime) + '\n' +
+      'Audio: ' + _fmtSec(data.audioClockTime) + '\n\n' +
+      'Delta: ' + _fmtMs(data.deltaMs),
+      _rootDriftClass(data.deltaMs)
+    );
+  }
+  _seekRootRenderSummary();
+}
+
+let _seekWorkerSpawnState = null;
+
+function _fmtSignedSec(v) {
+  if (v == null || !isFinite(v)) return '?';
+  return (v >= 0 ? '+' : '') + Number(v).toFixed(3) + 's';
+}
+
+function _workerDeltaClass(deltaSeconds) {
+  if (deltaSeconds == null || !isFinite(deltaSeconds)) return 'sync-neutral';
+  return Math.abs(deltaSeconds) <= 5 ? 'sync-ok' : 'sync-bad';
+}
+
+function appendSeekWorkerSpawnEntry(title, body, cls = 'sync-neutral') {
+  diagnostics.enqueue(() => {
+    const box = document.getElementById('seek-worker-spawn-log');
+    if (!box) return;
+    if (box.childElementCount === 0 || box.textContent === 'No seek worker spawn telemetry yet.') box.replaceChildren();
+    const ts = new Date().toTimeString().slice(0, 8);
+    const el = document.createElement('div');
+    el.className = 'seek-root-entry ' + cls;
+    el.textContent = '[' + ts + '] ' + title + '\n\n' + body;
+    box.insertBefore(el, box.firstChild);
+    while (box.childElementCount > MAX_VISIBLE_LOGS) box.removeChild(box.lastChild);
+  }, DebugLevel.NORMAL);
+}
+
+function renderSeekWorkerSpawnSummary() {
+  if (!_seekWorkerSpawnState) return;
+  const s = _seekWorkerSpawnState;
+  const delta = s.deltaSeconds ?? (
+    s.workerStartTime != null && s.requestedSeekTime != null
+      ? s.workerStartTime - s.requestedSeekTime
+      : null
+  );
+  const candidate = delta != null && isFinite(delta) && Math.abs(delta) > 5
+    ? 'WORKER_STARTED_FROM_WRONG_POSITION'
+    : delta == null
+      ? (s.rootCauseCandidate ?? 'UNKNOWN')
+      : 'NOT_WORKER_POSITION';
+  const text =
+    'SEEK WORKER REPORT\n\n' +
+    'requested:\n' + _fmtSec(s.requestedSeekTime) + '\n\n' +
+    'worker:\n' + _fmtSec(s.workerStartTime) + '\n\n' +
+    'delta:\n' + _fmtSignedSec(delta) + '\n\n' +
+    'generated:\n' + (s.segmentsGenerated ?? 0) + '\n\n' +
+    'promoted:\n' + (s.segmentsPromoted ?? 0) + '\n\n' +
+    'covering:\n' + (s.coveringSegmentFound == null ? '?' : String(!!s.coveringSegmentFound)) + '\n\n' +
+    'RESULT:\n' + (s.result ?? 'PENDING') + '\n\n' +
+    'ROOT CAUSE CANDIDATE:\n' + candidate;
+  const el = document.getElementById('seek-worker-spawn-summary');
+  if (el) {
+    el.textContent = text;
+    el.classList.remove('sync-ok', 'sync-warn', 'sync-bad', 'sync-neutral');
+    el.classList.add(_workerDeltaClass(delta));
+  }
+}
+
+function appendSeekWorkerSpawnEvent(name, data = {}) {
+  const relevant = name === 'SEEK_WORKER_SPAWN_REQUEST'
+    || name === 'seek.worker_spawn.creation_inputs'
+    || name === 'seek.worker_spawn.no_worker_path'
+    || name === 'seek.worker_spawn.source'
+    || name === 'seek.worker_spawn.validation'
+    || name === 'seek.worker_spawn.first_segment'
+    || name === 'seek.worker_spawn.first_discard'
+    || name === 'seek.worker_spawn.report';
+  if (!relevant) return;
+
+  if (name === 'SEEK_WORKER_SPAWN_REQUEST') {
+    _seekWorkerSpawnState = {
+      requestedSeekTime: data.requestedSeekTime,
+      currentPlaybackTime: data.currentPlaybackTime,
+      direction: data.direction,
+    };
+    appendSeekWorkerSpawnEntry(
+      'SEEK REQUEST',
+      'requestedSeekTime = ' + _fmtSec(data.requestedSeekTime) + '\n' +
+      'currentPlaybackTime = ' + _fmtSec(data.currentPlaybackTime) + '\n\n' +
+      'direction = ' + (data.direction ?? '?'),
+      data.direction === 'BACKWARD' ? 'sync-warn' : 'sync-neutral'
+    );
+    renderSeekWorkerSpawnSummary();
+    return;
+  }
+  if (!_seekWorkerSpawnState) _seekWorkerSpawnState = {};
+  const s = _seekWorkerSpawnState;
+
+  if (name === 'seek.worker_spawn.creation_inputs' || name === 'seek.worker_spawn.no_worker_path') {
+    Object.assign(s, {
+      requestedSeekTime: data.requestedSeekTime ?? s.requestedSeekTime,
+      currentPlaybackTime: data.currentPlaybackTime ?? s.currentPlaybackTime,
+      mainLastTime: data.mainLastTime,
+      timelineEnd: data.timelineEnd,
+      seekByte: data.seekByte,
+      seekOffset: data.seekOffset,
+      decodePoint: data.decodePoint,
+      workerStartTime: data.workerStartTime,
+      workerStartByte: data.workerStartByte,
+      workerStartOffset: data.workerStartOffset,
+      source: data.source ?? s.source,
+    });
+    appendSeekWorkerSpawnEntry(
+      name === 'seek.worker_spawn.no_worker_path' ? 'WORKER CREATION SKIPPED' : 'WORKER CREATION',
+      'requestedSeekTime = ' + _fmtSec(s.requestedSeekTime) + '\n\n' +
+      'currentPlaybackTime = ' + _fmtSec(s.currentPlaybackTime) + '\n\n' +
+      'mainLastTime = ' + _fmtSec(s.mainLastTime) + '\n\n' +
+      'timelineEnd = ' + _fmtSec(s.timelineEnd) + '\n\n' +
+      'seekByte = ' + (s.seekByte ?? '?') + '\n\n' +
+      'seekOffset = ' + _fmtSec(s.seekOffset) + '\n\n' +
+      'decodePoint = ' + (typeof s.decodePoint === 'object' ? JSON.stringify(s.decodePoint) : (s.decodePoint ?? '?')) + '\n\n' +
+      'workerStartTime = ' + _fmtSec(s.workerStartTime) + '\n' +
+      'workerStartByte = ' + (s.workerStartByte ?? '?') + '\n' +
+      'workerStartOffset = ' + _fmtSec(s.workerStartOffset) +
+      (data.reason ? '\n\nreason = ' + data.reason : ''),
+      name === 'seek.worker_spawn.no_worker_path' ? 'sync-warn' : 'sync-neutral'
+    );
+  } else if (name === 'seek.worker_spawn.source') {
+    s.source = data.source;
+    appendSeekWorkerSpawnEntry('WORKER SOURCE', data.source ?? '?', 'sync-neutral');
+  } else if (name === 'seek.worker_spawn.validation') {
+    Object.assign(s, {
+      requestedSeekTime: data.requestedSeekTime ?? s.requestedSeekTime,
+      workerStartTime: data.workerStartTime,
+      deltaSeconds: data.deltaSeconds,
+      source: data.source ?? s.source,
+    });
+    appendSeekWorkerSpawnEntry(
+      'WORKER VALIDATION',
+      'requested = ' + _fmtSec(data.requestedSeekTime) + '\n\n' +
+      'worker = ' + _fmtSec(data.workerStartTime) + '\n\n' +
+      'delta = ' + _fmtSignedSec(data.deltaSeconds),
+      _workerDeltaClass(data.deltaSeconds)
+    );
+  } else if (name === 'seek.worker_spawn.first_segment') {
+    s.firstSegment = data.segmentId;
+    appendSeekWorkerSpawnEntry(
+      'FIRST SEGMENT',
+      (data.segmentId ?? '?') + '\n\n' +
+      'relative:\n' + _fmtSec(data.relativeStart) + ' -> ' + _fmtSec(data.relativeEnd) + '\n\n' +
+      'absolute:\n' + _fmtSec(data.absoluteStart) + ' -> ' + _fmtSec(data.absoluteEnd) + '\n\n' +
+      'requested:\n' + _fmtSec(data.requestedSeekTime) + '\n\n' +
+      'worker:\n' + _fmtSec(data.workerStartTime),
+      'sync-neutral'
+    );
+  } else if (name === 'seek.worker_spawn.first_discard') {
+    s.firstDiscard = data.segmentId;
+    appendSeekWorkerSpawnEntry(
+      'FIRST DISCARD',
+      (data.segmentId ?? '?') + '\n\n' +
+      _fmtSec(data.absoluteStart) + ' -> ' + _fmtSec(data.absoluteEnd) + '\n\n' +
+      'target:\n' + _fmtSec(data.requestedSeekTime) + '\n\n' +
+      'reason:\n' + (data.reason ?? '?'),
+      'sync-bad'
+    );
+  } else if (name === 'seek.worker_spawn.report') {
+    Object.assign(s, {
+      requestedSeekTime: data.requestedSeekTime ?? s.requestedSeekTime,
+      workerStartTime: data.workerStartTime,
+      deltaSeconds: data.deltaSeconds,
+      segmentsGenerated: data.segmentsGenerated,
+      segmentsPromoted: data.segmentsPromoted,
+      coveringSegmentFound: data.coveringSegmentFound,
+      result: data.result,
+      rootCauseCandidate: data.rootCauseCandidate,
+    });
+    appendSeekWorkerSpawnEntry(
+      'SEEK WORKER REPORT',
+      'requested:\n' + _fmtSec(data.requestedSeekTime) + '\n\n' +
+      'worker:\n' + _fmtSec(data.workerStartTime) + '\n\n' +
+      'delta:\n' + _fmtSignedSec(data.deltaSeconds) + '\n\n' +
+      'generated:\n' + (data.segmentsGenerated ?? 0) + '\n\n' +
+      'promoted:\n' + (data.segmentsPromoted ?? 0) + '\n\n' +
+      'covering:\n' + String(!!data.coveringSegmentFound) + '\n\n' +
+      'RESULT:\n' + (data.result ?? '?') + '\n\n' +
+      'ROOT CAUSE CANDIDATE:\n' + (data.rootCauseCandidate ?? '?'),
+      _workerDeltaClass(data.deltaSeconds)
+    );
+  }
+  renderSeekWorkerSpawnSummary();
+}
+
+// ── Piece Gate Panel ──────────────────────────────────────────────────────────
+
+function updatePieceGatePanel(data) {
+  const phase      = data.phase ?? '';
+  const required   = data.required   ?? 3;
+  const storeCount = data.storeCount ?? 0;
+  const verCount   = data.verifiedCount ?? 0;
+  const waitedMs   = data.waitedMs   ?? 0;
+  const budgetMs   = data.budgetMs   ?? 0;
+  const seekByte   = data.fileByte   ?? data.seekByte;
+
+  _setText('gate-required', String(required));
+  _setText('gate-store',    String(storeCount));
+  _setText('gate-verified', String(verCount));
+  _setText('gate-elapsed',  waitedMs ? waitedMs.toFixed(0) + 'ms' : '—');
+  _setText('gate-budget',   budgetMs ? budgetMs.toFixed(0) + 'ms' : '—');
+  if (seekByte != null) _setText('gate-seekbyte', _fmtB(seekByte));
+
+  const storePct = required > 0 ? Math.min(100, (storeCount / required) * 100) : 0;
+  const verPct   = required > 0 ? Math.min(100, (verCount   / required) * 100) : 0;
+  const bs = document.getElementById('gbar-store');    if (bs) bs.style.width = storePct + '%';
+  const bv = document.getElementById('gbar-verified'); if (bv) bv.style.width = verPct   + '%';
+  _setText('gbar-store-n',    storeCount + '/' + required);
+  _setText('gbar-verified-n', verCount   + '/' + required);
+
+  const badge = document.getElementById('piece-gate-badge');
+  if (badge) {
+    if (phase.endsWith('.ready')) {
+      badge.textContent = 'ready ' + waitedMs.toFixed(0) + 'ms';
+      badge.className = 'pg-ready';
+    } else if (phase.includes('timeout')) {
+      badge.textContent = 'TIMEOUT';
+      badge.className = 'pg-timeout';
+    } else {
+      badge.textContent = 'waiting ' + waitedMs.toFixed(0) + 'ms';
+      badge.className = 'pg-wait';
+    }
+  }
+
+  const cls = phase.endsWith('.ready') ? 'tl-ok' : phase.includes('timeout') ? 'tl-warn' : 'tl-dim';
+  const label = phase.replace('torrent.piece_gate.', '');
+  _traceAppend('gate-history',
+    label + ' req=' + required + ' store=' + storeCount + ' ver=' + verCount +
+    (waitedMs ? ' ' + waitedMs.toFixed(0) + '/' + budgetMs.toFixed(0) + 'ms' : ''),
+    cls);
+}
+
+// ── Download Rate Panel ───────────────────────────────────────────────────────
+
+function updateDownloadRatePanel(data) {
+  const el = document.getElementById('dl-rate-pre');
+  if (!el) return;
+  const pct = data.progress != null ? (data.progress * 100).toFixed(2) + '%' : '—';
+  el.textContent =
+    'Speed:    ' + _fmtB(data.speed) + '/s\n' +
+    'Peers:    ' + (data.peers ?? '—') + '\n' +
+    'Progress: ' + pct + '\n' +
+    'DL:       ' + _fmtB(data.downloaded) + ' / ' + _fmtB(data.total) + '\n' +
+    'Main pos: ' + (data.mainByte != null ? _fmtB(data.mainByte) : '—');
+}
+
+// ── Seek Lifecycle Panel ──────────────────────────────────────────────────────
+
+function appendSeekLifecycle(phase, data) {
+  let cls = 'tl-dim';
+  let msg = phase.replace('route.seek.', '').replace('seek.worker.', 'wkr.');
+  if (data.seekTime   != null) msg += ' t='   + data.seekTime.toFixed(1) + 's';
+  if (data.seekGeneration != null) msg += ' gen=' + data.seekGeneration;
+  if (data.gen        != null) msg += ' gen=' + data.gen;
+  if (phase.includes('request') || phase.includes('create') || phase.includes('started') || phase.includes('spawn')) cls = 'tl-seek';
+  else if (phase.includes('done') || phase.includes('ready') || phase.includes('complete'))                          cls = 'tl-ok';
+  else if (phase.includes('fail') || phase.includes('error') || phase.includes('timeout') || phase.includes('kill')) cls = 'tl-err';
+  _traceAppend('seek-lifecycle-log', msg, cls);
+}
+
+// ── Byte Estimation Panel ─────────────────────────────────────────────────────
+
+function appendByteEstimate(phase, data) {
+  let msg = phase.replace('torrent.seek_byte.', '').replace('route.seek.', '').replace('seek.worker.', '');
+  if (data.seekTimeSec != null) msg += ' t='        + data.seekTimeSec.toFixed(1) + 's';
+  if (data.seekByte    != null) msg += ' est='      + _fmtB(data.seekByte);
+  if (data.original    != null) msg += ' orig='     + _fmtB(data.original);
+  if (data.refined     != null) msg += ' refined='  + _fmtB(data.refined);
+  if (data.original != null && data.refined != null) msg += ' Δ=' + _fmtB(Math.abs(data.refined - data.original));
+  if (data.clusterByte != null) msg += ' cluster='  + _fmtB(data.clusterByte);
+  const cls = phase.includes('cues_hit') ? 'tl-ok' : phase.includes('interpolated') ? 'tl-seek' : 'tl-dim';
+  _traceAppend('seek-byte-log', msg, cls);
+}
+
+// ── Priority Panel ────────────────────────────────────────────────────────────
+
+function appendPriority(data) {
+  const msg = 'pieces ' + (data.startPiece ?? '?') + '–' + (data.endPiece ?? '?') +
+    ' (' + (data.windowMB ?? '?') + 'MB)  ' + _fmtB(data.startByte) + '→' + _fmtB(data.endByte);
+  _traceAppend('priority-log', msg, 'tl-seek');
+}
+
+// ── Cluster Scan Panel ────────────────────────────────────────────────────────
+
+function appendCluster(phase, data) {
+  let msg = phase.replace('torrent.cluster.', '');
+  if (data.seekByte  != null) msg += ' seekByte='  + _fmtB(data.seekByte);
+  if (data.offset    != null) msg += ' offset='    + _fmtB(data.offset);
+  if (data.clusterMs != null) msg += ' ' + data.clusterMs + 'ms';
+  const cls = phase.includes('found') ? 'tl-ok' : phase.includes('error') || phase.includes('false_positive') ? 'tl-warn' : 'tl-dim';
+  _traceAppend('cluster-log', msg, cls);
+}
+
+// ── FFmpeg Lifecycle Panel ────────────────────────────────────────────────────
+
+function appendFfmpeg(phase, data) {
+  let msg = phase.replace('main.ffmpeg.', 'main.').replace('seek.ffmpeg.', 'seek.')
+              .replace('pipeline.', 'pipe.');
+  if (data.seconds        != null) msg += ' t='       + data.seconds.toFixed(1) + 's';
+  if (data.attempt        != null) msg += ' attempt=' + data.attempt;
+  if (data.timelineCount  != null) msg += ' segs='    + data.timelineCount;
+  const cls = phase.includes('spawn') || phase.includes('end') || phase.includes('done') || phase.includes('ready') ? 'tl-ok'
+    : phase.includes('error') ? 'tl-err' : 'tl-dim';
+  _traceAppend('ffmpeg-log', msg, cls);
+}
+
+// ── Segment Generation Panel ──────────────────────────────────────────────────
+
+function appendSegmentGen(phase, data) {
+  let msg = phase.replace('main.segment.', 'main.').replace('seek.segment.', 'seek.');
+  if (data.file     != null) msg += ' ' + data.file;
+  if (data.filename != null) msg += ' ' + data.filename;
+  if (data.startTime != null) msg += ' t=' + data.startTime.toFixed(2) + 's';
+  const cls = phase.includes('promoted') ? 'tl-ok'
+    : phase.includes('failed') || phase.includes('discard') || phase.includes('parse_failed') ? 'tl-warn' : 'tl-dim';
+  _traceAppend('segment-gen-log', msg, cls);
+}
+
+// ── Video Events Panel ────────────────────────────────────────────────────────
+
+function appendVideoEvent(name, data) {
+  let msg = name;
+  if (data.currentTime != null) msg += ' t=' + (+data.currentTime).toFixed(3) + 's';
+  if (data.readyState  != null) msg += ' rs=' + data.readyState;
+  const cls = ['playing', 'canplay', 'canplaythrough', 'seeked'].includes(name) ? 'tl-ok'
+    : ['waiting', 'stalled', 'error'].includes(name) ? 'tl-warn' : 'tl-dim';
+  _traceAppend('video-events-log', msg, cls);
+}
+
+// ── Seek Breakdown Report ─────────────────────────────────────────────────────
+
+function renderSeekBreakdown(target, totalMs, phases) {
+  const el = document.getElementById('seek-breakdown-pre');
+  if (!el || !phases.length) return;
+
+  const find = names => {
+    for (const name of names) {
+      const p = phases.find(p => p.name === name);
+      if (p) return p.ms;
+    }
+    return null;
+  };
+
+  const keyPhases = [
+    ['seek start',         ['seek_start']],
+    ['POST seek sent',     ['server.route.seek.request']],
+    ['server response',    ['server_response']],
+    ['byte estimated',     ['server.route.seek.estimated_byte', 'server.seek.worker.seek_byte_refined']],
+    ['main paused',        ['server.route.seek.promote_pause_main']],
+    ['worker created',     ['server.route.seek.worker_started', 'server.seek.worker.started']],
+    ['piece gate done',    ['server.seek.worker.piece_gate_done', 'server.torrent.piece_gate.ready']],
+    ['FFmpeg spawned',     ['server.seek.ffmpeg.spawned']],
+    ['first seg open',     ['server.seek.ffmpeg.segment_open']],
+    ['segment promoted',   ['server.seek.segment.promoted']],
+    ['SSE seg received',   ['sse_segment_ready']],
+    ['covering found',     ['covering_found']],
+    ['MSE append start',   ['mse_append_start']],
+    ['buffer ready',       ['buffer_ready']],
+    ['video playing',      ['video_playing', 'PLAYING']],
+  ];
+
+  const lines = [
+    'Seek → ' + target.toFixed(2) + 's   total=' + totalMs.toFixed(0) + 'ms\n',
+    '─'.repeat(50) + '\n',
+  ];
+
+  let prev = 0;
+  for (const [label, names] of keyPhases) {
+    const ms = find(names);
+    if (ms == null) continue;
+    const delta = ms - prev;
+    lines.push(
+      ('+' + ms.toFixed(0)).padStart(7) + 'ms  ' +
+      label.padEnd(22) +
+      '(Δ ' + delta.toFixed(0) + 'ms)\n'
+    );
+    prev = ms;
+  }
+  lines.push('─'.repeat(50) + '\n');
+  lines.push('  TOTAL  ' + totalMs.toFixed(0) + 'ms');
+  el.textContent = lines.join('');
+}
+
+// ── Seek Debug Log ────────────────────────────────────────────────────────────
+// Single panel that captures all seek.* instrumentation events in order.
+// Formatted for easy reading and one-click copy.
+
+let _seekDebugLines = [];
+
+function _seekDebugAppend(phase, data) {
+  const ts   = new Date().toTimeString().slice(0, 8);
+  const file = data.file ?? data.filename ?? data.destName ?? '';
+  const segs = data.segmentsSeen != null
+    ? ` seen=${data.segmentsSeen} parsed=${data.segmentsParsed} promoted=${data.segmentsPromoted} inserted=${data.timelineInserted}`
+    : '';
+
+  let body = '';
+  const COLOR = {
+    'seek.segment_discovered':  '#7df',
+    'seek.tfdt_parsed':         '#7f7',
+    'seek.tfdt_failed':         '#f55',
+    'seek.segment_timing':      '#adf',
+    'seek.segment.evaluated':   '#fa0',
+    'seek.preroll_check':       '#fa0',
+    'seek.promote_decision':    '#c8f',
+    'seek.timeline_insert':     '#7f7',
+    'seek.timeline.inserted':   '#7f7',
+    'seek.timeline_reject':     '#f55',
+    'seek.proof.generated':     '#7df',
+    'seek.proof.parsed':        '#7f7',
+    'seek.proof.preroll_discarded': '#fa0',
+    'seek.proof.written':       '#7f7',
+    'seek.proof.timeline':      '#7f7',
+    'seek.proof.promoted':      '#7f7',
+    'seek.success_check':       '#fa0',
+    'seek.failure_report':      '#f55',
+    'seek.summary':             '#fff',
+    'seek.ffmpeg.stderr':           '#888',
+    'seek.ffmpeg.progress_parsed':  '#fa0',
+    'seek.ffmpeg.exit':             '#f55',
+    'seek.dir.file_created':        '#7df',
+    'seek.dir.file_modified':       '#668',
+    'seek.first_output':            '#7f7',
+    'seek.worker.timeline':         '#fff',
+    'torrent.stream.open':          '#7df',
+    'torrent.stream.first_byte':    '#7f7',
+    'torrent.stream.bytes_sent':    '#556',
+    'torrent.stream.closed':        '#aaa',
+  };
+
+  // Build a compact multi-line representation for each phase
+  switch (phase) {
+    case 'seek.segment_discovered':
+      body = `FILE  ${file}\n      size=${data.fileSize != null ? _fmtB(data.fileSize) : '?'}  mtime=${data.mtime != null ? new Date(data.mtime).toTimeString().slice(0,8) : '?'}`;
+      break;
+    case 'seek.tfdt_parsed':
+      body = `FILE  ${file}\n      bmdt=${data.baseMediaDecodeTime}  ts=${data.timescale}  start=${data.startSeconds}s  end=${data.endSeconds}s`;
+      break;
+    case 'seek.tfdt_failed':
+      body = `FILE  ${file}  timescale=${data.timescale ?? '?'}`;
+      break;
+    case 'seek.segment_timing':
+      body = `FILE  ${file}\n      rel=${data.relativeStart}s-${data.relativeEnd}s offset=${data.seekOffset}s\n      abs=${data.absoluteStart ?? data.startTime}s-${data.absoluteEnd ?? data.endTime}s target=${data.targetTime}s overlap=${data.overlapsTarget}`;
+      break;
+    case 'seek.segment.evaluated':
+      body = `EVALUATED  ${file}\n      rel=${data.relativeStart}s-${data.relativeEnd}s offset=${data.seekOffset}s\n      abs=${data.absoluteStart}s-${data.absoluteEnd}s target=${data.targetTime}s\n      decision=${data.decision} overlap=${data.overlapsTarget}`;
+      break;
+    case 'seek.preroll_check':
+      body = `FILE  ${file}\n      rel=${data.relativeStart}s-${data.relativeEnd}s offset=${data.seekOffset}s\n      abs=${data.absoluteStart ?? data.startTime}s-${data.absoluteEnd ?? data.endTime}s target=${data.targetTime}s\n      preroll=${data.prerollWindow}s  result=${data.result}  reason=${data.reason}`;
+      break;
+    case 'seek.promote_decision':
+      body = `FILE  ${file} → ${data.destName ?? ''}\n      action=${data.action}` + (data.reason ? `  reason=${data.reason}` : '');
+      break;
+    case 'seek.timeline_insert':
+      body = `FILE  ${data.file}\n      rel=${data.relativeStart}s-${data.relativeEnd}s offset=${data.seekOffset}s\n      abs=${data.absoluteStart ?? data.startTime}s-${data.absoluteEnd ?? data.endTime}s target=${data.targetTime}s\n      timeline ${data.timelineCountBefore} -> ${data.timelineCountAfter}`;
+      break;
+    case 'seek.timeline.inserted':
+      body = `TIMELINE INSERTED  ${data.file}\n      rel=${data.relativeStart}s-${data.relativeEnd}s offset=${data.seekOffset}s\n      abs=${data.absoluteStart}s-${data.absoluteEnd}s target=${data.targetTime}s\n      count=${data.timelineCount} overlap=${data.overlapsTarget}`;
+      break;
+    case 'seek.timeline_reject':
+      body = `FILE  ${data.file}  reason=${data.reason}`;
+      break;
+    case 'seek.proof.generated':
+      body = `GENERATED  ${file}\n      timeline=${data.timelineCount ?? '?'}  seen=${data.segmentsSeen ?? 0} parsed=${data.segmentsParsed ?? 0} promoted=${data.segmentsPromoted ?? 0} inserted=${data.timelineInserted ?? 0}`;
+      break;
+    case 'seek.proof.parsed':
+      body = `PARSED  ${file}\n      rel=${data.relativeStart}s-${data.relativeEnd}s offset=${data.seekOffset}s\n      abs=${data.absoluteStart ?? data.startTime}s-${data.absoluteEnd ?? data.endTime}s target=${data.targetTime}s overlap=${data.overlapsTarget}\n      timeline=${data.timelineCount ?? '?'}`;
+      break;
+    case 'seek.proof.preroll_discarded':
+      body = `DISCARDED  ${file}\n      rel=${data.relativeStart}s-${data.relativeEnd}s offset=${data.seekOffset}s\n      abs=${data.absoluteStart ?? data.startTime}s-${data.absoluteEnd ?? data.endTime}s target=${data.targetTime}s overlap=${data.overlapsTarget}\n      promoted=${data.promoted} inserted=${data.inserted} timeline=${data.timelineCount ?? '?'}`;
+      break;
+    case 'seek.proof.written':
+      body = `WRITTEN  ${data.file}\n      exists=${data.existsOnDisk} size=${data.fileSize != null ? _fmtB(data.fileSize) : '?'}\n      rel=${data.relativeStart}s-${data.relativeEnd}s offset=${data.seekOffset}s\n      abs=${data.absoluteStart ?? data.startTime}s-${data.absoluteEnd ?? data.endTime}s target=${data.targetTime}s overlap=${data.overlapsTarget}`;
+      break;
+    case 'seek.proof.timeline':
+      body = `TIMELINE  ${data.file}\n      inserted=${data.inserted} count=${data.timelineCountBefore} -> ${data.timelineCountAfter} increased=${data.timelineCountIncreased}\n      rel=${data.relativeStart}s-${data.relativeEnd}s offset=${data.seekOffset}s\n      abs=${data.absoluteStart ?? data.startTime}s-${data.absoluteEnd ?? data.endTime}s target=${data.targetTime}s overlap=${data.overlapsTarget}`;
+      break;
+    case 'seek.proof.promoted':
+      body = `PROMOTED  ${data.file}\n      promoted=${data.promoted} emitted=${data.emitted} exists=${data.existsOnDisk} size=${data.fileSize != null ? _fmtB(data.fileSize) : '?'} timeline=${data.timelineCount ?? '?'}\n      rel=${data.relativeStart}s-${data.relativeEnd}s offset=${data.seekOffset}s\n      abs=${data.absoluteStart ?? data.startTime}s-${data.absoluteEnd ?? data.endTime}s target=${data.targetTime}s overlap=${data.overlapsTarget}`;
+      break;
+    case 'seek.success_check':
+    case 'seek.failure_report':
+      body = `attempt=${data.attempt}${segs}\n      lastReason=${data.lastReason ?? data.lastFailureReason ?? '—'}`;
+      break;
+    case 'seek.summary':
+      body = `attempt=${data.attempt}${segs}\n      failureReason=${data.failureReason ?? 'none'}`;
+      break;
+    case 'seek.ffmpeg.stderr':
+      body = data.line ?? '';
+      break;
+    case 'seek.ffmpeg.progress_parsed':
+      body = `frame=${data.frame ?? '?'}  time=${data.time ?? '?'}  speed=${data.speed ?? '?'}x  fps=${data.fps ?? '?'}  size=${data.size ?? '?'}`;
+      break;
+    case 'seek.ffmpeg.exit':
+      body = `exitCode=${data.exitCode ?? '?'}  reason=${data.reason ?? '?'}\n` +
+        (data.stderrTail?.length ? data.stderrTail.slice(-3).join('\n') : '(no stderr)');
+      break;
+    case 'seek.dir.file_created':
+      body = `${data.file ?? data.filename ?? '?'}  size=${data.fileSize != null ? _fmtB(data.fileSize) : '?'}`;
+      break;
+    case 'seek.dir.file_modified':
+      body = `${data.file ?? data.filename ?? '?'}  size=${data.fileSize != null ? _fmtB(data.fileSize) : '?'}  Δ=${data.deltaSize != null ? _fmtB(data.deltaSize) : '?'}`;
+      break;
+    case 'seek.first_output':
+      body = `${data.file ?? data.filename ?? '?'}  elapsed=${data.elapsedMs ?? '?'}ms`;
+      break;
+    case 'seek.worker.timeline': {
+      const mils = data.milestones ?? {};
+      const entries = Object.entries(mils);
+      if (!entries.length) { body = '(no milestones)'; break; }
+      const t0 = Math.min(...entries.map(([, v]) => typeof v === 'number' ? v : Infinity));
+      body = entries.map(([k, v]) => `${k}=+${typeof v === 'number' ? v - t0 : v}ms`).join('  ');
+      break;
+    }
+    case 'torrent.stream.open':
+      body = `baseOffset=${_fmtB(data.baseOffset ?? 0)}  clusterStart=${_fmtB(data.clusterStart ?? 0)}  seekTimeMs=${data.seekTimeMs ?? '?'}`;
+      break;
+    case 'torrent.stream.first_byte':
+      body = `elapsed=${data.elapsedMs ?? '?'}ms  firstChunkSize=${_fmtB(data.firstChunkSize ?? 0)}`;
+      break;
+    case 'torrent.stream.bytes_sent':
+      body = `sent=${_fmtB(data.bytesServed ?? 0)}  elapsed=${data.elapsedMs ?? '?'}ms  rate=${data.rateMBps ?? '?'}MB/s`;
+      break;
+    case 'torrent.stream.closed':
+      body = `total=${_fmtB(data.bytesServed ?? 0)}  elapsed=${data.elapsedMs ?? '?'}ms`;
+      break;
+    default:
+      body = Object.entries(data)
+        .filter(([k]) => !['phase','ns','at','sessionId'].includes(k))
+        .map(([k,v]) => `${k}=${v}`)
+        .join('  ');
+  }
+
+  const color = COLOR[phase] ?? '#aaa';
+  const label = phase.replace('seek.', '').padEnd(24);
+  const line  = `[${ts}] \x1b[${color}]${label}\x1b[/]\n      ${body.replace(/\n/g, '\n      ')}`;
+
+  // Plain text for copy
+  const plainLine = `[${ts}] ${label}\n      ${body.replace(/\n/g, '\n      ')}`;
+  _seekDebugLines.push(plainLine);
+  if (_seekDebugLines.length > MAX_VISIBLE_LOGS) _seekDebugLines.splice(0, _seekDebugLines.length - MAX_VISIBLE_LOGS);
+
+  // DOM
+  const box = document.getElementById('seek-debug-log');
+  if (!box) return;
+  const el = document.createElement('div');
+  el.style.borderBottom  = '1px solid #1a1a1a';
+  el.style.paddingBottom = '3px';
+  el.style.marginBottom  = '2px';
+  el.style.color         = color;
+  // phase label bold, body normal
+  el.innerHTML = `<span style="color:${color};font-weight:bold">[${ts}] ${label}</span>\n      ${
+    body.replace(/\n/g, '\n      ')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  }`;
+  box.appendChild(el);
+  while (box.childElementCount > MAX_VISIBLE_LOGS) box.removeChild(box.firstChild);
+  box.scrollTop = box.scrollHeight;
+
+  const cnt = document.getElementById('seek-debug-count');
+  if (cnt) cnt.textContent = _seekDebugLines.length + ' events';
+}
+
+// Wire copy + clear buttons (after DOM ready).
+document.addEventListener('DOMContentLoaded', () => {
+  setupCopyButtons();
+  diagnosticsLevelEl?.addEventListener('change', e => {
+    diagnostics.setLevel(e.target.value);
+  });
+  diagnostics.setLevel(diagnosticsLevelEl?.value ?? DebugLevel.NORMAL);
+  setInterval(() => diagnostics.updatePerformancePanel(), 2000);
+  document.getElementById('btn-copy-seek-av-analysis')?.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    const b = e.currentTarget;
+    navigator.clipboard.writeText(_cpText('seek-av-sync-analysis-panel')).then(() => {
+      b.textContent = 'Copied!';
+      setTimeout(() => { b.textContent = 'Copy Panel'; }, 1500);
+    });
+  });
+  document.getElementById('btn-copy-seek-root-analysis')?.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    const b = e.currentTarget;
+    navigator.clipboard.writeText(_cpText('seek-root-cause-analysis-panel')).then(() => {
+      b.textContent = 'Copied!';
+      setTimeout(() => { b.textContent = 'Copy Panel'; }, 1500);
+    });
+  });
+  document.getElementById('btn-copy-seek-worker-spawn-analysis')?.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    const b = e.currentTarget;
+    navigator.clipboard.writeText(_cpText('seek-worker-spawn-analysis-panel')).then(() => {
+      b.textContent = 'Copied!';
+      setTimeout(() => { b.textContent = 'Copy Panel'; }, 1500);
+    });
+  });
+  document.getElementById('btn-copy-seek-debug')?.addEventListener('click', () => {
+    const text = _seekDebugLines.join('\n\n');
+    navigator.clipboard.writeText(text).then(
+      () => { const b = document.getElementById('btn-copy-seek-debug'); if(b){ b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy All',1500); } },
+      () => { /* fallback: select the pre */ }
+    );
+  });
+  document.getElementById('btn-clear-seek-debug')?.addEventListener('click', () => {
+    _seekDebugLines = [];
+    const box = document.getElementById('seek-debug-log');
+    if (box) box.replaceChildren();
+    const cnt = document.getElementById('seek-debug-count');
+    if (cnt) cnt.textContent = '';
+  });
+});
+
+// ── Copy helpers + panel copy buttons ────────────────────────────────────────
+
+function _cpText(id) {
+  const el = document.getElementById(id);
+  if (!el) return '';
+  if (el.tagName === 'TABLE') {
+    return Array.from(el.querySelectorAll('tr'))
+      .map(r => Array.from(r.cells).map(c => c.textContent.trim()).join('\t'))
+      .join('\n');
+  }
+  return el.innerText ?? el.textContent ?? '';
+}
+
+function _cpBtn(targetId) {
+  const b = document.createElement('button');
+  b.className = 'cp-btn';
+  b.textContent = 'Copy';
+  b.addEventListener('click', () => {
+    navigator.clipboard.writeText(_cpText(targetId)).then(() => {
+      b.textContent = 'Copied!';
+      setTimeout(() => { b.textContent = 'Copy'; }, 1500);
+    });
+  });
+  return b;
+}
+
+const _CP_PANELS = [
+  'seek-log-box', 'log-box', 'seek-workers-body', 'timeline-registry-table',
+  'gate-history', 'dl-rate-pre',
+  'seek-lifecycle-log', 'seek-byte-log', 'priority-log', 'cluster-log',
+  'ffmpeg-log', 'segment-gen-log', 'video-events-log', 'seek-breakdown-pre',
+  'seek-av-sync-analysis-panel', 'seek-root-cause-analysis-panel',
+  'seek-worker-spawn-analysis-panel', 'diagnostics-perf-pre',
+];
+
+function setupCopyButtons() {
+  for (const id of _CP_PANELS) {
+    const content = document.getElementById(id);
+    if (!content) continue;
+    const card = content.closest('.card');
+    if (!card) continue;
+    if (card.id === 'card-seek-av-analysis') continue;
+    if (card.id === 'card-seek-root-analysis') continue;
+    if (card.id === 'card-seek-worker-spawn-analysis') continue;
+    const h2 = card.querySelector('h2');
+    if (!h2 || h2.parentElement.classList.contains('panel-hdr')) continue;
+    const hdr = document.createElement('div');
+    hdr.className = 'panel-hdr';
+    h2.style.margin = '0';
+    h2.parentNode.insertBefore(hdr, h2);
+    hdr.appendChild(h2);
+    hdr.appendChild(_cpBtn(id));
+  }
+
+  // Floating universal Copy All button
+  const fab = document.createElement('button');
+  fab.id = 'btn-copy-all-fab';
+  fab.textContent = '⎘ Copy All';
+  fab.addEventListener('click', () => {
+    const parts = _CP_PANELS.map(id => {
+      const el = document.getElementById(id);
+      if (!el) return null;
+      const card = el.closest('.card');
+      const title = card?.querySelector('h2')?.textContent?.replace('Copy','').trim() ?? id;
+      const text  = _cpText(id);
+      return text.trim() ? `=== ${title} ===\n${text}` : null;
+    }).filter(Boolean);
+    // Also include seek debug log
+    parts.push(`=== Seek Debug Log ===\n${_seekDebugLines.join('\n\n')}`);
+    navigator.clipboard.writeText(parts.join('\n\n')).then(() => {
+      fab.textContent = '✓ Copied!';
+      setTimeout(() => { fab.textContent = '⎘ Copy All'; }, 2500);
+    });
+  });
+  document.body.appendChild(fab);
+}
+
+// ── Main trace dispatcher ─────────────────────────────────────────────────────
+
+function dispatchTraceTelemetry(phase, data) {
+  if (!diagnostics.shouldLog(phase)) return;
+  // ── Seek debug panel: capture all seek.* events ──────────────────────────
+  const SEEK_DEBUG_PHASES = new Set([
+    'seek.segment_discovered', 'seek.tfdt_parsed', 'seek.tfdt_failed',
+    'seek.segment_timing', 'seek.segment.evaluated',
+    'seek.preroll_check', 'seek.promote_decision',
+    'seek.timeline_insert', 'seek.timeline.inserted', 'seek.timeline_reject',
+    'seek.proof.generated', 'seek.proof.parsed',
+    'seek.proof.preroll_discarded', 'seek.proof.written',
+    'seek.proof.timeline', 'seek.proof.promoted',
+    'seek.success_check', 'seek.failure_report', 'seek.summary',
+    'seek.ffmpeg.stderr', 'seek.ffmpeg.progress_parsed', 'seek.ffmpeg.exit',
+    'seek.dir.file_created', 'seek.dir.file_modified', 'seek.first_output',
+    'seek.worker.timeline',
+    'torrent.stream.open', 'torrent.stream.first_byte',
+    'torrent.stream.bytes_sent', 'torrent.stream.closed',
+  ]);
+  if (SEEK_DEBUG_PHASES.has(phase)) { _seekDebugAppend(phase, data); return; }
+
+  if (phase.startsWith('torrent.piece_gate.')) { updatePieceGatePanel(data); return; }
+  if (phase === 'torrent.download_rate')        { updateDownloadRatePanel(data); return; }
+  if (phase === 'torrent.prioritize')           { appendPriority(data); return; }
+  if (phase.startsWith('torrent.seek_byte.') || phase === 'route.seek.estimated_byte' || phase === 'seek.worker.seek_byte_refined') {
+    appendByteEstimate(phase, data); return;
+  }
+  if (phase.startsWith('torrent.cluster.'))     { appendCluster(phase, data); return; }
+  if (phase.startsWith('main.ffmpeg.') || phase.startsWith('seek.ffmpeg.')) {
+    if (!phase.endsWith('.progress')) appendFfmpeg(phase, data); return;
+  }
+  if (phase.startsWith('pipeline.') || phase.startsWith('main.segment.')) {
+    appendFfmpeg(phase, data); return;
+  }
+  if (phase.startsWith('seek.segment.'))        { appendSegmentGen(phase, data); return; }
+  if (phase.startsWith('route.seek.') || phase.startsWith('seek.worker.')) {
+    appendSeekLifecycle(phase, data); return;
+  }
+}
+
 function log(msg, cls) {
-  const line = document.createElement('div');
-  line.className = 'log-line' + (cls ? ' ' + cls : '');
-  const ts = new Date().toTimeString().slice(0, 8);
-  line.textContent = '[' + ts + '] ' + msg;
-  logBox.appendChild(line);
-  logBox.scrollTop = logBox.scrollHeight;
+  const level = cls === 'err' ? DebugLevel.OFF : DebugLevel.NORMAL;
+  diagnostics.enqueue(() => {
+    const line = document.createElement('div');
+    line.className = 'log-line' + (cls ? ' ' + cls : '');
+    const ts = new Date().toTimeString().slice(0, 8);
+    line.textContent = '[' + ts + '] ' + msg;
+    logBox.appendChild(line);
+    while (logBox.childElementCount > MAX_VISIBLE_LOGS) logBox.removeChild(logBox.firstChild);
+    logBox.scrollTop = logBox.scrollHeight;
+  }, level);
 }
 
 /** Mirror MSE debug line to the Log card (console.log separately with exact format) */
 function msePageLog() {
+  if (diagnostics.effectiveLevel() < DebugLevel.VERBOSE) return;
   const parts = [];
   for (let i = 0; i < arguments.length; i++) {
     const a = arguments[i];
     parts.push(a != null && typeof a === 'object' ? JSON.stringify(a) : String(a));
   }
   log(parts.join(' '));
+}
+
+function diagnosticsQuery() {
+  return 'debugLevel=' + encodeURIComponent(String(diagnostics.level));
+}
+
+function handleEventBatch(e, feed = 'feed') {
+  let payload;
+  try { payload = JSON.parse(e.data); } catch { return; }
+  const events = Array.isArray(payload.events) ? payload.events : [];
+  diagnostics.recordSse(events.length);
+  for (const item of events) {
+    if (!item || !item.event) continue;
+    if (item.event === 'server:trace') {
+      logServerTrace(item.data, { feed });
+    } else if (item.event === 'progress') {
+      handleStartupProgress(item.data);
+    }
+  }
+}
+
+function handleStartupProgress(p) {
+  if (!p) return;
+  statusEl.textContent =
+    'Downloading metadata / pieces...\n' +
+    _fmtB(p.downloaded) + ' / ' + _fmtB(p.total) + '\n' +
+    _fmtB(p.speed) + '/s · peers ' + p.numPeers;
+  progressEl.value = p.total ? p.downloaded / p.total : 0;
 }
 
 function dumpBuffered(video) {
@@ -723,26 +2548,55 @@ function logVideoState(context) {
     'buffered=', fmtBufferedRanges(v),
     'seeking=', v.seeking
   );
-  console.log('[VIDEO STATE]', context, {
-    currentTime: v.currentTime,
-    readyState:  v.readyState,
-    buffered:    dumpBuffered(v),
-    seeking:     v.seeking,
-  });
+  if (diagnostics.effectiveLevel() >= DebugLevel.VERBOSE) {
+    console.log('[VIDEO STATE]', context, {
+      currentTime: v.currentTime,
+      readyState:  v.readyState,
+      buffered:    dumpBuffered(v),
+      seeking:     v.seeking,
+    });
+  }
 }
 
 function wireVideoEventLogs(video) {
   const events = [
     'seeking', 'seeked', 'waiting', 'canplay', 'canplaythrough', 'playing', 'stalled', 'error',
+    'loadeddata', 'progress', 'ratechange', 'pause', 'ended',
   ];
   for (const name of events) {
     video.addEventListener(name, () => {
       if (name === 'error') {
         console.log('[VIDEO EVENT] error', video.error);
         msePageLog('[VIDEO EVENT] error', video.error?.code ?? '', video.error?.message ?? '');
+        if (seekLatency.isActive()) {
+          seekLatency.phase('video_error', {
+            code: video.error?.code,
+            message: video.error?.message,
+          });
+        }
       } else {
-        console.log('[VIDEO EVENT]', name, video.currentTime);
-        msePageLog('[VIDEO EVENT]', name, video.currentTime.toFixed(3));
+        const ct = video.currentTime;
+        if (diagnostics.effectiveLevel() >= DebugLevel.VERBOSE) console.log('[VIDEO EVENT]', name, ct);
+        msePageLog('[VIDEO EVENT]', name, ct.toFixed(3));
+        appendVideoEvent(name, { currentTime: ct, readyState: video.readyState });
+        if (seekLatency.isActive()) {
+          seekLatency.phase('video_' + name, {
+            currentTime: +ct.toFixed(3),
+            readyState: video.readyState,
+            paused: video.paused,
+            buffered: fmtBufferedRanges(video),
+          });
+          if (name === 'playing') {
+            const target = seekLatency.target();
+            if (target != null && isTimeBuffered(video, target)
+                && Math.abs(ct - target) < 1.5) {
+              seekLatency.complete('video_playing', {
+                currentTime: ct,
+                segmentId: segPlayer?.pendingSeekSeg ?? segPlayer?._lastAppendedSeg?.segmentId,
+              });
+            }
+          }
+        }
       }
     });
   }
@@ -790,7 +2644,7 @@ class TimelineQueue {
     this.segments.splice(i, 0, seg);
     if (!quiet) {
       const payload = { segmentId: seg.segmentId, startTime: seg.startTime, endTime: seg.endTime };
-      console.log('[QUEUE INSERT]', payload);
+      if (diagnostics.effectiveLevel() >= DebugLevel.VERBOSE) console.log('[QUEUE INSERT]', payload);
       msePageLog('[QUEUE INSERT]', JSON.stringify(payload));
     }
     return true;
@@ -911,7 +2765,12 @@ class SegmentPlayer {
     this._gapPollBusy      = false;
     this._fetchSlots       = 0;
     this._timelineRetry    = null;
-    this._postSeekUntil    = 0;
+    this._postSeekUntil        = 0;
+    this._seekSegmentsAppended = 0;
+    this._currentInitType      = 'main'; // 'main' | 'seek' — tracks which init segment is active
+    this._seekBootstrap        = null;   // first segment that overlaps the active seek target
+    this._seekAv               = null;   // seek A/V telemetry accumulator
+    this._mediaStateTimer      = null;
   }
 
   _playheadTime() {
@@ -934,11 +2793,15 @@ class SegmentPlayer {
   }
 
   _seekStillPending(bufEnd) {
+    const seekTime = this.pendingSeekTime ?? 0;
     const hasSeek = id => this._isSeekArtifact(id);
     if ([...this.fetching].some(hasSeek)) return true;
     if ([...this.buffers.keys()].some(hasSeek)) return true;
+    // Only count queue entries within 30s of the current seek target.
+    // Artifacts from a previous seek (e.g. segments at 440s when seeking to 204s)
+    // would otherwise keep seekPending=true indefinitely.
     return this.queue.unappended(this.appendedIds).some(s =>
-      hasSeek(s.segmentId) && s.endTime > bufEnd - 0.5
+      hasSeek(s.segmentId) && s.endTime > bufEnd - 0.5 && s.startTime < seekTime + 30
     );
   }
 
@@ -981,7 +2844,8 @@ class SegmentPlayer {
     this.timelineEl.addEventListener('change', () => {
       const t = parseFloat(this.timelineEl.value);
       if (!isFinite(t)) return;
-      this.seek(t);
+      seekSegmentLog.seek('scrubber → ' + t.toFixed(2) + 's');
+      this.seek(t, 'scrubber');
     });
   }
 
@@ -1028,6 +2892,391 @@ class SegmentPlayer {
 
   _segmentUrl(segmentId) {
     return `/stream/${this.sessionId}/by-id/${encodeURIComponent(segmentId)}`;
+  }
+
+  _mseTrace(name, payload = {}) {
+    if (!diagnostics.shouldLog(name)) return;
+    const data = {
+      ...payload,
+      generation: payload.generation ?? this._generation,
+      pendingSeekTime: this.pendingSeekTime,
+    };
+    if (diagnostics.effectiveLevel() >= DebugLevel.VERBOSE) console.log('[' + name + ']', data);
+    msePageLog('[' + name + ']', JSON.stringify(data));
+    seekSegmentLog.trace(name, data, null);
+    appendSeekAvAnalysisEvent(name, data);
+    appendSeekRootCauseEvent(name, data);
+    appendSeekWorkerSpawnEvent(name, data);
+  }
+
+  _bufferedSnapshot() {
+    return dumpBuffered(this.video).map(r => ({
+      start: +r.start.toFixed(3),
+      end:   +r.end.toFixed(3),
+    }));
+  }
+
+  _sourceBufferStatePayload(extra = {}) {
+    return {
+      updating: this.sb?.updating ?? null,
+      buffered: this._bufferedSnapshot(),
+      readyState: this.ms?.readyState ?? null,
+      videoReadyState: this.video.readyState,
+      currentTime: +this.video.currentTime.toFixed(3),
+      paused: this.video.paused,
+      queueLength: this.queue.segments.length,
+      bufferCacheSize: this.buffers.size,
+      fetchingCount: this.fetching.size,
+      ...extra,
+    };
+  }
+
+  _videoStatePayload(extra = {}) {
+    return {
+      currentTime: +this.video.currentTime.toFixed(3),
+      readyState: this.video.readyState,
+      paused: this.video.paused,
+      seeking: this.video.seeking,
+      buffered: this._bufferedSnapshot(),
+      ...extra,
+    };
+  }
+
+  _cacheKeys() {
+    return [...this.buffers.keys()];
+  }
+
+  _cacheInsert(key, buf, seg, gen = this._generation, source = 'unknown') {
+    const segmentId = typeof seg === 'string' ? seg : (seg?.segmentId ?? key);
+    this.buffers.set(key, buf);
+    this._mseTrace('CACHE_INSERT', {
+      key,
+      segmentId,
+      bytes: buf?.byteLength ?? null,
+      cacheKeys: this._cacheKeys(),
+      generation: gen,
+      source,
+      seekSegment: this._isSeekArtifact(segmentId),
+      seekBootstrap: this._isSeekBootstrapSegment(segmentId),
+    });
+    this._mseTrace('GENERATION_CHECK', {
+      segmentId,
+      segmentGeneration: gen,
+      currentGeneration: this._generation,
+      accepted: gen === this._generation,
+      stage: 'cache_insert',
+      source,
+      seekBootstrap: this._isSeekBootstrapSegment(segmentId),
+    });
+    if (this._isSeekBootstrapSegment(segmentId)) {
+      this._mseTrace('SEEK_COVERING_CACHE_INSERT', {
+        segmentId,
+        bytes: buf?.byteLength ?? null,
+        cacheKeys: this._cacheKeys(),
+        generation: gen,
+        source,
+      });
+    }
+  }
+
+  _isSeekBootstrapSegment(segmentId) {
+    return !!this._seekBootstrap?.segmentId && this._seekBootstrap.segmentId === segmentId;
+  }
+
+  _selectSeekBootstrap(seg, source = 'unknown', gen = this._generation) {
+    if (!seg || this.pendingSeekTime == null) return false;
+    if (!this._coversTime(seg, this.pendingSeekTime)) return false;
+    if (this._seekBootstrap?.segmentId) return this._seekBootstrap.segmentId === seg.segmentId;
+
+    this._seekBootstrap = {
+      segmentId: seg.segmentId,
+      startTime: seg.startTime,
+      endTime: seg.endTime,
+      generation: gen,
+      fetchStarted: false,
+      fetchDone: false,
+      appended: false,
+      playable: false,
+    };
+    this.pendingSeekSeg = seg.segmentId;
+    this.seekAnchor = seg;
+    this._mseTrace('SEEK_COVERING_SELECTED', {
+      segmentId: seg.segmentId,
+      startTime: +seg.startTime.toFixed(3),
+      endTime: +seg.endTime.toFixed(3),
+      targetTime: +this.pendingSeekTime.toFixed(3),
+      source,
+      generation: gen,
+    });
+    return true;
+  }
+
+  _seekBootstrapPlayable() {
+    return !!this._seekBootstrap?.playable;
+  }
+
+  _rangeFromTrack(track, fallbackStart = null, fallbackEnd = null) {
+    if (!track) return null;
+    const start = track.startSec ?? track.tfdt ?? fallbackStart;
+    const end = track.endSec ?? (track.durSec != null && start != null ? start + track.durSec : fallbackEnd);
+    if (start == null || end == null || !isFinite(start) || !isFinite(end)) return null;
+    return {
+      start: +start.toFixed(3),
+      end: +end.toFixed(3),
+    };
+  }
+
+  _trackRangesFromSegment(seg, tracks = null) {
+    const video = this._rangeFromTrack(tracks?.video, seg?.startTime, seg?.endTime);
+    const audio = this._rangeFromTrack(tracks?.audio, seg?.startTime, seg?.endTime);
+    return { video, audio };
+  }
+
+  _avDriftMs(tracks) {
+    if (!tracks?.video || !tracks?.audio) return null;
+    return Math.round((tracks.audio.startSec - tracks.video.startSec) * 1000);
+  }
+
+  _seekAvSource(source, fallback = 'other') {
+    const allowed = new Set([
+      'parsed_fragment',
+      'append_history',
+      'timeline',
+      'media_buffered',
+      'cached_segment',
+      'segment_metadata',
+      'other',
+    ]);
+    if (allowed.has(source)) return source;
+    if (['fetch_done', 'ffmpeg_fragment', 'mp4_timeline'].includes(source)) return 'parsed_fragment';
+    if (['append_before_buffer', 'append_updateend'].includes(source)) return 'append_history';
+    if (['timeline_ready', 'timeline'].includes(source)) return 'timeline';
+    if (['cache_insert', 'cache_lookup'].includes(source)) return 'cached_segment';
+    if (allowed.has(fallback)) return fallback;
+    return 'other';
+  }
+
+  _logAvDrift(segmentId, tracks, source = 'unknown') {
+    const driftMs = this._avDriftMs(tracks);
+    if (driftMs == null) return null;
+    this._mseTrace('AV_DRIFT', {
+      segmentId,
+      driftMs,
+      source,
+      warn: Math.abs(driftMs) > SEEK_AV_WARN_MS,
+    });
+    if (Math.abs(driftMs) > SEEK_AV_WARN_MS) {
+      seekSegmentLog.warn('AV_DRIFT ' + segmentId + ' drift=' + driftMs + 'ms source=' + source);
+    }
+    return driftMs;
+  }
+
+  _recordSeekAvSegment(seg, tracks, source = 'unknown') {
+    if (!seg?.segmentId || !this._seekAv) return;
+    const ranges = this._trackRangesFromSegment(seg, tracks);
+    const driftMs = this._avDriftMs(tracks);
+    const sourceLabel = this._seekAvSource(source, 'parsed_fragment');
+    const entry = {
+      segmentId: seg.segmentId,
+      startTime: seg.startTime,
+      endTime: seg.endTime,
+      video: ranges.video,
+      audio: ranges.audio,
+      videoTfdt: tracks?.video?.tfdt ?? null,
+      audioTfdt: tracks?.audio?.tfdt ?? null,
+      videoDuration: tracks?.video?.durSec ?? null,
+      audioDuration: tracks?.audio?.durSec ?? null,
+      driftMs,
+      source: sourceLabel,
+    };
+    this._seekAv.segments.set(seg.segmentId, entry);
+    if (!this._seekAv.firstVideo && ranges.video && ranges.video.end > this._seekAv.targetTime) {
+      this._seekAv.firstVideo = { ...ranges.video, segmentId: seg.segmentId, source: sourceLabel };
+      this._mseTrace('FIRST_VIDEO_SEGMENT', {
+        segmentId: seg.segmentId,
+        start: ranges.video.start,
+        end: ranges.video.end,
+        source: sourceLabel,
+      });
+    }
+    if (!this._seekAv.firstAudio && ranges.audio && ranges.audio.end > this._seekAv.targetTime) {
+      this._seekAv.firstAudio = { ...ranges.audio, segmentId: seg.segmentId, source: sourceLabel };
+      this._mseTrace('FIRST_AUDIO_SEGMENT', {
+        segmentId: seg.segmentId,
+        start: ranges.audio.start,
+        end: ranges.audio.end,
+        source: sourceLabel,
+      });
+    }
+  }
+
+  _logSeekAppendFragment(seg, tracks, gen) {
+    if (!seg?.segmentId || !this._isSeekArtifact(seg.segmentId)) return null;
+    const timestampOffset = this.sb?.timestampOffset ?? 0;
+    const videoTfdt = tracks?.video?.tfdt ?? null;
+    const audioTfdt = tracks?.audio?.tfdt ?? null;
+    const avDeltaMs = videoTfdt != null && audioTfdt != null
+      ? Math.round((audioTfdt - videoTfdt) * 1000)
+      : null;
+    const rebasedVideoStart = videoTfdt != null ? videoTfdt + timestampOffset : null;
+    const rebasedAudioStart = audioTfdt != null ? audioTfdt + timestampOffset : null;
+    const payload = {
+      segmentId: seg.segmentId,
+      videoTfdt: videoTfdt != null ? +videoTfdt.toFixed(3) : null,
+      audioTfdt: audioTfdt != null ? +audioTfdt.toFixed(3) : null,
+      avDeltaMs,
+      timestampOffset: +timestampOffset.toFixed(3),
+      rebasedVideoStart: rebasedVideoStart != null ? +rebasedVideoStart.toFixed(3) : null,
+      rebasedAudioStart: rebasedAudioStart != null ? +rebasedAudioStart.toFixed(3) : null,
+      generation: gen,
+      pendingSeekTime: this.pendingSeekTime,
+    };
+    if (this._seekAv) {
+      this._seekAv.appendHistory.set(seg.segmentId, {
+        ...payload,
+        source: 'append_history',
+      });
+    }
+    this._mseTrace('SEEK_APPEND_FRAGMENT', payload);
+    return payload;
+  }
+
+  _logSegmentAvTelemetry(seg, buf, tracks, source = 'fetch_done') {
+    if (!seg?.segmentId) return;
+    const duration = seg.endTime != null && seg.startTime != null ? seg.endTime - seg.startTime : null;
+    const driftMs = this._logAvDrift(seg.segmentId, tracks, source);
+    this._mseTrace('SEGMENT_METADATA', {
+      segmentId: seg.segmentId,
+      startTime: seg.startTime != null ? +seg.startTime.toFixed(3) : null,
+      endTime: seg.endTime != null ? +seg.endTime.toFixed(3) : null,
+      videoTfdt: tracks?.video?.tfdt != null ? +tracks.video.tfdt.toFixed(3) : null,
+      audioTfdt: tracks?.audio?.tfdt != null ? +tracks.audio.tfdt.toFixed(3) : null,
+      duration: duration != null ? +duration.toFixed(3) : null,
+      driftMs,
+      source,
+    });
+    this._mseTrace('MP4_TIMELINE', {
+      segmentId: seg.segmentId,
+      videoBaseDecodeTime: tracks?.video?.tfdt != null ? +tracks.video.tfdt.toFixed(3) : null,
+      audioBaseDecodeTime: tracks?.audio?.tfdt != null ? +tracks.audio.tfdt.toFixed(3) : null,
+      videoDuration: tracks?.video?.durSec != null ? +tracks.video.durSec.toFixed(3) : null,
+      audioDuration: tracks?.audio?.durSec != null ? +tracks.audio.durSec.toFixed(3) : null,
+    });
+    if (this._isSeekArtifact(seg.segmentId)) {
+      this._mseTrace('FFMPEG_FRAGMENT', {
+        segmentId: seg.segmentId,
+        videoStartPTS: tracks?.video?.startSec != null ? +tracks.video.startSec.toFixed(3) : null,
+        videoEndPTS: tracks?.video?.endSec != null ? +tracks.video.endSec.toFixed(3) : null,
+        audioStartPTS: tracks?.audio?.startSec != null ? +tracks.audio.startSec.toFixed(3) : null,
+        audioEndPTS: tracks?.audio?.endSec != null ? +tracks.audio.endSec.toFixed(3) : null,
+      });
+    }
+    this._recordSeekAvSegment(seg, tracks, source);
+  }
+
+  _logBufferedRanges(segmentId, tracks = null, source = 'updateend') {
+    const parsed = this._trackRangesFromSegment(
+      typeof segmentId === 'object' ? segmentId : null,
+      tracks
+    );
+    this._mseTrace('BUFFERED_RANGES', {
+      segmentId: typeof segmentId === 'string' ? segmentId : segmentId?.segmentId,
+      source,
+      video: parsed.video,
+      audio: parsed.audio,
+      mediaElementBuffered: this._bufferedSnapshot(),
+      note: 'single muxed SourceBuffer; browser exposes mediaElement.buffered only',
+    });
+  }
+
+  _startSeekMediaDiagnostics(targetTime, gen) {
+    clearInterval(this._mediaStateTimer);
+    let ticks = 0;
+    this._mediaStateTimer = setInterval(() => {
+      if (this._destroyed || this._generation !== gen || ticks >= 15) {
+        clearInterval(this._mediaStateTimer);
+        this._mediaStateTimer = null;
+        return;
+      }
+      ticks++;
+      this._mseTrace('MEDIA_STATE', {
+        targetTime: +targetTime.toFixed(3),
+        currentTime: +this.video.currentTime.toFixed(3),
+        readyState: this.video.readyState,
+        videoBuffered: this._bufferedSnapshot(),
+        audioBuffered: this._bufferedSnapshot(),
+        note: 'audio/video share one muxed SourceBuffer in this player',
+      });
+    }, 1000);
+  }
+
+  _renderSeekAvReport(result = 'UNKNOWN') {
+    if (!this._seekAv) return;
+    const firstVideo = this._seekAv.firstVideo;
+    const firstAudio = this._seekAv.firstAudio;
+    const driftMs = firstVideo && firstAudio ? Math.round((firstAudio.start - firstVideo.start) * 1000) : null;
+    const firstVideoSource = firstVideo?.source ?? 'other';
+    const firstAudioSource = firstAudio?.source ?? 'other';
+    const videoBuffered = this._bufferedSnapshot();
+    const audioBuffered = this._bufferedSnapshot();
+    const finalResult = result !== 'UNKNOWN'
+      ? result
+      : driftMs != null && Math.abs(driftMs) <= SEEK_AV_WARN_MS ? 'SYNCED' : 'DESYNCED';
+    const report = {
+      target: +this._seekAv.targetTime.toFixed(3),
+      firstVideo,
+      firstAudio,
+      firstVideoSource,
+      firstAudioSource,
+      driftMs,
+      videoBuffered,
+      audioBuffered,
+      result: finalResult,
+    };
+    this._seekAv.report = report;
+    this._mseTrace('SEEK_AV_REPORT_INPUTS', {
+      firstVideo: firstVideo?.start ?? null,
+      firstAudio: firstAudio?.start ?? null,
+      firstVideoSource,
+      firstAudioSource,
+      generation: this._seekAv.generation,
+      pendingSeekTime: this.pendingSeekTime,
+    });
+    this._mseTrace('SEEK_AV_REPORT', report);
+    _setSeekAvStatus({
+      driftMs,
+      firstVideoSource,
+      firstAudioSource,
+      result: finalResult,
+    });
+    const videoAppend = firstVideo?.segmentId ? this._seekAv.appendHistory.get(firstVideo.segmentId) : null;
+    const audioAppend = firstAudio?.segmentId ? this._seekAv.appendHistory.get(firstAudio.segmentId) : null;
+    const rebasedVideoStart = videoAppend?.rebasedVideoStart ?? firstVideo?.start ?? null;
+    const rebasedAudioStart = audioAppend?.rebasedAudioStart ?? firstAudio?.start ?? null;
+    const computedDriftMs = rebasedVideoStart != null && rebasedAudioStart != null
+      ? Math.round((rebasedAudioStart - rebasedVideoStart) * 1000)
+      : null;
+    const validationResult = computedDriftMs != null && Math.abs(computedDriftMs) < SEEK_AV_WARN_MS
+      ? 'SYNCED'
+      : 'DESYNCED';
+    this._mseTrace('SEEK_AV_VALIDATION', {
+      targetTime: +this._seekAv.targetTime.toFixed(3),
+      rebasedVideoStart: rebasedVideoStart != null ? +rebasedVideoStart.toFixed(3) : null,
+      rebasedAudioStart: rebasedAudioStart != null ? +rebasedAudioStart.toFixed(3) : null,
+      computedDriftMs,
+      result: validationResult,
+      firstVideoSource: videoAppend ? 'append_history' : firstVideoSource,
+      firstAudioSource: audioAppend ? 'append_history' : firstAudioSource,
+      generation: this._seekAv.generation,
+      pendingSeekTime: this.pendingSeekTime,
+    });
+    seekSegmentLog.timer(
+      'SEEK AV REPORT target=' + report.target +
+      ' firstVideo=' + (firstVideo ? firstVideo.start + '->' + firstVideo.end : '?') +
+      ' firstAudio=' + (firstAudio ? firstAudio.start + '->' + firstAudio.end : '?') +
+      ' drift=' + (driftMs != null ? driftMs + 'ms' : '?') +
+      ' result=' + finalResult
+    );
   }
 
   _trackSeg(seg, stage, extra = {}) {
@@ -1086,22 +3335,51 @@ class SegmentPlayer {
       const postSeek   = Date.now() < this._postSeekUntil;
       const nearCt     = this._segmentNearSeek(seg, ct);
       const extendsBuf = seg.startTime <= bufEnd + 1.0 && seg.endTime > bufEnd - 0.1;
-      if (!activeSeek && !postSeek && !nearCt && !extendsBuf) return;
-      if (!activeSeek && seg.endTime < ct - EVICT_BEHIND) return;
+      if (!activeSeek && !postSeek && !nearCt && !extendsBuf) {
+        seekSegmentLog.muted('  → drop (seek artifact: stale)');
+        return;
+      }
+      if (!activeSeek && seg.endTime < ct - EVICT_BEHIND) {
+        seekSegmentLog.muted('  → drop (seek artifact: behind playhead)');
+        return;
+      }
       if (activeSeek) {
-        this.pendingSeekSeg = seg.segmentId;
+        this._selectSeekBootstrap(seg, 'enqueue', this._generation);
         for (const id of [...this._abortControllers.keys()]) {
-          if (this._isSeekArtifact(id) && id !== seg.segmentId) {
+          if (this._isSeekArtifact(id) && id !== this._seekBootstrap?.segmentId) {
             this._abortControllers.get(id)?.abort();
           }
         }
       }
     } else if (this.pendingSeekTime != null) {
-      if (!this._segmentNearSeek(seg, this.pendingSeekTime)) return;
+      if (!this._segmentNearSeek(seg, this.pendingSeekTime)) {
+        seekSegmentLog.muted('  → drop (seeking: not near ' + this.pendingSeekTime.toFixed(1) + 's)');
+        return;
+      }
     } else if (seg.startTime > ct + PREFETCH_SEC + 30 || seg.endTime < ct - EVICT_BEHIND - 5) {
+      seekSegmentLog.muted('  → drop (out of window)');
       return;
     }
-    this.queue.insert(seg);
+    seekSegmentLog.muted('  → queued');
+    if (this.pendingSeekTime != null && seekLatency.isActive()) {
+      seekLatency.phase('segment_queued', {
+        segmentId: seg.segmentId,
+        startTime: seg.startTime,
+        endTime: seg.endTime,
+        seekArtifact: this._isSeekArtifact(seg.segmentId),
+      });
+    }
+    const inserted = this.queue.insert(seg);
+    this._mseTrace('QUEUE_PUSH', {
+      segmentId: seg.segmentId,
+      startTime: +seg.startTime.toFixed(3),
+      endTime: +seg.endTime.toFixed(3),
+      queueLength: this.queue.segments.length,
+      generation: this._generation,
+      inserted,
+      seekSegment: this._isSeekArtifact(seg.segmentId),
+      seekBootstrap: this._isSeekBootstrapSegment(seg.segmentId),
+    });
     this._trackSeg(seg, 'queued');
     this._pump();
   }
@@ -1213,6 +3491,80 @@ class SegmentPlayer {
     }
   }
 
+  /**
+   * Before appending a segment, ensure the SourceBuffer's active init segment
+   * matches the segment type. Seek worker segments are encoded by a separate
+   * FFmpeg process (seek_init.mp4); main segments use init.mp4. Appending the
+   * wrong init causes silent data rejection with buffered.length staying 0.
+   */
+  async _ensureInitForSegment(isSeekSeg) {
+    if (isSeekSeg && this._currentInitType !== 'seek') {
+      try {
+        this._mseTrace('INIT_FETCH_START', {
+          initType: 'seek',
+          url: `/stream/${this.sessionId}/seek_init.mp4`,
+          currentInitType: this._currentInitType,
+        });
+        const buf = await fetch(`/stream/${this.sessionId}/seek_init.mp4`)
+          .then(r => { if (!r.ok) throw new Error('seek_init HTTP ' + r.status); return r.arrayBuffer(); });
+        this._mseTrace('INIT_FETCH_DONE', {
+          initType: 'seek',
+          bytes: buf.byteLength,
+          currentInitType: this._currentInitType,
+        });
+        this._mseTrace('INIT_APPEND_START', this._sourceBufferStatePayload({
+          initType: 'seek',
+        }));
+        await this._append(buf, 0, 'init');
+        this._mseTrace('INIT_APPEND_DONE', this._sourceBufferStatePayload({
+          initType: 'seek',
+        }));
+        this._currentInitType = 'seek';
+        msePageLog('[SEEK INIT]', 'seek_init.mp4 appended — decoder re-initialized for seek segments');
+      } catch (e) {
+        this._mseTrace('INIT_APPEND_ERROR', {
+          initType: 'seek',
+          error: e.message || String(e),
+          currentInitType: this._currentInitType,
+        });
+        log('seek_init.mp4 fetch/append failed: ' + e.message, 'warn');
+        return false;
+      }
+    } else if (!isSeekSeg && this._currentInitType === 'seek') {
+      try {
+        this._mseTrace('INIT_FETCH_START', {
+          initType: 'main',
+          url: this.initUrl,
+          currentInitType: this._currentInitType,
+        });
+        const buf = await fetch(this.initUrl).then(r => r.arrayBuffer());
+        this._mseTrace('INIT_FETCH_DONE', {
+          initType: 'main',
+          bytes: buf.byteLength,
+          currentInitType: this._currentInitType,
+        });
+        this._mseTrace('INIT_APPEND_START', this._sourceBufferStatePayload({
+          initType: 'main',
+        }));
+        await this._append(buf, 0, 'init');
+        this._mseTrace('INIT_APPEND_DONE', this._sourceBufferStatePayload({
+          initType: 'main',
+        }));
+        this._currentInitType = 'main';
+        msePageLog('[SEEK INIT]', 'init.mp4 re-appended — decoder restored for main segments');
+      } catch (e) {
+        this._mseTrace('INIT_APPEND_ERROR', {
+          initType: 'main',
+          error: e.message || String(e),
+          currentInitType: this._currentInitType,
+        });
+        log('init.mp4 re-fetch/append failed: ' + e.message, 'warn');
+        return false;
+      }
+    }
+    return true;
+  }
+
   _logContinuityCheck(seg, bufferedEnd) {
     const gap = seg.startTime - bufferedEnd;
     const payload = {
@@ -1222,7 +3574,7 @@ class SegmentPlayer {
       bufferedEnd,
       gap,
     };
-    console.log('[CONTINUITY CHECK]', payload);
+    if (diagnostics.effectiveLevel() >= DebugLevel.VERBOSE) console.log('[CONTINUITY CHECK]', payload);
     msePageLog('[CONTINUITY CHECK]', JSON.stringify({
       bufferedEnd,
       segmentStart: seg.startTime,
@@ -1235,7 +3587,7 @@ class SegmentPlayer {
 
   _logAppendDecision(segmentId, action, reason) {
     const payload = { segmentId, action, reason };
-    console.log('[APPEND DECISION]', payload);
+    if (diagnostics.effectiveLevel() >= DebugLevel.VERBOSE) console.log('[APPEND DECISION]', payload);
     msePageLog('[APPEND DECISION]', JSON.stringify(payload));
   }
 
@@ -1249,9 +3601,18 @@ class SegmentPlayer {
 
     if (this.pendingSeekTime != null) {
       const seekTime = this.pendingSeekTime;
-      const covering = this._seekCoveringSegments(seekTime);
+      if (this._seekBootstrap?.segmentId && !this._seekBootstrapPlayable()) {
+        const bootstrap = this.queue.segments.find(s => s.segmentId === this._seekBootstrap.segmentId);
+        if (!bootstrap || this.appendedIds.has(bootstrap.segmentId)) return null;
+        this._logContinuityCheck(bootstrap, bufferedEnd);
+        this._logAppendDecision(bootstrap.segmentId, 'append', 'seek target coverage bootstrap');
+        return bootstrap;
+      }
+      const covering = this._seekCoveringSegments(seekTime)
+        .filter(s => !this.appendedIds.has(s.segmentId));
       if (covering.length) {
         const seg = covering[0];
+        this._selectSeekBootstrap(seg, 'next_to_append', gen);
         this._logContinuityCheck(seg, bufferedEnd);
         this._logAppendDecision(seg.segmentId, 'append', 'seek target coverage');
         return seg;
@@ -1322,6 +3683,10 @@ class SegmentPlayer {
   /** Poll server for the segment covering bufferedEnd when the queue has a timeline hole. */
   _ensureGapRecoveryPoll() {
     if (this._destroyed || this.pendingSeekTime != null) return;
+    if (diagnostics.effectiveLevel() < DebugLevel.VERBOSE && !this.video.paused && !this.video.seeking) {
+      const ahead = this._bufferedEndTime() - this.video.currentTime;
+      if (ahead > MIN_BUFFER_AHEAD / 2 && this.video.readyState >= 3) return;
+    }
     if (this._gapPollTimer) return;
     this._gapPollTimer = setInterval(() => this._pollGapFill(), 400);
     this._pollGapFill();
@@ -1332,6 +3697,11 @@ class SegmentPlayer {
     const bufferedEnd = this._bufferedEndTime();
     const ct          = this.video.currentTime;
     const ahead       = bufferedEnd - ct;
+
+    if (diagnostics.effectiveLevel() < DebugLevel.VERBOSE && !this.video.paused && !this.video.seeking && this.video.readyState >= 3 && ahead > MIN_BUFFER_AHEAD / 2) {
+      this._stopGapPoll();
+      return;
+    }
 
     if (this.duration && bufferedEnd >= this.duration - 0.5) {
       this._stopGapPoll();
@@ -1392,7 +3762,30 @@ class SegmentPlayer {
 
     if (this.pendingSeekTime != null) {
       const seekTime = this.pendingSeekTime;
+      if (this._seekBootstrap?.segmentId && !this._seekBootstrapPlayable()) {
+        const bootstrap = this.queue.segments.find(s => s.segmentId === this._seekBootstrap.segmentId)
+          ?? {
+            segmentId: this._seekBootstrap.segmentId,
+            file: this._seekBootstrap.segmentId,
+            startTime: this._seekBootstrap.startTime,
+            endTime: this._seekBootstrap.endTime,
+            duration: this._seekBootstrap.endTime - this._seekBootstrap.startTime,
+          };
+        return this.appendedIds.has(bootstrap.segmentId)
+          || this.buffers.has(bootstrap.segmentId)
+          || this.fetching.has(bootstrap.segmentId)
+          ? []
+          : [bootstrap];
+      }
       const candidates = [...this._seekCoveringSegments(seekTime)];
+      if (candidates[0]) this._selectSeekBootstrap(candidates[0], 'fetch_candidates', this._generation);
+      if (!this._seekBootstrap?.segmentId) return [];
+      if (this._seekBootstrap?.segmentId && !this._seekBootstrapPlayable()) {
+        const bootstrap = candidates.find(s => s.segmentId === this._seekBootstrap.segmentId);
+        return bootstrap && !this.buffers.has(bootstrap.segmentId) && !this.fetching.has(bootstrap.segmentId)
+          ? [bootstrap]
+          : [];
+      }
       for (const seg of this.queue.unappended(this.appendedIds)) {
         if (!this._isSeekArtifact(seg.segmentId)) continue;
         if (!this._segmentNearSeek(seg, seekTime)) continue;
@@ -1448,47 +3841,97 @@ class SegmentPlayer {
     );
 
     if (this.pendingSeekTime != null) {
+      this._seekSegmentsAppended = (this._seekSegmentsAppended ?? 0) + 1;
       const target = this.pendingSeekTime;
       const bufferedAtSeek = isTimeBuffered(video, target);
       const overlapsSeg = this._lastAppendedSeg
         && bufferedOverlapsRange(video, this._lastAppendedSeg.startTime, this._lastAppendedSeg.endTime);
       msePageLog('[SEEK CHECK]', JSON.stringify({
-        seekTime: target,
-        seekSeg:  this.pendingSeekSeg,
+        seekTime:         target,
+        seekSeg:          this.pendingSeekSeg,
         bufferedAtSeek,
         overlapsSeg,
-        lastSeg: this._lastAppendedSeg?.segmentId,
+        lastSeg:          this._lastAppendedSeg?.segmentId,
+        seekSegsAppended: this._seekSegmentsAppended,
       }));
-      if (bufferedAtSeek || overlapsSeg) {
-        const bufEnd = this._bufferedEndTime();
-        const ahead  = bufEnd - target;
-        const seekPending = this._seekStillPending(bufEnd);
-        if (ahead < MIN_BUFFER_AHEAD && seekPending) {
-          msePageLog('[SEEK PARTIAL]', JSON.stringify({
-            seekTime: target, ahead: +ahead.toFixed(2), seekPending: true,
-          }));
-          this._pump();
-          return;
+
+      // Start playback as soon as the target is covered — MSE/video.waiting
+      // handles rebuffering naturally if more data is needed.
+      if (bufferedAtSeek && this._seekSegmentsAppended >= 1) {
+        const ahead = this._bufferedEndTime() - target;
+        if (this._isSeekBootstrapSegment(seg.segmentId)) {
+          this._seekBootstrap.playable = true;
+          this._mseTrace('SEEK_COVERING_PLAYABLE', {
+            segmentId: seg.segmentId,
+            currentTime: +video.currentTime.toFixed(3),
+            targetTime: +target.toFixed(3),
+            buffered: this._bufferedSnapshot(),
+          });
         }
         msePageLog('[SEEK TARGET BUFFERED]', JSON.stringify({
-          seekTime: target,
-          currentTime: video.currentTime,
-          ahead: +ahead.toFixed(2),
+          seekTime:         target,
+          currentTime:      video.currentTime,
+          ahead:            +ahead.toFixed(2),
+          seekSegsAppended: this._seekSegmentsAppended,
         }));
-        if (bufferedAtSeek) {
-          const visibleId = this.pendingSeekSeg ?? seg.segmentId;
-          this._markDisplayedBoth(visibleId);
-          if (this._lastAppendedSeg?.segmentId
-              && this._lastAppendedSeg.segmentId !== visibleId) {
-            this._markDisplayedBoth(this._lastAppendedSeg.segmentId);
-          }
+        const visibleId = this.pendingSeekSeg ?? seg.segmentId;
+        this._markDisplayedBoth(visibleId);
+        if (this._lastAppendedSeg?.segmentId && this._lastAppendedSeg.segmentId !== visibleId) {
+          this._markDisplayedBoth(this._lastAppendedSeg.segmentId);
         }
+        if (seekLatency.isActive()) {
+          seekLatency.phase('buffer_ready', {
+            target,
+            segmentId: visibleId,
+            ahead: +ahead.toFixed(2),
+            seekSegsAppended: this._seekSegmentsAppended,
+          });
+        }
+        this._mseTrace('SEEK_ROOT_PLAYBACK_START', {
+          currentTime: +video.currentTime.toFixed(3),
+          videoFrameTime: +video.currentTime.toFixed(3),
+          audioClockTime: null,
+          deltaMs: null,
+          segmentId: visibleId,
+          note: 'audio clock is not exposed by HTMLMediaElement',
+        });
+        if (typeof video.requestVideoFrameCallback === 'function') {
+          video.requestVideoFrameCallback((_, metadata) => {
+            this._mseTrace('SEEK_ROOT_PLAYBACK_START', {
+              currentTime: +video.currentTime.toFixed(3),
+              videoFrameTime: metadata?.mediaTime != null ? +metadata.mediaTime.toFixed(3) : null,
+              audioClockTime: null,
+              deltaMs: null,
+              segmentId: visibleId,
+              note: 'first rendered video frame callback; audio clock unavailable',
+            });
+          });
+        }
+        this._renderSeekAvReport();
         this._clearSeekWait();
         if (video.seeking || Math.abs(video.currentTime - target) > 0.5) {
           video.currentTime = target;
         }
         if (video.paused) video.play().catch(() => {});
+        if (seekLatency.isActive()) {
+          seekLatency.complete('buffer_at_target', {
+            currentTime: video.currentTime,
+            segmentId: visibleId,
+          });
+        }
+        return;
       }
+
+      // Not ready yet — keep fetching toward the target.
+      if (bufferedAtSeek || overlapsSeg) {
+        msePageLog('[SEEK PARTIAL]', JSON.stringify({
+          seekTime:         target,
+          seekSegsAppended: this._seekSegmentsAppended,
+          bufferedAtSeek,
+          reason:           'waiting for 3 segments',
+        }));
+      }
+      this._pump();
     } else {
       this._maybeMarkDisplayed(seg);
       this._prefetchNextMainSegment();
@@ -1506,11 +3949,23 @@ class SegmentPlayer {
   }
 
   _clearSeekWait() {
+    diagnostics.endSeekBurst();
     clearInterval(this._seekPollTimer);
+    if (this.pendingSeekTime != null) {
+      seekSegmentLog.seek('complete @' + this.pendingSeekTime.toFixed(2) + 's seg=' + (this.pendingSeekSeg || '—'));
+      if (seekLatency.isActive()) {
+        seekLatency.phase('seek_wait_cleared', {
+          target: this.pendingSeekTime,
+          segmentId: this.pendingSeekSeg,
+        });
+      }
+    }
     this._seekPollTimer = null;
     this.pendingSeekTime = null;
     this.pendingSeekSeg  = null;
     this.seekAnchor      = null;
+    this._seekBootstrap  = null;
+    this._seekAv         = null;
     this._lastAppendedSeg = null;
     this._postSeekUntil   = Date.now() + 180_000;
     if (segmentTracker._userRequestKind === 'seek') {
@@ -1527,6 +3982,10 @@ class SegmentPlayer {
       await this._purgeOrphanRanges();
       this._ensurePostSeekContinuation();
     });
+    // Populate the queue around the new position via the windowed REST endpoint.
+    // Without this, cached content after a seek relies on the slow one-at-a-time
+    // gap-fill poll to discover segments near the seek target.
+    this.loadTimeline();
   }
 
   _startSeekCoveringPoll(gen, toTime) {
@@ -1545,6 +4004,22 @@ class SegmentPlayer {
         const seg = this._normalizeSegment(data.segment);
         if (!seg?.segmentId) return;
         if (!this._segmentNearSeek(seg, this.pendingSeekTime)) return;
+        if (seekLatency.isActive()) {
+          seekLatency.phase('covering_found', {
+            segmentId: seg.segmentId,
+            startTime: seg.startTime,
+            endTime: seg.endTime,
+          });
+        }
+        this._mseTrace('COVERING_FOUND', {
+          segmentId: seg.segmentId,
+          startTime: +seg.startTime.toFixed(3),
+          endTime: +seg.endTime.toFixed(3),
+          generation: gen,
+          currentGeneration: this._generation,
+          seekSegment: this._isSeekArtifact(seg.segmentId),
+        });
+        this._selectSeekBootstrap(seg, 'covering_poll', gen);
         this._enqueueSegment(seg);
         if (!this.buffers.has(seg.segmentId) && !this.fetching.has(seg.segmentId)) {
           this._fetchSegment(seg, gen);
@@ -1643,20 +4118,23 @@ class SegmentPlayer {
   /** Bootstrap from GET /torrent/timeline before SSE feed replay. */
   async loadTimeline() {
     try {
-      const r = await fetch('/torrent/timeline?sessionId=' + encodeURIComponent(this.sessionId));
+      const ct     = this.video.currentTime || 0;
+      const params = new URLSearchParams({
+        sessionId: this.sessionId,
+        after:     String(ct),
+        window:    String(BOOTSTRAP_SEC),
+      });
+      const r = await fetch('/torrent/timeline?' + params);
       if (!r.ok) {
         log('Timeline bootstrap failed: HTTP ' + r.status, 'warn');
         return;
       }
       const entries = await r.json();
       if (!Array.isArray(entries)) return;
-      const ct = this.video.currentTime || 0;
-      const windowEnd = ct + BOOTSTRAP_SEC;
       let inserted = 0;
       for (const e of entries) {
         const seg = this._normalizeSegment(e);
         if (!seg || this._isSeekArtifact(seg.segmentId)) continue;
-        if (seg.startTime > windowEnd) continue;
         if (this.queue.insert(seg, { quiet: true })) {
           inserted++;
           this._trackSeg(seg, 'bootstrap');
@@ -1679,8 +4157,27 @@ class SegmentPlayer {
   onSegmentReady(data) {
     const seg = this._normalizeSegment(data);
     if (!seg) return;
+    this._mseTrace('SEGMENT_METADATA', {
+      segmentId: seg.segmentId,
+      startTime: +seg.startTime.toFixed(3),
+      endTime: +seg.endTime.toFixed(3),
+      videoTfdt: null,
+      audioTfdt: null,
+      duration: +(seg.endTime - seg.startTime).toFixed(3),
+      source: 'segment_ready',
+      note: 'track TFDT populated after segment fetch',
+    });
     this._trackSeg(seg, 'sse');
+    if (this.pendingSeekTime != null && seekLatency.isActive()) {
+      seekLatency.phase('sse_segment_ready', {
+        segmentId: seg.segmentId,
+        startTime: seg.startTime,
+        endTime: seg.endTime,
+        source: data.source,
+      });
+    }
     this._enqueueSegment(seg);
+    seekSegmentLog.sse(seg.segmentId + ' ready t=' + seg.startTime.toFixed(2) + '–' + seg.endTime.toFixed(2) + 's');
   }
 
   /** True if segment is close enough to pending seek to fetch/append. */
@@ -1701,38 +4198,162 @@ class SegmentPlayer {
     const next = this._nextToAppend();
     if (!next) return;
 
-    if (this.ready && this.sb && !this.sb.updating && this.buffers.has(next.segmentId)) {
-      const buf = this.buffers.get(next.segmentId);
+    this._mseTrace('SOURCEBUFFER_STATE', this._sourceBufferStatePayload({
+      segmentId: next.segmentId,
+      generation: gen,
+      hasBuffer: this.buffers.has(next.segmentId),
+      appended: this.appendedIds.has(next.segmentId),
+      seekSegment: this._isSeekArtifact(next.segmentId),
+    }));
+    const cacheFound = this.buffers.has(next.segmentId);
+    this._mseTrace('CACHE_LOOKUP', {
+      key: next.segmentId,
+      segmentId: next.segmentId,
+      found: cacheFound,
+      cacheKeys: this._cacheKeys(),
+      generation: gen,
+      seekSegment: this._isSeekArtifact(next.segmentId),
+      seekBootstrap: this._isSeekBootstrapSegment(next.segmentId),
+    });
+    this._mseTrace('GENERATION_CHECK', {
+      segmentId: next.segmentId,
+      segmentGeneration: gen,
+      currentGeneration: this._generation,
+      accepted: gen === this._generation,
+      stage: 'cache_lookup',
+      seekBootstrap: this._isSeekBootstrapSegment(next.segmentId),
+    });
+    if (this._isSeekBootstrapSegment(next.segmentId)) {
+      this._mseTrace('SEEK_COVERING_CACHE_LOOKUP', {
+        segmentId: next.segmentId,
+        found: cacheFound,
+        cacheKeys: this._cacheKeys(),
+        generation: gen,
+      });
+    }
+
+    if (!this.ready || !this.sb || this.sb.updating || !cacheFound) {
+      this._mseTrace('APPEND_BLOCKED', {
+        segmentId: next.segmentId,
+        generation: gen,
+        ready: this.ready,
+        hasSourceBuffer: !!this.sb,
+        updating: this.sb?.updating ?? null,
+        hasBuffer: this.buffers.has(next.segmentId),
+        cacheKeys: this._cacheKeys(),
+        queueLength: this.queue.segments.length,
+        seekSegment: this._isSeekArtifact(next.segmentId),
+        seekBootstrap: this._isSeekBootstrapSegment(next.segmentId),
+      });
+    }
+
+    if (this.ready && this.sb && !this.sb.updating && cacheFound) {
+      const buf        = this.buffers.get(next.segmentId);
+      const isSeekSeg  = this._isSeekArtifact(next.segmentId);
+      const isBootstrap = this._isSeekBootstrapSegment(next.segmentId);
       this.buffers.delete(next.segmentId);
       this.appendedIds.add(next.segmentId);
+      this._mseTrace('QUEUE_POP', {
+        segmentId: next.segmentId,
+        queueLength: this.queue.segments.length,
+        generation: gen,
+        bytes: buf.byteLength,
+        seekSegment: isSeekSeg,
+        seekBootstrap: this._isSeekBootstrapSegment(next.segmentId),
+      });
 
       const wasSeekAnchor = this.seekAnchor && this.seekAnchor.segmentId === next.segmentId;
 
       this.sbQueue = this.sbQueue.then(async () => {
         if (this._needsMseCleanup()) await this._ensureMseCapacity();
+        const initOk = await this._ensureInitForSegment(isSeekSeg);
+        if (!initOk) {
+          // Init segment unavailable — roll back optimistic add so this segment
+          // is retried once seek_init.mp4 is ready.
+          this.appendedIds.delete(next.segmentId);
+          this._cacheInsert(next.segmentId, buf, next, gen, 'init_failed_rollback');
+          return;
+        }
+        const genAccepted = this._generation === gen;
+        this._mseTrace('GEN_CHECK', {
+          segmentId: next.segmentId,
+          segmentGeneration: gen,
+          currentGeneration: this._generation,
+          accepted: genAccepted,
+          stage: 'before_append',
+          seekSegment: isSeekSeg,
+        });
+        if (!genAccepted) return;
         let appended = false;
         try {
+          if (isBootstrap) {
+            this._mseTrace('SEEK_COVERING_APPEND_START', {
+              segmentId: next.segmentId,
+              generation: gen,
+            });
+          }
           await this._append(buf, gen, next);
           appended = true;
+          if (isBootstrap) {
+            this._mseTrace('SEEK_COVERING_APPEND_DONE', {
+              segmentId: next.segmentId,
+              generation: gen,
+            });
+          }
         } catch (e) {
+          this._mseTrace('APPEND_ERROR', {
+            segmentId: next.segmentId,
+            generation: gen,
+            error: e.message || String(e),
+            seekSegment: isSeekSeg,
+          });
           log('MSE append error: ' + (e.message ?? e), 'warn');
           this.appendedIds.delete(next.segmentId);
-          this.buffers.set(next.segmentId, buf);
+          this._cacheInsert(next.segmentId, buf, next, gen, 'append_failed_rollback');
           if (!this._isQuotaError(e)) return;
           await this._purgeOrphanRanges({ aggressive: true });
           await this._ensureMseCapacity({ aggressive: true });
           this.appendedIds.add(next.segmentId);
           try {
+            if (isBootstrap) {
+              this._mseTrace('SEEK_COVERING_APPEND_START', {
+                segmentId: next.segmentId,
+                generation: gen,
+                retry: true,
+              });
+            }
             await this._append(buf, gen, next);
             appended = true;
+            if (isBootstrap) {
+              this._mseTrace('SEEK_COVERING_APPEND_DONE', {
+                segmentId: next.segmentId,
+                generation: gen,
+                retry: true,
+              });
+            }
           } catch (e2) {
+            this._mseTrace('APPEND_ERROR', {
+              segmentId: next.segmentId,
+              generation: gen,
+              error: e2.message || String(e2),
+              retry: true,
+              seekSegment: isSeekSeg,
+            });
             log('MSE append retry failed: ' + (e2.message ?? e2), 'warn');
             this.appendedIds.delete(next.segmentId);
-            this.buffers.set(next.segmentId, buf);
+            this._cacheInsert(next.segmentId, buf, next, gen, 'append_retry_failed_rollback');
             return;
           }
         }
         if (appended) this._registerAppendedSeg(next);
+        this._mseTrace('GEN_CHECK', {
+          segmentId: next.segmentId,
+          segmentGeneration: gen,
+          currentGeneration: this._generation,
+          accepted: this._generation === gen,
+          stage: 'after_append',
+          seekSegment: isSeekSeg,
+        });
         if (this._generation !== gen) return;
         if (wasSeekAnchor) this.seekAnchor = null;
         this._lastAppendedSeg = next;
@@ -1747,20 +4368,90 @@ class SegmentPlayer {
   }
 
   _fetchSegment(seg, gen) {
-    if (this._fetchSlots >= MAX_FETCH_PARALLEL) return;
+    const accepted = gen === this._generation;
+    const isBootstrap = this._isSeekBootstrapSegment(seg.segmentId);
+    this._mseTrace('GEN_CHECK', {
+      segmentId: seg.segmentId,
+      segmentGeneration: gen,
+      currentGeneration: this._generation,
+      accepted,
+      stage: 'fetch_start',
+      seekSegment: this._isSeekArtifact(seg.segmentId),
+    });
+    this._mseTrace('GENERATION_CHECK', {
+      segmentId: seg.segmentId,
+      segmentGeneration: gen,
+      currentGeneration: this._generation,
+      accepted,
+      stage: 'fetch_start',
+      seekBootstrap: isBootstrap,
+    });
+    if (!accepted) return;
+    if (this._fetchSlots >= MAX_FETCH_PARALLEL && !isBootstrap) {
+      this._mseTrace('FETCH_BLOCKED', {
+        segmentId: seg.segmentId,
+        reason: 'max_parallel',
+        fetchSlots: this._fetchSlots,
+        generation: gen,
+        seekSegment: this._isSeekArtifact(seg.segmentId),
+      });
+      return;
+    }
     this._fetchSlots++;
     this.fetching.add(seg.segmentId);
     this._trackSeg(seg, 'fetching');
     const controller = new AbortController();
     this._abortControllers.set(seg.segmentId, controller);
     const url = this._segmentUrl(seg.segmentId);
+    const tReq = seg.startTime != null ? seg.startTime.toFixed(2) + 's' : '?';
+    this._mseTrace('FETCH_START', {
+      segmentId: seg.segmentId,
+      url,
+      generation: gen,
+      startTime: +seg.startTime.toFixed(3),
+      endTime: +seg.endTime.toFixed(3),
+      seekSegment: this._isSeekArtifact(seg.segmentId),
+    });
+    if (isBootstrap) {
+      this._seekBootstrap.fetchStarted = true;
+      this._mseTrace('SEEK_COVERING_FETCH_START', {
+        segmentId: seg.segmentId,
+        generation: gen,
+      });
+    }
+    const trackSeekTimer = this.pendingSeekTime != null
+      || Date.now() < this._postSeekUntil
+      || this._isSeekArtifact(seg.segmentId);
+    seekSegmentLog.request(
+      seg.segmentId,
+      seg.segmentId + ' GET ' + url + ' @' + tReq,
+      trackSeekTimer
+    );
 
     fetch(url, { signal: controller.signal })
       .then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
       .then(buf => {
         if (this._destroyed) return;
+        const fetchAccepted = gen === this._generation;
+        this._mseTrace('GEN_CHECK', {
+          segmentId: seg.segmentId,
+          segmentGeneration: gen,
+          currentGeneration: this._generation,
+          accepted: fetchAccepted,
+          stage: 'fetch_done',
+          seekSegment: this._isSeekArtifact(seg.segmentId),
+        });
+        this._mseTrace('GENERATION_CHECK', {
+          segmentId: seg.segmentId,
+          segmentGeneration: gen,
+          currentGeneration: this._generation,
+          accepted: fetchAccepted,
+          stage: 'fetch_done',
+          seekBootstrap: this._isSeekBootstrapSegment(seg.segmentId),
+        });
         this.fetching.delete(seg.segmentId);
         this._abortControllers.delete(seg.segmentId);
+        if (!fetchAccepted) return;
         if (!this.queue.segments.some(s => s.segmentId === seg.segmentId)) {
           const bmdt = readFirstVideoTfdt(buf);
           let startTime = seg.startTime;
@@ -1815,13 +4506,58 @@ class SegmentPlayer {
             segmentId: seg.segmentId, avDeltaMs: tracks.avDeltaMs,
           }));
         }
+        this._logSegmentAvTelemetry(queued ?? seg, buf, tracks, 'fetch_done');
         const t = queued?.startTime ?? seg.startTime ?? 0;
         msePageLog('[FETCH DONE]', seg.segmentId, t.toFixed(2) + 's', 'gen=', gen);
-        this.buffers.set(seg.segmentId, buf);
+        this._mseTrace('FETCH_DONE', {
+          segmentId: seg.segmentId,
+          bytes: buf.byteLength,
+          generation: gen,
+          currentGeneration: this._generation,
+          accepted: gen === this._generation,
+          startTime: +(queued?.startTime ?? seg.startTime ?? 0).toFixed(3),
+          endTime: +(queued?.endTime ?? seg.endTime ?? 0).toFixed(3),
+          seekSegment: this._isSeekArtifact(seg.segmentId),
+        });
+        if (this._isSeekBootstrapSegment(seg.segmentId)) {
+          this._seekBootstrap.fetchDone = true;
+          this._mseTrace('SEEK_COVERING_FETCH_DONE', {
+            segmentId: seg.segmentId,
+            bytes: buf.byteLength,
+            generation: gen,
+          });
+        }
+        this._cacheInsert(seg.segmentId, buf, queued ?? seg, gen, 'fetch_done');
+        seekSegmentLog.received(
+          seg.segmentId,
+          seg.segmentId + ' ' + buf.byteLength + ' bytes @' + t.toFixed(2) + 's gen=' + gen
+        );
         this._pump();
       })
       .catch(e => {
-        if (this._destroyed || e.name === 'AbortError') return;
+        if (this._destroyed) return;
+        if (e.name === 'AbortError') {
+          this._mseTrace('FETCH_ABORTED', {
+            segmentId: seg.segmentId,
+            generation: gen,
+            currentGeneration: this._generation,
+            seekSegment: this._isSeekArtifact(seg.segmentId),
+          });
+          this.fetching.delete(seg.segmentId);
+          this._abortControllers.delete(seg.segmentId);
+          seekSegmentLog.clearTimer(seg.segmentId);
+          seekSegmentLog.warn(seg.segmentId + ' aborted');
+          return;
+        }
+        this._mseTrace('FETCH_ERROR', {
+          segmentId: seg.segmentId,
+          generation: gen,
+          currentGeneration: this._generation,
+          error: e.message || String(e),
+          seekSegment: this._isSeekArtifact(seg.segmentId),
+        });
+        seekSegmentLog.clearTimer(seg.segmentId);
+        seekSegmentLog.warn(seg.segmentId + ' failed: ' + (e.message || e));
         this.fetching.delete(seg.segmentId);
         this._abortControllers.delete(seg.segmentId);
         setTimeout(() => this._pump(), 1000);
@@ -1834,35 +4570,183 @@ class SegmentPlayer {
 
   _append(buf, gen, seg) {
     return new Promise((resolve, reject) => {
-      if (this._destroyed) { resolve(); return; }
-      if (gen !== 0 && this._generation !== gen) { resolve(); return; }
-      if (!this.sb || this.ms.readyState !== 'open') { resolve(); return; }
-
       const label = typeof seg === 'string' ? seg : seg.segmentId;
+      const isMediaSegment = typeof seg === 'object' && seg !== null && seg !== 'init';
+      const isSeekSeg = isMediaSegment && this._isSeekArtifact(seg.segmentId);
+      if (this._destroyed) {
+        this._mseTrace('APPEND_ERROR', {
+          segmentId: label,
+          generation: gen,
+          error: 'destroyed',
+          seekSegment: isSeekSeg,
+        });
+        resolve();
+        return;
+      }
+      if (gen !== 0 && this._generation !== gen) {
+        this._mseTrace('GEN_CHECK', {
+          segmentId: label,
+          segmentGeneration: gen,
+          currentGeneration: this._generation,
+          accepted: false,
+          stage: 'append_entry',
+          seekSegment: isSeekSeg,
+        });
+        resolve();
+        return;
+      }
+      if (!this.sb || this.ms.readyState !== 'open') {
+        this._mseTrace('APPEND_ERROR', {
+          segmentId: label,
+          generation: gen,
+          error: 'sourcebuffer_unavailable',
+          readyState: this.ms?.readyState ?? null,
+          seekSegment: isSeekSeg,
+        });
+        resolve();
+        return;
+      }
+
+      const appendTracks = isMediaSegment ? parseFragmentTracks(buf) : null;
+      this._mseTrace('SOURCEBUFFER_STATE', this._sourceBufferStatePayload({
+        segmentId: label,
+        generation: gen,
+        seekSegment: isSeekSeg,
+      }));
+      for (const type of ['video', 'audio']) {
+        this._mseTrace('SOURCEBUFFER_STATE', {
+          type,
+          segmentId: label,
+          generation: gen,
+          timestampOffset: this.sb.timestampOffset,
+          appendWindowStart: this.sb.appendWindowStart,
+          appendWindowEnd: this.sb.appendWindowEnd,
+          updating: this.sb.updating,
+          readyState: this.ms.readyState,
+          note: 'single muxed SourceBuffer; same state applies to audio and video samples',
+        });
+      }
+      this._mseTrace('APPEND_START', {
+        segmentId: label,
+        generation: gen,
+        bytes: buf.byteLength,
+        updating: this.sb.updating,
+        readyState: this.ms.readyState,
+        seekSegment: isSeekSeg,
+      });
+      if (isMediaSegment) {
+        this._mseTrace('APPEND_START', {
+          segmentId: label,
+          type: 'video',
+          generation: gen,
+        });
+        if (appendTracks?.audio) {
+          this._mseTrace('APPEND_START', {
+            segmentId: label,
+            type: 'audio',
+            generation: gen,
+          });
+        }
+      }
       msePageLog('[APPEND START]', label);
-      if (typeof seg === 'object' && seg !== null && seg !== 'init') {
+      if (isMediaSegment) {
         this._trackSeg(seg, 'appending');
         segmentTracker.setActive(seg.segmentId);
         audioSegmentTracker.setActive(seg.segmentId);
+        if (this.pendingSeekTime != null && seekLatency.isActive()) {
+          seekLatency.phase('mse_append_start', {
+            segmentId: seg.segmentId,
+            startTime: seg.startTime,
+            endTime: seg.endTime,
+          });
+        }
       }
 
       const onEnd = () => {
-        if (typeof seg === 'object' && seg !== 'init') this._ensureFullDuration();
+        if (isMediaSegment) this._ensureFullDuration();
+        if (isMediaSegment) {
+          this._mseTrace('APPEND_END', {
+            segmentId: label,
+            type: 'video',
+            generation: gen,
+          });
+          if (appendTracks?.audio) {
+            this._mseTrace('APPEND_END', {
+              segmentId: label,
+              type: 'audio',
+              generation: gen,
+            });
+          }
+        }
+        this._mseTrace('UPDATEEND', {
+          segmentId: label,
+          generation: gen,
+          buffered: this._bufferedSnapshot(),
+          updating: this.sb?.updating ?? null,
+          readyState: this.ms?.readyState ?? null,
+          seekSegment: isSeekSeg,
+        });
+        if (isSeekSeg) {
+          this._mseTrace('SEEK_APPEND_RESULT', {
+            segmentId: label,
+            currentTime: +this.video.currentTime.toFixed(3),
+            timestampOffset: this.sb?.timestampOffset != null ? +this.sb.timestampOffset.toFixed(3) : null,
+            mediaElementBuffered: this._bufferedSnapshot(),
+            generation: gen,
+          });
+        }
+        if (isMediaSegment) this._logBufferedRanges(seg, appendTracks, 'updateend');
         msePageLog('[APPEND END]', label);
-        if (typeof seg === 'object') this._logAfterAppendEnd(seg);
+        if (isMediaSegment && this.pendingSeekTime != null && seekLatency.isActive()) {
+          seekLatency.phase('mse_append_end', {
+            segmentId: seg.segmentId,
+            buffered: fmtBufferedRanges(this.video),
+          });
+        }
+        if (isMediaSegment) {
+          this._mseTrace('VIDEO_STATE', this._videoStatePayload({
+            segmentId: seg.segmentId,
+            generation: gen,
+            stage: 'after_updateend',
+            seekSegment: isSeekSeg,
+          }));
+          this._logAfterAppendEnd(seg);
+        }
         resolve();
       };
-      const onErr = e => reject(e);
+      const onErr = e => {
+        this._mseTrace('APPEND_ERROR', {
+          segmentId: label,
+          generation: gen,
+          error: e?.message || this.sb?.error?.message || String(e),
+          sourceBufferError: this.sb?.error?.message ?? null,
+          seekSegment: isSeekSeg,
+        });
+        reject(e);
+      };
       this.sb.addEventListener('updateend', onEnd, { once: true });
       this.sb.addEventListener('error',     onErr, { once: true });
       try {
-        if (typeof seg === 'object' && seg !== null && seg !== 'init') {
+        if (isMediaSegment) {
           this._syncTimestampOffset(buf, seg);
+          this._logSeekAppendFragment(seg, appendTracks, gen);
         }
         this.sb.appendBuffer(buf);
+        this._mseTrace('APPEND_SUCCESS', {
+          segmentId: label,
+          generation: gen,
+          updating: this.sb.updating,
+          seekSegment: isSeekSeg,
+        });
       } catch (e) {
         this.sb.removeEventListener('updateend', onEnd);
         this.sb.removeEventListener('error',     onErr);
+        this._mseTrace('APPEND_ERROR', {
+          segmentId: label,
+          generation: gen,
+          error: e.message || String(e),
+          seekSegment: isSeekSeg,
+        });
         reject(e);
       }
     });
@@ -2072,42 +4956,124 @@ class SegmentPlayer {
     });
   }
 
-  seek(toTime) {
+  seek(toTime, source = 'player') {
     if (this._destroyed) return;
+    diagnostics.startSeekBurst();
+    const currentPlaybackTime = this.video.currentTime;
+    const direction = Math.abs(toTime - currentPlaybackTime) < 0.05
+      ? 'SAME'
+      : toTime > currentPlaybackTime ? 'FORWARD' : 'BACKWARD';
+    this._mseTrace('SEEK_WORKER_SPAWN_REQUEST', {
+      requestedSeekTime: +toTime.toFixed(3),
+      currentPlaybackTime: +currentPlaybackTime.toFixed(3),
+      direction,
+      source,
+    });
 
     const bufferedAtSeek = isTimeBuffered(this.video, toTime);
     if (bufferedAtSeek) {
+      seekLatency.begin(toTime, 'instant_buffered');
       this.video.currentTime = toTime;
+      seekSegmentLog.seek('skip — already buffered @' + toTime.toFixed(2) + 's');
       log('Seek skipped — already buffered at ' + Math.floor(toTime) + 's', 'ok');
+      seekLatency.skip('already_buffered', { currentTime: toTime });
       return;
     }
 
     segmentTracker.beginUserRequest('seek', toTime);
 
+    this._mseTrace('SEEK_RESET_START', this._sourceBufferStatePayload({
+      seekTime: +toTime.toFixed(3),
+      source,
+      oldGeneration: this._generation,
+    }));
     this._stopGapPoll();
     this._generation++;
     const gen = this._generation;
+    this._mseTrace('GENERATION_INCREMENTED', {
+      generation: gen,
+      seekTime: +toTime.toFixed(3),
+      source,
+    });
+    this._currentInitType = 'main';
 
+    this._mseTrace('ABORT_FETCHES', {
+      generation: gen,
+      fetchCount: this._abortControllers.size,
+      fetching: [...this.fetching],
+    });
     for (const controller of this._abortControllers.values()) controller.abort();
     this._abortControllers.clear();
+    this._mseTrace('CLEAR_QUEUE', {
+      generation: gen,
+      queueLengthBefore: this.queue.segments.length,
+      appendedCountBefore: this.appendedIds.size,
+      bufferedSegmentCountBefore: this.buffers.size,
+    });
     this.buffers.clear();
     this.fetching.clear();
 
-    this.pendingSeekTime = toTime;
-    this.pendingSeekSeg  = null;
-    this.seekAnchor      = null;
+    this.pendingSeekTime       = toTime;
+    this.pendingSeekSeg        = null;
+    this.seekAnchor            = null;
+    this._seekSegmentsAppended = 0;
+    this._seekBootstrap        = null;
+    this._seekAv               = {
+      targetTime: toTime,
+      generation: gen,
+      segments: new Map(),
+      appendHistory: new Map(),
+      firstVideo: null,
+      firstAudio: null,
+      report: null,
+    };
+    this._mseTrace('SEEK_TARGET', {
+      targetTime: +toTime.toFixed(3),
+      generation: gen,
+      source,
+    });
+    this._startSeekMediaDiagnostics(toTime, gen);
 
     this.queue.clear();
     this.appendedIds.clear();
     this._appendedTimeline = [];
     for (const id of [...this.buffers.keys()]) this.buffers.delete(id);
+    this._mseTrace('CLEAR_QUEUE_DONE', {
+      generation: gen,
+      queueLengthAfter: this.queue.segments.length,
+      appendedCountAfter: this.appendedIds.size,
+      bufferedSegmentCountAfter: this.buffers.size,
+    });
+    this._mseTrace('QUEUE_DUMP', {
+      generation: gen,
+      queue: this.queue.segments.map(s => ({
+        segmentId: s.segmentId,
+        startTime: +s.startTime.toFixed(3),
+        endTime: +s.endTime.toFixed(3),
+      })),
+    });
 
     this.sbQueue = this.sbQueue.then(async () => {
+      this._mseTrace('REMOVE_BUFFER_START', this._sourceBufferStatePayload({
+        generation: gen,
+        aggressive: true,
+      }));
       await this._purgeOrphanRanges({ aggressive: true });
+      this._mseTrace('REMOVE_BUFFER_DONE', this._sourceBufferStatePayload({
+        generation: gen,
+        aggressive: true,
+      }));
       this._syncAppendedIdsToBuffer();
+      this._mseTrace('SEEK_RESET_DONE', this._sourceBufferStatePayload({
+        generation: gen,
+        seekTime: +toTime.toFixed(3),
+      }));
+      this._pump();
     });
 
     msePageLog('[SEEK REQUEST]', JSON.stringify({ seekTime: toTime, gen }));
+    seekSegmentLog.seek('start t=' + toTime.toFixed(2) + 's gen=' + gen);
+    seekLatency.begin(toTime, source, gen);
     log('Seek → t=' + Math.floor(toTime) + 's (waiting for server)', 'ok');
 
     clearTimeout(this._seekTimer);
@@ -2117,14 +5083,23 @@ class SegmentPlayer {
       fetch('/torrent/seek', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ sessionId: this.sessionId, seekTime: toTime }),
+        body:    JSON.stringify({ sessionId: this.sessionId, seekTime: toTime, currentPlaybackTime }),
       })
-        .then(r => r.json())
+        .then(r => { if (!r.ok) throw new Error('Seek ' + r.status); return r.json(); })
         .then(d => {
           if (this._generation !== gen) return;
           msePageLog('[SEEK RESPONSE]', JSON.stringify(d));
 
           const seg = this._normalizeSegment(d);
+          seekSegmentLog.seek('server ' + (d.action || '?') + ' @' + toTime.toFixed(2) + 's');
+          if (seekLatency.isActive() && seekLatency.gen() === gen) {
+            seekLatency.phase('server_response', {
+              action: d.action,
+              segmentId: seg?.segmentId,
+              startTime: seg?.startTime,
+              endTime: seg?.endTime,
+            });
+          }
 
           if (d.action === 'cached' && seg?.segmentId && this._coversTime(seg, toTime)) {
             this.pendingSeekSeg = seg.segmentId;
@@ -2133,6 +5108,12 @@ class SegmentPlayer {
             if (this.appendedIds.has(seg.segmentId) && isTimeBuffered(this.video, toTime)) {
               this._clearSeekWait();
               this.video.currentTime = toTime;
+              if (seekLatency.isActive()) {
+                seekLatency.complete('cached_buffered', {
+                  currentTime: toTime,
+                  segmentId: seg.segmentId,
+                });
+              }
               log('Seek: cached — already buffered at ' + Math.floor(toTime) + 's', 'ok');
             } else if (this.appendedIds.has(seg.segmentId)) {
               this.seekAnchor = seg;
@@ -2151,23 +5132,11 @@ class SegmentPlayer {
 
           if (d.action === 'started' || d.action === 'waiting') {
             this.seekAnchor = null;
-            const start = d.startTime ?? Math.max(0, toTime - 2);
-            const end   = d.endTime ?? start + (d.duration ?? 2);
-            const segId = this._predictSeekSegmentId(start);
-            const hintSeg = {
-              segmentId: segId,
-              file:      segId,
-              startTime: start,
-              endTime:   end,
-              duration:  end - start,
-            };
-            this.pendingSeekSeg = segId;
-            this.queue.insert(hintSeg);
-            if (!this.buffers.has(segId) && !this.fetching.has(segId)) {
-              msePageLog('[SEEK PREFETCH]', JSON.stringify({ segmentId: segId, startTime: start, endTime: end }));
-              this._fetchSegment(hintSeg, gen);
-            }
-            log('Seek: ' + d.action + ' — worker/feed will deliver segment near '
+            this.pendingSeekSeg = null;
+            // Don't prefetch a predicted segment name — seek worker segments
+            // are named by their actual keyframe TFDT, which the client can't
+            // know in advance. The covering poll and SSE will deliver them.
+            log('Seek: ' + d.action + ' — waiting for segment near '
               + Math.floor(toTime) + 's', 'ok');
             this._startSeekCoveringPoll(gen, toTime);
             this._pump();
@@ -2179,7 +5148,13 @@ class SegmentPlayer {
               + seg.segmentId + ' does not cover target', 'warn');
           }
         })
-        .catch(err => log('Seek POST failed: ' + err.message, 'warn'));
+        .catch(err => {
+          seekSegmentLog.warn('POST /torrent/seek failed: ' + err.message);
+          log('Seek POST failed: ' + err.message, 'warn');
+          if (seekLatency.isActive()) {
+            seekLatency.phase('server_error', { message: err.message });
+          }
+        });
     }, 150);
   }
 
@@ -2189,6 +5164,7 @@ class SegmentPlayer {
     clearInterval(this._durationLock);
     clearInterval(this._seekPollTimer);
     clearInterval(this._gapPollTimer);
+    clearInterval(this._mediaStateTimer);
     clearTimeout(this._seekTimer);
     clearTimeout(this._timelineRetry);
     for (const controller of this._abortControllers.values()) controller.abort();
@@ -2237,17 +5213,23 @@ btnStart.addEventListener('click', async function () {
   const verb = data.status === 'joining' ? 'Joining existing session' : 'Created session';
   log(verb + ' ' + activeSession, 'ok');
 
-  const es = new EventSource(data.eventsUrl);
+  const es = new EventSource(data.eventsUrl + (data.eventsUrl.includes('?') ? '&' : '?') + diagnosticsQuery());
   activeEventSource = es;
 
   es.addEventListener('progress', function (e) {
-    const p = JSON.parse(e.data);
-    const pct = p.total ? ((p.downloaded / p.total) * 100).toFixed(1) : '0.0';
-    statusEl.textContent =
-      'State:      downloading\n' +
-      'Downloaded: ' + fmt(p.downloaded) + ' / ' + fmt(p.total) + ' (' + pct + '%)\n' +
-      'Speed:      ' + fmt(p.speed) + '/s';
-    progressEl.value = p.total ? p.downloaded / p.total : 0;
+    diagnostics.recordSse(1);
+    handleStartupProgress(JSON.parse(e.data));
+  });
+
+  es.addEventListener('event_batch', function (e) {
+    handleEventBatch(e, 'startup');
+  });
+
+  es.addEventListener('server:trace', function (e) {
+    diagnostics.recordSse(1);
+    try {
+      logServerTrace(JSON.parse(e.data), { feed: 'startup' });
+    } catch (_) {}
   });
 
   es.addEventListener('stream:ready', function (e) {
@@ -2291,6 +5273,7 @@ function launchMsePlayer(payload) {
   resolveMovieDuration(activeSession, streamUrl, duration).then(resolvedDur => {
     resetTraceTables();
     if (resolvedDur == null) {
+    seekSegmentLog.clear();
       log('Could not resolve movie duration', 'warn');
     } else {
       log('Movie duration: ' + Math.floor(resolvedDur) + 's', 'ok');
@@ -2308,12 +5291,35 @@ function launchMsePlayer(payload) {
 
 function openFeed(feedUrl) {
   if (activeFeed) { activeFeed.close(); activeFeed = null; }
-  const feed = new EventSource(feedUrl);
+  const feed = new EventSource(feedUrl + (feedUrl.includes('?') ? '&' : '?') + diagnosticsQuery());
   activeFeed = feed;
 
   feed.addEventListener('segment:ready', function (e) {
+    diagnostics.recordSse(1);
     const data = JSON.parse(e.data);
     if (segPlayer) segPlayer.onSegmentReady(data);
+  });
+
+  feed.addEventListener('duration:ready', function (e) {
+    diagnostics.recordSse(1);
+    const { duration } = JSON.parse(e.data);
+    const d = Number(duration);
+    if (!isFinite(d) || d <= 0) return;
+    if (segPlayer && (segPlayer.duration == null || Math.abs(segPlayer.duration - d) > 1)) {
+      segPlayer._applyDuration(d);
+      log('Duration from feed: ' + Math.floor(d) + 's (' + formatTime(d) + ')', 'ok');
+    }
+  });
+
+  feed.addEventListener('server:trace', function (e) {
+    diagnostics.recordSse(1);
+    try {
+      logServerTrace(JSON.parse(e.data), { feed: 'playback' });
+    } catch (_) {}
+  });
+
+  feed.addEventListener('event_batch', function (e) {
+    handleEventBatch(e, 'playback');
   });
 
   feed.onerror = () => log('Segment feed SSE error', 'warn');
@@ -2350,10 +5356,11 @@ btnStop.addEventListener('click', async function () {
 player.addEventListener('seeking', function () {
   if (!segPlayer) return;
   const t = player.currentTime;
+  seekSegmentLog.seek('video seeking → ' + t.toFixed(2) + 's');
   for (let i = 0; i < player.buffered.length; i++) {
     if (player.buffered.start(i) <= t + 0.1 && t <= player.buffered.end(i) + 0.1) return;
   }
-  segPlayer.seek(t);
+  segPlayer.seek(t, 'video_controls');
 });
 
 // ── status polling ─────────────────────────────────────────────────────────────
@@ -2373,17 +5380,20 @@ function startPolling(sessionId) {
       const data = await resp.json();
       renderStatus(data);
     } catch (_) {}
-  }, 2000);
+  }, 5000);
 
-  // Slower refresh for the full timeline registry panel (every 5s).
+  // Slower refresh for the full timeline registry panel; skip during healthy playback
+  // unless verbose diagnostics are enabled.
   _timelineRefreshTimer = setInterval(async function () {
+    const healthyPlayback = segPlayer?.pendingSeekTime == null && !player.paused && !player.seeking && player.readyState >= 3;
+    if (healthyPlayback && diagnostics.effectiveLevel() < DebugLevel.VERBOSE) return;
     try {
       const r = await fetch('/torrent/timeline?sessionId=' + encodeURIComponent(sessionId));
       if (!r.ok) return;
       const entries = await r.json();
       renderTimelineRegistry(entries);
     } catch (_) {}
-  }, 5000);
+  }, 10000);
 }
 
 function renderTimelineRegistry(entries) {
@@ -2391,18 +5401,22 @@ function renderTimelineRegistry(entries) {
   const countEl = document.getElementById('timeline-count');
   if (!tbody) return;
 
-  if (countEl) countEl.textContent = entries.length + ' segment' + (entries.length === 1 ? '' : 's');
+  if (countEl) {
+    countEl.textContent = entries.length + ' segment' + (entries.length === 1 ? '' : 's')
+      + (entries.length > MAX_VISIBLE_LOGS ? ' (showing latest ' + MAX_VISIBLE_LOGS + ')' : '');
+  }
 
   const frag = document.createDocumentFragment();
   let idx = 0;
-  for (const e of entries) {
+  const visibleEntries = entries.length > MAX_VISIBLE_LOGS ? entries.slice(-MAX_VISIBLE_LOGS) : entries;
+  for (const e of visibleEntries) {
     const tr = document.createElement('tr');
     const dur = e.endTime != null && e.startTime != null ? (e.endTime - e.startTime).toFixed(2) : '—';
     const isSeek = /^segment_t/.test(e.file ?? '');
     tr.style.color = isSeek ? '#f0a500' : '';
     const cells = [
       String(idx++),
-      (e.file ?? '').length > 24 ? (e.file ?? '').slice(0, 22) + '…' : (e.file ?? ''),
+      e.file ?? '',
       e.startTime != null ? e.startTime.toFixed(2) : '—',
       e.endTime   != null ? e.endTime.toFixed(2) : '—',
       dur,
@@ -2482,6 +5496,7 @@ function cleanup() {
   VIDEO_TIMESCALE = 90000; // reset to default
   resetTraceTables();
   player.src = '';
+  seekSegmentLog.clear();
   if (timelineScrub) {
     timelineScrub.value = '0';
     timelineScrub.max = '100';

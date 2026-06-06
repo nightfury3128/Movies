@@ -21,8 +21,10 @@ export class SegmentTimelineRegistry {
    */
   constructor(persistPath = null) {
     this._segments    = [];   // sorted ascending by startTime
+    this._clusters    = [];   // sorted ascending by startTime
     this._persistPath = persistPath;
     this._waiters     = [];   // { mode, time?, bufferedEnd?, file?, resolve, timer }
+    this._persistTimer = null;
   }
 
   // ── Write ─────────────────────────────────────────────────────────────────
@@ -31,16 +33,30 @@ export class SegmentTimelineRegistry {
    * Register a segment. Idempotent: same file re-registered is a no-op unless
    * timing changed.
    */
-  register({ file, startTime, endTime, source = 'main' }) {
+  register({
+    file,
+    startTime,
+    endTime,
+    source = 'main',
+    byteOffset = null,
+    clusterOffset = null,
+    segmentId = file,
+    decodeStartTime = null,
+  }) {
     const existing = this._segments.find(s => s.file === file);
     if (existing) {
       const same = Math.abs(existing.startTime - startTime) < 0.001
         && Math.abs(existing.endTime - endTime) < 0.001;
-      if (same) return existing;
+      if (same) {
+        this._mergeSegmentMetadata(existing, { byteOffset, clusterOffset, segmentId, decodeStartTime, source });
+        this._persist();
+        return existing;
+      }
       existing.startTime = startTime;
       existing.endTime   = endTime;
       existing.duration  = endTime - startTime;
       existing.source    = source;
+      this._mergeSegmentMetadata(existing, { byteOffset, clusterOffset, segmentId, decodeStartTime, source });
       this._segments.sort((a, b) => a.startTime - b.startTime);
       this._persist();
       this._resolveWaiters(startTime, endTime, existing);
@@ -53,8 +69,10 @@ export class SegmentTimelineRegistry {
       endTime,
       duration:  endTime - startTime,
       source,
+      segmentId,
       createdAt: Date.now(),
     };
+    this._mergeSegmentMetadata(entry, { byteOffset, clusterOffset, segmentId, decodeStartTime, source });
 
     // Insert sorted by startTime
     let i = this._segments.length;
@@ -69,18 +87,57 @@ export class SegmentTimelineRegistry {
   bulkRegister(entries) {
     for (const e of entries) {
       if (!this._segments.find(s => s.file === e.file)) {
-        this._segments.push(e);
+        this._segments.push(this._normaliseSegment(e));
       }
     }
     this._segments.sort((a, b) => a.startTime - b.startTime);
+    this._persist();
+  }
+
+  recordCluster({ startTime, endTime = null, byteOffset = null, clusterOffset, source = 'scan' }) {
+    if (!isFinite(startTime) || !isFinite(clusterOffset) || clusterOffset < 0) return null;
+    const entry = {
+      startTime,
+      endTime,
+      byteOffset: byteOffset ?? clusterOffset,
+      clusterOffset,
+      source,
+      createdAt: Date.now(),
+    };
+
+    const MERGE_WINDOW = 0.25;
+    const existing = this._clusters.find(c => Math.abs(c.startTime - startTime) < MERGE_WINDOW);
+    if (existing) {
+      const rank = s => s === 'cues' ? 3 : s === 'seek' ? 2 : s === 'scan' ? 1 : 0;
+      if (rank(source) >= rank(existing.source)) {
+        existing.endTime       = endTime ?? existing.endTime ?? null;
+        existing.byteOffset    = entry.byteOffset;
+        existing.clusterOffset = clusterOffset;
+        existing.source        = source;
+        existing.updatedAt     = Date.now();
+        this._persist();
+      }
+      return existing;
+    }
+
+    let i = this._clusters.length;
+    while (i > 0 && this._clusters[i - 1].startTime > startTime) i--;
+    this._clusters.splice(i, 0, entry);
+    this._persist();
+    return entry;
   }
 
   // ── Read ──────────────────────────────────────────────────────────────────
 
-  /** Segment where startTime <= time < endTime. */
+  /** Segment where startTime <= time < endTime. O(log n). */
   findSegmentForTime(time) {
-    for (const s of this._segments) {
-      if (s.startTime <= time && time < s.endTime) return s;
+    const segs = this._segments;
+    let lo = 0, hi = segs.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (segs[mid].endTime <= time)       lo = mid + 1;
+      else if (segs[mid].startTime > time) hi = mid - 1;
+      else return segs[mid];
     }
     return null;
   }
@@ -89,41 +146,90 @@ export class SegmentTimelineRegistry {
     return this.findSegmentForTime(time);
   }
 
-  /** Segment that extends bufferedEnd (starts ≤ bufferedEnd + before, ends > bufferedEnd + after). */
+  /** Segment that extends bufferedEnd. O(log n) entry point + short linear scan. */
   findNextForBuffer(bufferedEnd, maxGapSec = 45) {
-    for (const s of this._segments) {
-      if (s.startTime <= bufferedEnd + 0.5 && s.endTime > bufferedEnd + 0.1) return s;
+    const segs = this._segments;
+    if (!segs.length) return null;
+
+    // Skip segments whose endTime is too far behind to matter.
+    let lo = 0, hi = segs.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (segs[mid].endTime <= bufferedEnd - maxGapSec) lo = mid + 1;
+      else hi = mid;
     }
-    let best = null;
-    for (const s of this._segments) {
+
+    // Pass 1: segment overlapping / continuing bufferedEnd.
+    for (let i = lo; i < segs.length; i++) {
+      const s = segs[i];
+      if (s.startTime > bufferedEnd + 0.5) break;
+      if (s.endTime > bufferedEnd + 0.1) return s;
+    }
+
+    // Pass 2: nearest future segment within gap tolerance.
+    for (let i = lo; i < segs.length; i++) {
+      const s = segs[i];
       if (s.startTime <= bufferedEnd + 0.1) continue;
-      const gap = s.startTime - bufferedEnd;
-      if (gap > maxGapSec) continue;
-      if (!best || s.startTime < best.startTime) best = s;
+      if (s.startTime - bufferedEnd > maxGapSec) break; // sorted — no further candidates
+      return s;
     }
-    return best;
+    return null;
   }
 
   findByFile(file) {
     return this._segments.find(s => s.file === file) ?? null;
   }
 
+  /** First segment with startTime strictly after `startTime`. O(log n). */
   findNextAfter(startTime) {
-    for (const s of this._segments) {
-      if (s.startTime > startTime) return s;
+    const segs = this._segments;
+    let lo = 0, hi = segs.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (segs[mid].startTime <= startTime) lo = mid + 1;
+      else hi = mid;
     }
-    return null;
+    return lo < segs.length ? segs[lo] : null;
   }
 
+  /** Segment whose startTime is nearest to `time`. O(log n). */
   findNearestSegment(time) {
-    if (!this._segments.length) return null;
-    return this._segments.reduce((best, s) =>
-      Math.abs(s.startTime - time) < Math.abs(best.startTime - time) ? s : best
-    );
+    const segs = this._segments;
+    if (!segs.length) return null;
+    let lo = 0, hi = segs.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (segs[mid].startTime < time) lo = mid + 1;
+      else hi = mid;
+    }
+    if (lo >= segs.length) return segs[segs.length - 1];
+    if (lo === 0)          return segs[0];
+    const before = segs[lo - 1], after = segs[lo];
+    return Math.abs(before.startTime - time) <= Math.abs(after.startTime - time) ? before : after;
   }
 
+  findClusterBefore(time, minPrerollSec = 0) {
+    const target = time - minPrerollSec;
+    let best = null;
+    for (const c of this._clusters) {
+      if (c.startTime <= target) best = c;
+      else break;
+    }
+    return best;
+  }
+
+  /** All segments overlapping [startTime, endTime). O(log n) entry + linear result. */
   findSegmentsInRange(startTime, endTime) {
-    return this._segments.filter(s => s.startTime < endTime && s.endTime > startTime);
+    const segs = this._segments;
+    let lo = 0, hi = segs.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (segs[mid].endTime <= startTime) lo = mid + 1;
+      else hi = mid;
+    }
+    const result = [];
+    for (let i = lo; i < segs.length && segs[i].startTime < endTime; i++) result.push(segs[i]);
+    return result;
   }
 
   hasTime(time) { return this.findSegmentForTime(time) != null; }
@@ -133,7 +239,9 @@ export class SegmentTimelineRegistry {
   }
 
   getAll()  { return [...this._segments]; }
+  getClusters() { return [...this._clusters]; }
   count()   { return this._segments.length; }
+  clusterCount() { return this._clusters.length; }
 
   // ── Async wait ────────────────────────────────────────────────────────────
 
@@ -177,13 +285,57 @@ export class SegmentTimelineRegistry {
     if (!this._persistPath) return;
     try {
       const saved = JSON.parse(fs.readFileSync(this._persistPath, 'utf8'));
-      if (Array.isArray(saved)) this._segments = saved;
+      if (Array.isArray(saved)) {
+        this._segments = saved.map(e => this._normaliseSegment(e));
+        this._clusters = [];
+      } else if (saved && typeof saved === 'object') {
+        this._segments = Array.isArray(saved.segments) ? saved.segments.map(e => this._normaliseSegment(e)) : [];
+        this._clusters = Array.isArray(saved.clusters) ? saved.clusters.map(e => ({
+          ...e,
+          byteOffset: e.byteOffset ?? e.clusterOffset,
+        })).filter(e => isFinite(e.startTime) && isFinite(e.clusterOffset)) : [];
+        this._segments.sort((a, b) => a.startTime - b.startTime);
+        this._clusters.sort((a, b) => a.startTime - b.startTime);
+      }
     } catch {}
   }
 
   _persist() {
-    if (!this._persistPath) return;
-    try { fs.writeFileSync(this._persistPath, JSON.stringify(this._segments)); } catch {}
+    if (!this._persistPath || this._persistTimer) return;
+    this._persistTimer = setTimeout(() => {
+      this._persistTimer = null;
+      try {
+        fs.writeFileSync(this._persistPath, JSON.stringify({
+          version: 2,
+          segments: this._segments,
+          clusters: this._clusters,
+        }));
+      } catch {}
+    }, 1000);
+  }
+
+  _normaliseSegment(entry) {
+    return {
+      ...entry,
+      segmentId: entry.segmentId ?? entry.file,
+      duration: entry.duration ?? (entry.endTime - entry.startTime),
+    };
+  }
+
+  _mergeSegmentMetadata(entry, metadata) {
+    if (metadata.segmentId) entry.segmentId = metadata.segmentId;
+    if (metadata.byteOffset != null && isFinite(metadata.byteOffset)) entry.byteOffset = metadata.byteOffset;
+    if (metadata.clusterOffset != null && isFinite(metadata.clusterOffset)) entry.clusterOffset = metadata.clusterOffset;
+    if (metadata.decodeStartTime != null && isFinite(metadata.decodeStartTime)) entry.decodeStartTime = metadata.decodeStartTime;
+    if (metadata.clusterOffset != null && isFinite(metadata.clusterOffset)) {
+      this.recordCluster({
+        startTime: metadata.decodeStartTime ?? entry.startTime,
+        endTime: entry.endTime,
+        byteOffset: metadata.byteOffset ?? metadata.clusterOffset,
+        clusterOffset: metadata.clusterOffset,
+        source: metadata.source ?? entry.source ?? 'segment',
+      });
+    }
   }
 
   _resolveWaiters(startTime, endTime, entry) {
@@ -211,14 +363,80 @@ export class SegmentTimelineRegistry {
   }
 }
 
+/**
+ * ClusterIndex — maps media time → cluster byte offset.
+ *
+ * Populated by seek workers as they discover safe decode points (Cues table
+ * hits or scan results). Consulted before hitting the Cues table so that the
+ * second seek to a nearby time reuses the already-discovered cluster without
+ * any async I/O.
+ *
+ * Entries come from MKV Cues (keyframe-guaranteed) or _findClusterAt scans.
+ * Only Cues-derived entries are guaranteed to start at IDR frames.
+ */
+export class ClusterIndex {
+  constructor() {
+    this._entries = []; // [{startTime, clusterByte, source}] sorted by startTime
+  }
+
+  /**
+   * Record a discovered cluster location.
+   * @param {number} startTimeSec  Cluster's timecode in seconds
+   * @param {number} clusterByte   File-relative byte offset of cluster start
+   * @param {string} source        'cues' | 'scan' | 'estimate'
+   */
+  record(startTimeSec, clusterByte, source = 'scan') {
+    if (!isFinite(startTimeSec) || !isFinite(clusterByte) || clusterByte < 0) return;
+    const MERGE_WINDOW = 0.2; // merge entries within 200ms of each other
+    const existing = this._entries.findIndex(e => Math.abs(e.startTime - startTimeSec) < MERGE_WINDOW);
+    if (existing !== -1) {
+      // Prefer 'cues' source over 'scan' over 'estimate'
+      const rank = s => s === 'cues' ? 2 : s === 'scan' ? 1 : 0;
+      if (rank(source) >= rank(this._entries[existing].source)) {
+        this._entries[existing].clusterByte = clusterByte;
+        this._entries[existing].source      = source;
+      }
+      return;
+    }
+    let i = this._entries.length;
+    while (i > 0 && this._entries[i - 1].startTime > startTimeSec) i--;
+    this._entries.splice(i, 0, { startTime: startTimeSec, clusterByte, source });
+  }
+
+  /**
+   * Find the best safe decode starting point for a seek.
+   * Returns the latest entry whose startTime ≤ (seekTimeSec - minPrerollSec),
+   * or null if none exists.
+   *
+   * @param {number} seekTimeSec
+   * @param {number} minPrerollSec  Minimum seconds before target (default 0)
+   */
+  findBefore(seekTimeSec, minPrerollSec = 0) {
+    const target = seekTimeSec - minPrerollSec;
+    let best = null;
+    // Entries are sorted; stop once we pass target.
+    for (const e of this._entries) {
+      if (e.startTime <= target) best = e;
+      else break;
+    }
+    return best;
+  }
+
+  count() { return this._entries.length; }
+  getAll() { return [...this._entries]; }
+}
+
 /** Normalise a timeline entry into the wire format used by SSE and HTTP responses. */
 export function toSegmentPayload(entry) {
   if (!entry) return null;
   return {
-    segmentId: entry.file,
+    segmentId: entry.segmentId ?? entry.file,
     file:      entry.file,
     startTime: entry.startTime,
     endTime:   entry.endTime,
     duration:  entry.duration ?? (entry.endTime - entry.startTime),
+    byteOffset: entry.byteOffset ?? null,
+    clusterOffset: entry.clusterOffset ?? null,
+    decodeStartTime: entry.decodeStartTime ?? null,
   };
 }

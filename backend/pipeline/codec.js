@@ -29,7 +29,7 @@ export async function detectCodecs(sourceUrl, filename) {
   const fmtHint = { mkv: 'matroska', mp4: 'mp4', avi: 'avi', mov: 'mov', webm: 'webm', m4v: 'mp4' }[ext] ?? null;
   const fmtOpt  = fmtHint ? `-f ${fmtHint}` : '';
 
-  const cmd = `ffprobe -v quiet -print_format json -show_streams ${fmtOpt} "${sourceUrl}"`;
+  const cmd = `ffprobe -v quiet -analyzeduration 500000 -probesize 1000000 -print_format json -show_streams -show_format ${fmtOpt} "${sourceUrl}"`;
 
   let probe;
   try {
@@ -55,9 +55,19 @@ export async function detectCodecs(sourceUrl, filename) {
   const needsAudioTranscode = audioCodec != null && !REMUX_AUDIO.has(audioCodec);
   const mode = (!needsVideoTranscode && !needsAudioTranscode) ? 'remux' : 'transcode';
 
-  // Duration from any stream that has it.
+  // Duration: prefer explicit header value; fall back to size/bitrate (works when
+  // format.duration is absent in poorly-muxed MKV or AVI/TS sources).
   const durationRaw = videoSt?.duration ?? audioSt?.duration ?? probe.format?.duration;
-  const duration    = durationRaw ? parseFloat(durationRaw) : null;
+  let duration = durationRaw ? parseFloat(durationRaw) : null;
+  if (!duration) {
+    const br   = parseFloat(probe.format?.bit_rate);
+    const size = parseFloat(probe.format?.size);
+    if (br > 0 && size > 0) duration = size * 8 / br;
+  }
+
+  const mimeType = audioCodec !== null
+    ? 'video/mp4; codecs="avc1.64001f,mp4a.40.2"'
+    : 'video/mp4; codecs="avc1.64001f"';
 
   return {
     mode,
@@ -67,7 +77,7 @@ export async function detectCodecs(sourceUrl, filename) {
     needsAudioTranscode,
     pixFmt,
     duration: isFinite(duration) ? duration : null,
-    mimeType: 'video/mp4; codecs="avc1.64001f,mp4a.40.2"',
+    mimeType,
   };
 }
 
@@ -80,6 +90,6 @@ function fallbackCodecInfo() {
     needsAudioTranscode: true,
     pixFmt:              null,
     duration:            null,
-    mimeType:            'video/mp4; codecs="avc1.64001f,mp4a.40.2"',
+    mimeType:            'video/mp4; codecs="avc1.64001f"',
   };
 }

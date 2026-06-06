@@ -56,7 +56,7 @@ export class HlsGenerator extends EventEmitter {
    * @param {number} seekOffset  > 0 for seek workers; shifts output TFDT
    * @param {boolean} isSeekWorker  Uses seek_init.mp4 instead of init.mp4
    */
-  start(sourceUrl, videoName, outputDir, codecInfo, seekOffset = 0, isSeekWorker = false) {
+  start(sourceUrl, videoName, outputDir, codecInfo, seekOffset = 0, isSeekWorker = false, seekByte = null, hlsTime = HLS_TIME) {
     return new Promise((resolve, reject) => {
       if (this.running) return reject(new Error('HlsGenerator already running'));
       this.running = true;
@@ -77,15 +77,24 @@ export class HlsGenerator extends EventEmitter {
       const inputOpts = [
         '-reconnect', '1',
         '-reconnect_delay_max', '5',
-        '-rw_timeout', '300000000',
-        '-analyzeduration', '3000000',
-        '-probesize', '5000000',
+        '-rw_timeout', isSeekWorker ? '20000000' : '300000000',
+        '-analyzeduration',   isSeekWorker ? '50000'     : '1000000',
+        '-probesize',         isSeekWorker ? '200000'    : '2000000',
       ];
 
-      if (seekOffset > 0) {
-        // Input seek — jumps to nearest keyframe before seekOffset.
+      if (isSeekWorker && seekByte != null && seekByte > 0) {
+        // Linear read from seekByte via ?start=N on the internal HTTP URL.
+        // Avoids MKV binary bisection: -ss on an MKV input makes FFmpeg issue
+        // Range requests to fileSize/2, fileSize/4, … to locate the cluster —
+        // those positions are never downloaded in a partial torrent and block
+        // indefinitely. -seekable 0 prevents Range-based seeks; rw_timeout is
+        // The TorrentManager HTTP server handles ?start=N and serves a 200
+        // response from that byte offset; -seekable 0 prevents FFmpeg from
+        // issuing any further seek requests.
+        inputOpts.push('-seekable', '0');
+      } else if (seekOffset > 0) {
         inputOpts.unshift('-ss', String(seekOffset));
-        // Needed after reconnect options to re-enable range queries.
+        inputOpts.push('-fflags', '+ignidx');
       } else {
         // Normal start: disable seekable so FFmpeg doesn't follow MKV Cues.
         inputOpts.push('-seekable', '0');
@@ -93,7 +102,14 @@ export class HlsGenerator extends EventEmitter {
 
       if (fmtHint) inputOpts.push('-f', fmtHint);
 
-      let cmd = ffmpeg(sourceUrl).inputOptions(inputOpts);
+      // For seek workers, append ?start=N so the TorrentManager HTTP server
+      // streams from seekByte without needing a Range request header.
+      // Encode seekOffset in ms so the HTTP handler can range-validate clusters.
+      const effectiveUrl = (isSeekWorker && seekByte != null && seekByte > 0)
+        ? `${sourceUrl}?start=${Math.floor(seekByte)}&seekTime=${Math.round(seekOffset * 1000)}`
+        : sourceUrl;
+
+      let cmd = ffmpeg(effectiveUrl).inputOptions(inputOpts);
 
       // ── Video codec ────────────────────────────────────────────────────────
       if (!needsVideoTranscode) {
@@ -106,7 +122,7 @@ export class HlsGenerator extends EventEmitter {
             '-crf', '23',
             '-pix_fmt', 'yuv420p',
             '-bf', '0',
-            '-force_key_frames', `expr:gte(t,n_forced*${HLS_TIME})`,
+            '-force_key_frames', `expr:gte(t,n_forced*${hlsTime})`,
             '-sc_threshold', '0',
           ]);
       }
@@ -123,12 +139,15 @@ export class HlsGenerator extends EventEmitter {
       }
 
       // ── PTS normalisation (seek workers) ──────────────────────────────────
-      // Without this, seek segment TFDTs start near 0 instead of seekOffset.
-      // We use setpts=PTS-STARTPTS + -output_ts_offset to land at seekOffset.
-      if (seekOffset > 0) {
-        if (needsVideoTranscode && hasAudio) {
-          cmd = cmd.videoFilters('setpts=PTS-STARTPTS').audioFilters('asetpts=PTS-STARTPTS');
-        } else if (!needsVideoTranscode && needsAudioTranscode && hasAudio) {
+      // Transcode mode: setpts=PTS-STARTPTS resets timestamps to 0, then
+      // -output_ts_offset shifts them to seekOffset so TFDT ≈ seekOffset.
+      //
+      // Remux mode (-c:v copy): source timestamps are already at the keyframe
+      // position (~seekOffset). DO NOT apply setpts or -output_ts_offset —
+      // doing so would produce TFDT ≈ 2×seekOffset, corrupting the timeline.
+      if (seekOffset > 0 && needsVideoTranscode) {
+        cmd = cmd.videoFilters('setpts=PTS-STARTPTS');
+        if (hasAudio && needsAudioTranscode) {
           cmd = cmd.audioFilters('asetpts=PTS-STARTPTS');
         }
       }
@@ -146,12 +165,16 @@ export class HlsGenerator extends EventEmitter {
         .outputOptions([
           ...mapOpts,
           '-threads', cpuThreads,
-          '-avoid_negative_ts', 'make_zero',
+          // Seek workers read mid-file: source timestamps are already positive (~seekTime).
+          // make_zero would reset them to 0 when the header+cluster stream causes the AAC
+          // encoder priming delay to appear negative, making every segment look like pre-roll.
+          '-avoid_negative_ts', isSeekWorker ? 'disabled' : 'make_zero',
 
-          // Shift output timestamps so seek segments have TFDT ≈ seekOffset.
-          ...(seekOffset > 0 ? ['-output_ts_offset', String(seekOffset)] : []),
+          // Only shift timestamps for transcode mode (setpts reset to 0 above).
+          // Remux mode leaves source timestamps intact — no offset needed.
+          ...(seekOffset > 0 && needsVideoTranscode ? ['-output_ts_offset', String(seekOffset)] : []),
 
-          '-hls_time',              String(HLS_TIME),
+          '-hls_time',              String(hlsTime),
           '-hls_list_size',         '0',
           '-hls_flags',             'independent_segments',
           '-hls_segment_type',      'fmp4',
@@ -169,6 +192,8 @@ export class HlsGenerator extends EventEmitter {
       });
 
       cmd.on('stderr', line => {
+        this.emit('stderr', line);
+
         const timeM = line.match(/time=(\d+):(\d+):([\d.]+)/);
         if (timeM) {
           const secs = +timeM[1] * 3600 + +timeM[2] * 60 + parseFloat(timeM[3]);
@@ -219,6 +244,20 @@ export class HlsGenerator extends EventEmitter {
       this.process.kill('SIGTERM');
       this.running = false;
       this.process = null;
+    }
+  }
+
+  pause() {
+    if (this.process && this.running) {
+      this.process.kill('SIGSTOP');
+      log(NS, `Paused [${this.label}]`);
+    }
+  }
+
+  resume() {
+    if (this.process && this.running) {
+      this.process.kill('SIGCONT');
+      log(NS, `Resumed [${this.label}]`);
     }
   }
 }

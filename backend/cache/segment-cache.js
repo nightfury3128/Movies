@@ -15,7 +15,8 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_CACHE_DIR = path.join(__dirname, '..', 'cache', 'segments');
-const DEFAULT_MAX_BYTES = 50 * 1024 * 1024 * 1024; // 50 GB
+// Configurable via CACHE_MAX_GB env var (supports 10–50 GB range); default 10 GB.
+const DEFAULT_MAX_BYTES = parseFloat(process.env.CACHE_MAX_GB ?? '10') * 1024 * 1024 * 1024;
 
 export class SegmentCache {
   /**
@@ -31,6 +32,7 @@ export class SegmentCache {
   start() {
     fs.mkdirSync(this.cacheDir, { recursive: true });
     this._loadLru();
+    this._cleanOrphanedSeekDirs();
   }
 
   /** @returns {string} Absolute path to the HLS directory for this torrent. */
@@ -75,12 +77,21 @@ export class SegmentCache {
     const sorted = [...this._lru.entries()].sort((a, b) => a[1] - b[1]); // oldest first
     for (const [infoHash] of sorted) {
       if (this.totalBytes() <= this.maxBytes) break;
-      try {
-        fs.rmSync(this.dir(infoHash), { recursive: true, force: true });
-        this._lru.delete(infoHash);
-        this._saveLru();
-      } catch {}
+      try { fs.rmSync(this.dir(infoHash), { recursive: true, force: true }); } catch {}
+      try { fs.rmSync(this.dir(infoHash) + '_seek', { recursive: true, force: true }); } catch {}
+      this._lru.delete(infoHash);
+      this._saveLru();
     }
+  }
+
+  /** Remove seek scratch dirs left over from a crash or prior server run. */
+  _cleanOrphanedSeekDirs() {
+    try {
+      for (const entry of fs.readdirSync(this.cacheDir)) {
+        if (!entry.endsWith('_seek')) continue;
+        try { fs.rmSync(path.join(this.cacheDir, entry), { recursive: true, force: true }); } catch {}
+      }
+    } catch {}
   }
 
   _dirSize(dir) {

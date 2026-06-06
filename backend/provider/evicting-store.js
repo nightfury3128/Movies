@@ -6,9 +6,11 @@
  * pieces that FFmpeg has already consumed, keeping only a small window.
  *
  * Design:
- *   - Pieces below `_evictBefore` (chunk index) are eligible for eviction.
- *   - Pieces in `HEADER_PRESERVE_CHUNKS` are pinned permanently — they contain
- *     the MKV/MP4 container header which FFmpeg re-reads on every seek restart.
+ *   - Pieces below `_evictBefore` are eligible for eviction (updated as FFmpeg advances).
+ *   - Pieces in [0, HEADER_PRESERVE_CHUNKS) are pinned permanently — the MKV/MP4
+ *     container header that FFmpeg re-reads on every seek restart.
+ *   - get() returns an immediate error for missing chunks; callers (createReadStream
+ *     via chunk-store-iterator) handle this via WebTorrent's download + retry loop.
  *   - Eviction is lazy: happens on put() so there's no background GC timer.
  */
 
@@ -30,8 +32,8 @@ export class EvictingMemoryStore {
 
   get(index, cb) {
     const chunk = this.chunks.get(index);
-    if (!chunk) return cb(new Error('chunk not found'));
-    cb(null, chunk);
+    if (chunk) return cb(null, chunk);
+    cb(new Error('chunk not found'));
   }
 
   put(index, buf, cb) {

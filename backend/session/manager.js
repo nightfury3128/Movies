@@ -78,8 +78,10 @@ export class SessionManager {
       viewerTimes: new Map(),
 
       // Encoder state
-      mainLastTime: 0,
-      lastProgress: null,
+      mainLastTime:      0,
+      lastProgress:      null,
+      _mainPaused:       false, // true while main FFmpeg is SIGSTOP'd during a large seek
+      _priorityInterval: null,  // setInterval handle for viewer-aware piece prioritization
 
       // Cleanup
       _idleTimer:    null,
@@ -143,6 +145,12 @@ export class SessionManager {
     log(NS, `Destroying ${sessionId}`);
     s.state = 'stopped';
 
+    // Clear viewer-priority rebalancing interval.
+    if (s._priorityInterval) {
+      clearInterval(s._priorityInterval);
+      s._priorityInterval = null;
+    }
+
     // Stop the watcher
     s._stopWatcher?.();
 
@@ -151,6 +159,13 @@ export class SessionManager {
       for (const [id] of s.seekWorkerMgr._workers) {
         await s.seekWorkerMgr.killWorker(id).catch(() => {});
       }
+    }
+
+    // A SIGSTOP'd process buffers SIGTERM until resumed; send SIGCONT first so
+    // FFmpeg can receive and act on SIGTERM immediately.
+    if (s._mainPaused) {
+      s.generator?.resume();
+      s._mainPaused = false;
     }
 
     // Stop FFmpeg
@@ -162,6 +177,7 @@ export class SessionManager {
     }
 
     this._sessions.delete(sessionId);
+    this.segmentCache.evict();
   }
 }
 

@@ -185,8 +185,22 @@ export function readVideoTimescale(buf) {
  * @returns {Promise<{tfdt:number, startTime:number, durTicks:number|null, duration:number, endTime:number}|null>}
  */
 export async function readSegmentTiming(filePath, timescale) {
+  // moof (mfhd + traf→tfhd+tfdt+trun) is always within the first few KB.
+  // Everything after is mdat (raw media). Reading the full file wastes RAM.
+  const HEAD_BYTES = 8192;
   try {
-    const buf = await fs.promises.readFile(filePath);
+    const fh = await fs.promises.open(filePath, 'r');
+    let buf;
+    try {
+      const { size }      = await fh.stat();
+      const readLen       = Math.min(size, HEAD_BYTES);
+      const tmp           = Buffer.allocUnsafe(readLen);
+      const { bytesRead } = await fh.read(tmp, 0, readLen, 0);
+      buf = tmp.subarray(0, bytesRead);
+    } finally {
+      await fh.close();
+    }
+
     const tfdt = readTfdt(buf);
     if (tfdt == null) return null;
 
@@ -196,6 +210,100 @@ export async function readSegmentTiming(filePath, timescale) {
     return { tfdt, startTime, durTicks, duration, endTime: startTime + duration };
   } catch {
     return null;
+  }
+}
+
+/**
+ * Read video + audio TFDT/duration from a media segment.
+ * Assumes the local FFmpeg pipeline writes track 1 as video and track 2 as audio.
+ * @param {string} filePath
+ * @param {{videoTimescale?:number,audioTimescale?:number}} opts
+ * @returns {Promise<{video:null|object,audio:null|object,deltaMs:number|null}>}
+ */
+export async function readFragmentTracks(filePath, opts = {}) {
+  const videoTimescale = opts.videoTimescale ?? 90000;
+  const audioTimescale = opts.audioTimescale ?? 48000;
+  const HEAD_BYTES = 16384;
+
+  const empty = { video: null, audio: null, deltaMs: null };
+  try {
+    const fh = await fs.promises.open(filePath, 'r');
+    let buf;
+    try {
+      const { size } = await fh.stat();
+      const readLen = Math.min(size, HEAD_BYTES);
+      const tmp = Buffer.allocUnsafe(readLen);
+      const { bytesRead } = await fh.read(tmp, 0, readLen, 0);
+      buf = tmp.subarray(0, bytesRead);
+    } finally {
+      await fh.close();
+    }
+
+    const raw = { video: null, audio: null };
+
+    const parseTraf = payload => {
+      let trackId = null;
+      let tfdt = null;
+      let trunDur = null;
+      let p = 0;
+      while (p + 8 <= payload.length) {
+        const size = ru32(payload, p);
+        if (size < 8) break;
+        const type = rtype(payload, p);
+        const pp = payload.subarray(p + 8, p + size);
+        if (type === 'tfhd' && pp.length >= 8) {
+          trackId = ru32(pp, 4);
+        } else if (type === 'tfdt' && pp.length >= 8) {
+          tfdt = pp[0] === 1 ? ru64(pp, 4) : ru32(pp, 4);
+        } else if (type === 'trun') {
+          trunDur = parseTrunDuration(pp);
+        }
+        p += size;
+      }
+      return { trackId, tfdt, trunDur };
+    };
+
+    const walk = array => {
+      let pos = 0;
+      while (pos + 8 <= array.length) {
+        const size = ru32(array, pos);
+        if (size < 8) break;
+        const type = rtype(array, pos);
+        const payload = array.subarray(pos + 8, pos + size);
+        if (type === 'traf') {
+          const traf = parseTraf(payload);
+          if (traf.trackId === 1 || (traf.trackId == null && raw.video == null)) raw.video = traf;
+          else if (traf.trackId === 2 || raw.audio == null) raw.audio = traf;
+        } else if (type === 'moof') {
+          walk(payload);
+        }
+        pos += size;
+      }
+    };
+
+    walk(buf);
+
+    const convert = (track, timescale) => {
+      if (track?.tfdt == null || !timescale) return null;
+      const start = track.tfdt / timescale;
+      const duration = track.trunDur != null ? track.trunDur / timescale : null;
+      return {
+        tfdt: start,
+        start,
+        end: duration != null ? start + duration : null,
+        duration,
+      };
+    };
+
+    const video = convert(raw.video, videoTimescale);
+    const audio = convert(raw.audio, audioTimescale);
+    return {
+      video,
+      audio,
+      deltaMs: video && audio ? Math.round((audio.start - video.start) * 1000) : null,
+    };
+  } catch {
+    return empty;
   }
 }
 
