@@ -471,6 +471,16 @@ progress { width: 100%; height: 5px; margin-top: 8px; border-radius: 3px; }
   </div>
 </details>
 
+<details class="card seek-av-analysis-card" id="card-seek-audio-investigation" open>
+  <summary>
+    <h2>Seek Audio Investigation</h2>
+    <button id="btn-copy-seek-audio-investigation" class="cp-btn" type="button">Copy Panel</button>
+  </summary>
+  <div class="seek-av-analysis-body">
+    <pre id="seek-audio-investigation-panel" style="font-family: ui-monospace, monospace; font-size: 0.72rem; background: #0d1117; border: 1px solid #263241; color: #9cf; border-radius: 4px; padding: 10px 12px; max-height: 500px; overflow-y: auto; white-space: pre-wrap; margin: 0;">No seek audio investigation telemetry yet.</pre>
+  </div>
+</details>
+
 <div class="card">
   <h2>Log</h2>
   <div id="log-box"></div>
@@ -1030,32 +1040,12 @@ function parseFragmentTracks(data) {
   const buf = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
   const raw = { video: null, audio: null };
 
-  function parseTrunDuration(payload) {
-    if (payload.length < 8) return null;
-    const flags = ((payload[0] << 16) | (payload[1] << 8) | payload[2]) & 0xffffff;
-    const sampleCount = (payload[4] << 24) | (payload[5] << 16) | (payload[6] << 8) | payload[7];
-    if ((flags & 0x100) === 0 || sampleCount === 0) return null;
-    // ISO BMFF 8.8.8: pre-table optional fields.
-    let offset = 8;
-    if (flags & 0x001) offset += 4; // data_offset
-    if (flags & 0x004) offset += 4; // first_sample_flags
-    let total = 0;
-    for (let i = 0; i < sampleCount; i++) {
-      if (offset + 4 > payload.length) break;
-      total += (payload[offset] << 24) | (payload[offset + 1] << 16)
-        | (payload[offset + 2] << 8) | payload[offset + 3];
-      offset += 4; // sample_duration (0x100, always present here)
-      if (flags & 0x200) offset += 4; // sample_size
-      if (flags & 0x400) offset += 4; // sample_flags
-      if (flags & 0x800) offset += 4; // sample_composition_time_offset
-    }
-    return total > 0 ? total : null;
-  }
-
   function parseTraf(payload) {
     let trackId = null;
     let tfdt = null;
-    let trunDur = null;
+    let defaultSampleDuration = null;
+    let truns = [];
+
     let p = 0;
     while (p + 8 <= payload.length) {
       const psz = (payload[p] << 24) | (payload[p + 1] << 16)
@@ -1065,6 +1055,16 @@ function parseFragmentTracks(data) {
       const pp = payload.subarray(p + 8, p + psz);
       if (ptype === 'tfhd' && pp.length >= 8) {
         trackId = (pp[4] << 24) | (pp[5] << 16) | (pp[6] << 8) | pp[7];
+        const flags = ((pp[1] << 16) | (pp[2] << 8) | pp[3]) & 0xffffff;
+        let offset = 8;
+        if (flags & 0x000001) offset += 8; // base_data_offset
+        if (flags & 0x000002) offset += 4; // sample_description_index
+        if (flags & 0x000008) {
+          if (offset + 4 <= pp.length) {
+            defaultSampleDuration = (pp[offset] << 24) | (pp[offset + 1] << 16) | (pp[offset + 2] << 8) | pp[offset + 3];
+            offset += 4;
+          }
+        }
       } else if (ptype === 'tfdt' && pp.length >= 8) {
         const version = pp[0];
         if (version === 1) {
@@ -1074,11 +1074,76 @@ function parseFragmentTracks(data) {
           tfdt = (pp[4] << 24) | (pp[5] << 16) | (pp[6] << 8) | pp[7];
         }
       } else if (ptype === 'trun') {
-        trunDur = parseTrunDuration(pp);
+        truns.push(pp);
       }
       p += psz;
     }
-    return { trackId, tfdt, trunDur };
+
+    let totalSampleCount = 0;
+    let currentDts = tfdt || 0;
+    let firstPts = null;
+    let lastPts = null;
+    let totalDuration = 0;
+
+    for (const pp of truns) {
+      const flags = ((pp[1] << 16) | (pp[2] << 8) | pp[3]) & 0xffffff;
+      const sampleCount = (pp[4] << 24) | (pp[5] << 16) | (pp[6] << 8) | pp[7];
+      totalSampleCount += sampleCount;
+
+      let offset = 8;
+      if (flags & 0x000001) offset += 4; // data_offset
+      if (flags & 0x000004) offset += 4; // first_sample_flags
+
+      for (let i = 0; i < sampleCount; i++) {
+        if (offset >= pp.length) break;
+
+        let sampleDur = defaultSampleDuration || 0;
+        if (flags & 0x000100) {
+          sampleDur = (pp[offset] << 24) | (pp[offset + 1] << 16) | (pp[offset + 2] << 8) | pp[offset + 3];
+          offset += 4;
+        }
+
+        if (flags & 0x000200) {
+          offset += 4; // sample_size
+        }
+
+        if (flags & 0x000400) {
+          offset += 4; // sample_flags
+        }
+
+        let cto = 0;
+        if (flags & 0x000800) {
+          const version = pp[0];
+          if (version === 1) {
+            cto = (pp[offset] << 24) | (pp[offset + 1] << 16) | (pp[offset + 2] << 8) | pp[offset + 3];
+            if (cto & 0x80000000) {
+              cto = cto - 0x100000000;
+            }
+          } else {
+            cto = ((pp[offset] << 24) | (pp[offset + 1] << 16) | (pp[offset + 2] << 8) | pp[offset + 3]) >>> 0;
+          }
+          offset += 4;
+        }
+
+        const pts = currentDts + cto;
+        if (firstPts === null) {
+          firstPts = pts;
+        }
+        lastPts = pts;
+
+        currentDts += sampleDur;
+        totalDuration += sampleDur;
+      }
+    }
+
+    return {
+      trackId,
+      tfdt,
+      sampleCount: totalSampleCount,
+      firstPts: firstPts !== null ? firstPts : tfdt,
+      lastPts: lastPts !== null ? lastPts : tfdt,
+      trunDur: totalDuration
+    };
   }
 
   function walk(array) {
@@ -1113,6 +1178,10 @@ function parseFragmentTracks(data) {
       startSec,
       endSec: durSec != null ? startSec + durSec : null,
       durSec,
+      firstPts: raw.video.firstPts != null ? raw.video.firstPts / VIDEO_TIMESCALE : null,
+      lastPts: raw.video.lastPts != null ? raw.video.lastPts / VIDEO_TIMESCALE : null,
+      duration: durSec,
+      sampleCount: raw.video.sampleCount,
     };
   }
   if (raw.audio?.tfdt != null) {
@@ -1123,6 +1192,10 @@ function parseFragmentTracks(data) {
       startSec,
       endSec: durSec != null ? startSec + durSec : null,
       durSec,
+      firstPts: raw.audio.firstPts != null ? raw.audio.firstPts / AUDIO_TIMESCALE : null,
+      lastPts: raw.audio.lastPts != null ? raw.audio.lastPts / AUDIO_TIMESCALE : null,
+      duration: durSec,
+      sampleCount: raw.audio.sampleCount,
     };
   }
   if (out.video && out.audio) {
@@ -2320,6 +2393,15 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => { b.textContent = 'Copy Panel'; }, 1500);
     });
   });
+  document.getElementById('btn-copy-seek-audio-investigation')?.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    const b = e.currentTarget;
+    navigator.clipboard.writeText(_cpText('seek-audio-investigation-panel')).then(() => {
+      b.textContent = 'Copied!';
+      setTimeout(() => { b.textContent = 'Copy Panel'; }, 1500);
+    });
+  });
   document.getElementById('btn-copy-seek-debug')?.addEventListener('click', () => {
     const text = _seekDebugLines.join('\n\n');
     navigator.clipboard.writeText(text).then(
@@ -2368,7 +2450,7 @@ const _CP_PANELS = [
   'seek-lifecycle-log', 'seek-byte-log', 'priority-log', 'cluster-log',
   'ffmpeg-log', 'segment-gen-log', 'video-events-log', 'seek-breakdown-pre',
   'seek-av-sync-analysis-panel', 'seek-root-cause-analysis-panel',
-  'seek-worker-spawn-analysis-panel', 'diagnostics-perf-pre',
+  'seek-worker-spawn-analysis-panel', 'seek-audio-investigation-panel', 'diagnostics-perf-pre',
 ];
 
 function setupCopyButtons() {
@@ -2380,6 +2462,7 @@ function setupCopyButtons() {
     if (card.id === 'card-seek-av-analysis') continue;
     if (card.id === 'card-seek-root-analysis') continue;
     if (card.id === 'card-seek-worker-spawn-analysis') continue;
+    if (card.id === 'card-seek-audio-investigation') continue;
     const h2 = card.querySelector('h2');
     if (!h2 || h2.parentElement.classList.contains('panel-hdr')) continue;
     const hdr = document.createElement('div');
@@ -2771,10 +2854,381 @@ class SegmentPlayer {
     this._seekBootstrap        = null;   // first segment that overlaps the active seek target
     this._seekAv               = null;   // seek A/V telemetry accumulator
     this._mediaStateTimer      = null;
+    this._seekAudioInvestigation = null;
   }
 
   _playheadTime() {
     return this.pendingSeekTime ?? this.video.currentTime;
+  }
+
+  _updateSeekAudioInvestigationUI() {
+    const el = document.getElementById('seek-audio-investigation-panel');
+    if (!el || !this._seekAudioInvestigation) return;
+
+    let text = `====================================================
+SEEK AUDIO INVESTIGATION
+====================================================
+
+Goal:
+
+Determine where the AV drift first appears.
+
+Current logs show:
+
+AV_DRIFT ≈ 627ms
+
+We need to know whether the drift exists:
+
+1. Inside the MP4 fragment itself
+2. During append
+3. During playback
+
+----------------------------------------------------
+SECTION 1 — FIRST PLAYABLE SEGMENT
+----------------------------------------------------
+`;
+
+    const first = this._seekAudioInvestigation.firstPlayableSegment;
+    if (first) {
+      text += `For the segment that completes the seek:
+
+segmentId: ${first.segmentId}
+
+Log:
+{
+  segmentId: "${first.segmentId}",
+  segmentStart: ${first.segmentStart != null ? first.segmentStart.toFixed(3) : 'null'},
+  segmentEnd: ${first.segmentEnd != null ? first.segmentEnd.toFixed(3) : 'null'},
+  targetSeekTime: ${first.targetSeekTime != null ? first.targetSeekTime.toFixed(3) : 'null'}
+}
+`;
+    } else {
+      text += `Waiting for the segment that completes the seek...\n`;
+    }
+
+    text += `\n----------------------------------------------------
+SECTION 2 — MP4 TRACK TIMING
+----------------------------------------------------
+`;
+
+    if (this._seekAudioInvestigation.segments.length > 0) {
+      const seg = this._seekAudioInvestigation.segments[0];
+      text += `Immediately after parsing the segment:
+
+MP4 TRACK TIMING
+
+${seg.segmentId}
+
+videoFirstPts = ${seg.videoFirstPts != null ? seg.videoFirstPts.toFixed(3) : 'null'}
+
+audioFirstPts = ${seg.audioFirstPts != null ? seg.audioFirstPts.toFixed(3) : 'null'}
+
+drift = ${seg.driftMs != null ? seg.driftMs.toFixed(1) + 'ms' : 'null'}
+
+Log:
+{
+  segmentId: "${seg.segmentId}",
+  videoTfdt: ${seg.videoTfdt != null ? seg.videoTfdt.toFixed(3) : 'null'},
+  audioTfdt: ${seg.audioTfdt != null ? seg.audioTfdt.toFixed(3) : 'null'},
+  videoFirstPts: ${seg.videoFirstPts != null ? seg.videoFirstPts.toFixed(3) : 'null'},
+  audioFirstPts: ${seg.audioFirstPts != null ? seg.audioFirstPts.toFixed(3) : 'null'},
+  videoLastPts: ${seg.videoLastPts != null ? seg.videoLastPts.toFixed(3) : 'null'},
+  audioLastPts: ${seg.audioLastPts != null ? seg.audioLastPts.toFixed(3) : 'null'},
+  driftMs: ${seg.driftMs != null ? seg.driftMs.toFixed(3) : 'null'}
+}
+`;
+    } else {
+      text += `Waiting for segment parsing...\n`;
+    }
+
+    text += `\n----------------------------------------------------
+SECTION 3 — SAMPLE COUNTS
+----------------------------------------------------
+`;
+
+    if (this._seekAudioInvestigation.segments.length > 0) {
+      const seg = this._seekAudioInvestigation.segments[0];
+      text += `Log:
+{
+  videoSamples: ${seg.videoSamples != null ? seg.videoSamples : 'null'},
+  audioSamples: ${seg.audioSamples != null ? seg.audioSamples : 'null'}
+}
+
+This verifies that audio and video are both present.
+`;
+    } else {
+      text += `Waiting for sample counts...\n`;
+    }
+
+    text += `\n----------------------------------------------------
+SECTION 4 — APPEND VALUES
+----------------------------------------------------
+`;
+
+    if (this._seekAudioInvestigation.segments.length > 0) {
+      const seg = this._seekAudioInvestigation.segments[0];
+      if (seg.timestampOffset !== null) {
+        text += `Immediately before appendBuffer():
+
+Log:
+{
+  segmentId: "${seg.segmentId}",
+  timestampOffset: ${seg.timestampOffset.toFixed(3)},
+  appendWindowStart: ${seg.appendWindowStart.toFixed(3)},
+  appendWindowEnd: ${seg.appendWindowEnd.toFixed(3)},
+  videoFirstPts: ${seg.videoFirstPts != null ? seg.videoFirstPts.toFixed(3) : 'null'},
+  audioFirstPts: ${seg.audioFirstPts != null ? seg.audioFirstPts.toFixed(3) : 'null'},
+  driftBeforeAppendMs: ${seg.driftBeforeAppendMs != null ? seg.driftBeforeAppendMs.toFixed(3) : 'null'}
+}
+`;
+      } else {
+        text += `Waiting for append initialization...\n`;
+      }
+    } else {
+      text += `Waiting for segment data...\n`;
+    }
+
+    text += `\n----------------------------------------------------
+SECTION 5 — AFTER APPEND
+----------------------------------------------------
+`;
+
+    if (this._seekAudioInvestigation.segments.length > 0) {
+      const seg = this._seekAudioInvestigation.segments[0];
+      if (seg.bufferedStart !== null) {
+        text += `After updateend:
+
+Log:
+{
+  segmentId: "${seg.segmentId}",
+  bufferedStart: ${seg.bufferedStart.toFixed(3)},
+  bufferedEnd: ${seg.bufferedEnd.toFixed(3)},
+  currentTime: ${seg.currentTime.toFixed(3)}
+}
+`;
+      } else {
+        text += `Waiting for append completion (updateend)...\n`;
+      }
+    } else {
+      text += `Waiting for segment data...\n`;
+    }
+
+    text += `\n----------------------------------------------------
+SECTION 6 — DRIFT ORIGIN
+----------------------------------------------------
+`;
+
+    const origin = this._seekAudioInvestigation.driftOrigin;
+    if (origin) {
+      text += `DRIFT ORIGIN: ${origin}
+
+Logic:
+if abs(audioFirstPts - videoFirstPts) > 100ms
+=> MP4_FRAGMENT
+else if drift appears only after append
+=> MSE_APPEND
+else if drift appears only after playback begins
+=> PLAYBACK_CLOCK
+`;
+    } else {
+      text += `Waiting for drift origin diagnosis...\n`;
+    }
+
+    text += `\n----------------------------------------------------
+SECTION 7 — FIRST 5 SEEK SEGMENTS
+----------------------------------------------------
+`;
+
+    if (this._seekAudioInvestigation.segments.length > 0) {
+      text += `For the first 5 segments generated after a seek:\n\n`;
+      text += `segmentId\t\t\tvideoFirstPts\taudioFirstPts\tdriftMs\n`;
+      text += `--------------------------------------------------------------------------------\n`;
+      this._seekAudioInvestigation.segments.forEach(seg => {
+        text += `${seg.segmentId}\t${seg.videoFirstPts != null ? seg.videoFirstPts.toFixed(3) : 'null'}\t\t${seg.audioFirstPts != null ? seg.audioFirstPts.toFixed(3) : 'null'}\t\t${seg.driftMs != null ? seg.driftMs.toFixed(1) + 'ms' : 'null'}\n`;
+      });
+    } else {
+      text += `Waiting for seek segment generation...\n`;
+    }
+
+    el.textContent = text;
+  }
+
+  _onSegmentParsed(seg, buf, tracks) {
+    if (!this._seekAudioInvestigation) return;
+    const isSeekSeg = this._isSeekArtifact(seg.segmentId);
+    if (!isSeekSeg) return;
+
+    let segRecord = this._seekAudioInvestigation.segments.find(r => r.segmentId === seg.segmentId);
+    if (!segRecord && this._seekAudioInvestigation.segments.length < 5) {
+      const videoTfdt = tracks.video?.tfdt ?? null;
+      const audioTfdt = tracks.audio?.tfdt ?? null;
+      const videoFirstPts = tracks.video?.firstPts ?? null;
+      const audioFirstPts = tracks.audio?.firstPts ?? null;
+      const videoLastPts = tracks.video?.lastPts ?? null;
+      const audioLastPts = tracks.audio?.lastPts ?? null;
+      const videoDuration = tracks.video?.duration ?? null;
+      const audioDuration = tracks.audio?.duration ?? null;
+      const videoSamples = tracks.video?.sampleCount ?? null;
+      const audioSamples = tracks.audio?.sampleCount ?? null;
+      const driftMs = (videoFirstPts != null && audioFirstPts != null) ? (audioFirstPts - videoFirstPts) * 1000 : null;
+
+      segRecord = {
+        segmentId: seg.segmentId,
+        videoTfdt,
+        audioTfdt,
+        videoFirstPts,
+        audioFirstPts,
+        videoLastPts,
+        audioLastPts,
+        videoDuration,
+        audioDuration,
+        videoSamples,
+        audioSamples,
+        driftMs,
+        timestampOffset: null,
+        appendWindowStart: null,
+        appendWindowEnd: null,
+        driftBeforeAppendMs: null,
+        bufferedStart: null,
+        bufferedEnd: null,
+        currentTime: null
+      };
+      this._seekAudioInvestigation.segments.push(segRecord);
+
+      // Section 2 Log
+      const sec2Log = {
+        segmentId: seg.segmentId,
+        videoTfdt,
+        audioTfdt,
+        videoFirstPts,
+        audioFirstPts,
+        videoLastPts,
+        audioLastPts,
+        driftMs: driftMs != null ? +driftMs.toFixed(3) : null
+      };
+      console.log('[SEEK-AUDIO-INVESTIGATION] SECTION 2 — MP4 TRACK TIMING:', sec2Log);
+
+      // Section 3 Log
+      const sec3Log = {
+        videoSamples,
+        audioSamples
+      };
+      console.log('[SEEK-AUDIO-INVESTIGATION] SECTION 3 — SAMPLE COUNTS:', sec3Log);
+
+      this._updateSeekAudioInvestigationUI();
+    }
+  }
+
+  _captureAppendValues(segmentId, buf, tracks) {
+    if (!this._seekAudioInvestigation) return;
+    let segRecord = this._seekAudioInvestigation.segments.find(r => r.segmentId === segmentId);
+    if (!segRecord) return;
+
+    const timestampOffset = this.sb?.timestampOffset ?? 0;
+    const appendWindowStart = this.sb?.appendWindowStart ?? 0;
+    const appendWindowEnd = this.sb?.appendWindowEnd ?? this.duration;
+    const videoFirstPts = tracks?.video?.firstPts;
+    const audioFirstPts = tracks?.audio?.firstPts;
+    const driftBeforeAppendMs = (videoFirstPts != null && audioFirstPts != null)
+      ? (audioFirstPts - videoFirstPts) * 1000
+      : null;
+
+    segRecord.timestampOffset = timestampOffset;
+    segRecord.appendWindowStart = appendWindowStart;
+    segRecord.appendWindowEnd = appendWindowEnd;
+    segRecord.driftBeforeAppendMs = driftBeforeAppendMs;
+
+    const sec4Log = {
+      segmentId,
+      timestampOffset: +timestampOffset.toFixed(3),
+      appendWindowStart: +appendWindowStart.toFixed(3),
+      appendWindowEnd: +appendWindowEnd.toFixed(3),
+      videoFirstPts: videoFirstPts != null ? videoFirstPts.toFixed(3) : 'null',
+      audioFirstPts: audioFirstPts != null ? audioFirstPts.toFixed(3) : 'null',
+      driftBeforeAppendMs: driftBeforeAppendMs != null ? driftBeforeAppendMs.toFixed(1) : 'null'
+    };
+    console.log('[SEEK-AUDIO-INVESTIGATION] SECTION 4 — APPEND VALUES:', sec4Log);
+    this._updateSeekAudioInvestigationUI();
+  }
+
+  _capturePostAppendValues(segmentId) {
+    if (!this._seekAudioInvestigation) return;
+    let segRecord = this._seekAudioInvestigation.segments.find(r => r.segmentId === segmentId);
+    if (!segRecord) return;
+
+    const buffered = this.video.buffered;
+    let bufferedStart = null;
+    let bufferedEnd = null;
+
+    if (buffered.length > 0) {
+      bufferedStart = buffered.start(0);
+      for (let i = 0; i < buffered.length; i++) {
+        if (this.video.currentTime >= buffered.start(i) - 0.1 && this.video.currentTime < buffered.end(i) + 0.1) {
+          bufferedStart = buffered.start(i);
+          bufferedEnd = buffered.end(i);
+          break;
+        }
+      }
+      if (bufferedEnd === null) {
+        bufferedEnd = buffered.end(buffered.length - 1);
+      }
+    }
+
+    const currentTime = this.video.currentTime;
+    segRecord.bufferedStart = bufferedStart;
+    segRecord.bufferedEnd = bufferedEnd;
+    segRecord.currentTime = currentTime;
+
+    const sec5Log = {
+      segmentId,
+      bufferedStart: bufferedStart != null ? bufferedStart.toFixed(3) : 'null',
+      bufferedEnd: bufferedEnd != null ? bufferedEnd.toFixed(3) : 'null',
+      currentTime: currentTime.toFixed(3)
+    };
+    console.log('[SEEK-AUDIO-INVESTIGATION] SECTION 5 — AFTER APPEND:', sec5Log);
+
+    this._calculateDriftOrigin(segRecord);
+    this._markFirstPlayableSegment(segRecord);
+    this._updateSeekAudioInvestigationUI();
+  }
+
+  _calculateDriftOrigin(segRecord) {
+    if (!this._seekAudioInvestigation || this._seekAudioInvestigation.driftOrigin) return;
+
+    const driftMs = segRecord.driftMs;
+    if (driftMs == null) return;
+
+    if (Math.abs(driftMs) > 100) {
+      this._seekAudioInvestigation.driftOrigin = 'MP4_FRAGMENT';
+    } else if (segRecord.driftBeforeAppendMs != null && Math.abs(segRecord.driftBeforeAppendMs) > 100) {
+      this._seekAudioInvestigation.driftOrigin = 'MP4_FRAGMENT';
+    } else if (segRecord.bufferedStart != null && segRecord.currentTime != null) {
+      const postAppendDrift = (segRecord.audioFirstPts - segRecord.videoFirstPts) * 1000 || 0;
+      if (Math.abs(postAppendDrift) > 100) {
+        this._seekAudioInvestigation.driftOrigin = 'MSE_APPEND';
+      } else {
+        this._seekAudioInvestigation.driftOrigin = 'PLAYBACK_CLOCK';
+      }
+    }
+
+    if (this._seekAudioInvestigation.driftOrigin) {
+      console.log('[SEEK-AUDIO-INVESTIGATION] SECTION 6 — DRIFT ORIGIN:', this._seekAudioInvestigation.driftOrigin);
+    }
+  }
+
+  _markFirstPlayableSegment(segRecord) {
+    if (!this._seekAudioInvestigation) return;
+    if (this._seekAudioInvestigation.firstPlayableSegment) return;
+
+    if (segRecord.bufferedStart != null && segRecord.bufferedEnd != null && segRecord.videoFirstPts != null && segRecord.audioFirstPts != null) {
+      this._seekAudioInvestigation.firstPlayableSegment = {
+        segmentId: segRecord.segmentId,
+        segmentStart: segRecord.bufferedStart,
+        segmentEnd: segRecord.bufferedEnd,
+        targetSeekTime: this._seekAudioInvestigation.targetSeekTime
+      };
+      console.log('[SEEK-AUDIO-INVESTIGATION] FIRST PLAYABLE SEGMENT:', this._seekAudioInvestigation.firstPlayableSegment);
+    }
   }
 
   _isSeekArtifact(segmentId) {
@@ -4507,6 +4961,7 @@ class SegmentPlayer {
           }));
         }
         this._logSegmentAvTelemetry(queued ?? seg, buf, tracks, 'fetch_done');
+        this._onSegmentParsed(queued ?? seg, buf, tracks);
         const t = queued?.startTime ?? seg.startTime ?? 0;
         msePageLog('[FETCH DONE]', seg.segmentId, t.toFixed(2) + 's', 'gen=', gen);
         this._mseTrace('FETCH_DONE', {
@@ -4711,6 +5166,9 @@ class SegmentPlayer {
             seekSegment: isSeekSeg,
           }));
           this._logAfterAppendEnd(seg);
+          if (isSeekSeg) {
+            this._capturePostAppendValues(seg.segmentId);
+          }
         }
         resolve();
       };
@@ -4730,6 +5188,9 @@ class SegmentPlayer {
         if (isMediaSegment) {
           this._syncTimestampOffset(buf, seg);
           this._logSeekAppendFragment(seg, appendTracks, gen);
+          if (this._isSeekArtifact(seg.segmentId)) {
+            this._captureAppendValues(seg.segmentId, buf, appendTracks);
+          }
         }
         this.sb.appendBuffer(buf);
         this._mseTrace('APPEND_SUCCESS', {
@@ -5027,6 +5488,16 @@ class SegmentPlayer {
       firstAudio: null,
       report: null,
     };
+    this._seekAudioInvestigation = {
+      targetSeekTime: toTime,
+      segments: [],
+      firstPlayableSegment: null,
+      driftOrigin: null,
+    };
+    const uiEl = document.getElementById('seek-audio-investigation-panel');
+    if (uiEl) {
+      uiEl.textContent = 'Seeking to ' + toTime.toFixed(2) + 's... Waiting for telemetry.';
+    }
     this._mseTrace('SEEK_TARGET', {
       targetTime: +toTime.toFixed(3),
       generation: gen,
