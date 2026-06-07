@@ -147,6 +147,7 @@ export class SeekWorkerManager {
     const generator = new HlsGenerator({ label: jobId });
     const worker = {
       jobId,
+      generation: gen,
       seekTime,
       seekByte,
       seekOffset,
@@ -171,6 +172,9 @@ export class SeekWorkerManager {
       _spawnFirstDiscard: null,
       _spawnCoveringFound: false,
       _spawnSource: positionSource,
+      _prerollEntered:       false,
+      _prerollCount:         0,
+      _prerollTargetReached: false,
       // telemetry
       _stderrBuf:        [],   // rolling last-20 stderr lines
       _firstOutputSeen:  null, // first output filename (any type)
@@ -472,6 +476,7 @@ export class SeekWorkerManager {
   getWorkerStats() {
     return [...this._workers.values()].map(w => ({
       jobId:             w.jobId,
+      generation:        w.generation,
       seekTime:          w.seekTime,
       state:             w.state,
       segmentsGenerated: w.segmentsGenerated,
@@ -509,7 +514,7 @@ export class SeekWorkerManager {
     const FIRST_OUTPUT_NAMES = new Set(['master.m3u8', 'seek_init.mp4', 'segment_00000.m4s']);
     const prevDirFiles = new Map(); // filename → { size, mtime }
     const dirMonitorHandle = setInterval(() => {
-      if (worker.state !== 'running') { clearInterval(dirMonitorHandle); return; }
+      if (!this._isCurrentWorker(worker)) { clearInterval(dirMonitorHandle); return; }
       try {
         for (const f of fs.readdirSync(seekDir)) {
           const fp = path.join(seekDir, f);
@@ -535,6 +540,7 @@ export class SeekWorkerManager {
     }, 500);
 
     const processComplete = (file, fullPath) => {
+      if (!this._isCurrentWorker(worker)) return;
       if (!file.endsWith('.m4s') || file.startsWith('seek_init') || state.seen.has(file)) return;
       state.seen.add(file);
       worker._segsSeen++;
@@ -563,7 +569,7 @@ export class SeekWorkerManager {
     // So when this event fires for segment N, segment N-1 is fully written and closed.
     // Process N-1 now (complete); hold N until N+1 opens.
     const onOpen = ({ path: segPath, filename }) => {
-      if (worker.state !== 'running') return;
+      if (!this._isCurrentWorker(worker)) return;
       if (filename.startsWith('seek_init')) return;
       if (state.prevSeg) processComplete(state.prevSeg.filename, state.prevSeg.path);
       state.prevSeg = { filename, path: segPath };
@@ -585,7 +591,7 @@ export class SeekWorkerManager {
     // Fallback poll: catches segments the event missed AND any file that is no
     // longer the currently-open one (i.e. prevSeg moved past it).
     const pollHandle = setInterval(() => {
-      if (worker.state !== 'running') { clearInterval(pollHandle); return; }
+      if (!this._isCurrentWorker(worker)) { clearInterval(pollHandle); return; }
       try {
         for (const file of fs.readdirSync(seekDir)) {
           if (!file.endsWith('.m4s') || file.startsWith('seek_init') || state.seen.has(file)) continue;
@@ -605,17 +611,19 @@ export class SeekWorkerManager {
   }
 
   async _processSegment(worker, segPath, timescale) {
-    if (worker.state !== 'running') return;
+    if (!this._isCurrentWorker(worker)) return;
     const session = this.session;
     const file = path.basename(segPath);
 
     // Retry until we can parse the TFDT (file might still be written).
     let timing = null;
     for (let attempt = 0; attempt < 5; attempt++) {
+      if (!this._isCurrentWorker(worker)) return;
       timing = await readSegmentTiming(segPath, timescale);
       if (timing) break;
       await sleep(80);
     }
+    if (!this._isCurrentWorker(worker)) return;
 
     if (!timing) {
       warn(NS, `Could not parse TFDT from ${segPath}`);
@@ -634,6 +642,7 @@ export class SeekWorkerManager {
       videoTimescale: timescale,
       audioTimescale: 48000,
     });
+    if (!this._isCurrentWorker(worker)) return;
     if (!worker._rootFirstAv && (tracks.video || tracks.audio)) {
       worker._rootFirstAv = {
         firstVideoPts: tracks.video ? worker.seekOffset + tracks.video.start : null,
@@ -715,20 +724,22 @@ export class SeekWorkerManager {
       timelineCount: this.session.timeline.count(),
     });
 
-    // Preroll check: discard segments entirely before the seek target.
+    // Preroll accumulation: segments before the target are promoted normally so
+    // the player has a contiguous decode chain from the decode point.
     const PREROLL_WINDOW = 0.5;
-    const prerollResult = absoluteEnd < worker.seekTime - PREROLL_WINDOW ? 'discard' : 'keep';
+    const isPreroll = absoluteEnd < worker.seekTime - PREROLL_WINDOW;
     const overlapsTargetAtEvaluation = _overlapsTarget(absoluteTiming, worker.seekTime);
-    const decision = prerollResult === 'discard'
-      ? 'discard_before_target'
+    const decision = isPreroll
+      ? 'preroll_accumulate'
       : overlapsTargetAtEvaluation ? 'promote_overlap' : 'promote_after_target';
+
     this._trace(worker, 'seek.root.segment', {
       segment: file,
       absoluteStart: +absoluteStart.toFixed(3),
       absoluteEnd: +absoluteEnd.toFixed(3),
       containsVideo: !!tracks.video,
       containsAudio: !!tracks.audio,
-      decision: prerollResult === 'discard' ? 'discard' : 'keep',
+      decision: 'keep',
       detailedDecision: decision,
       targetTime: +worker.seekTime.toFixed(3),
     });
@@ -755,53 +766,36 @@ export class SeekWorkerManager {
       absoluteEnd:   +absoluteEnd.toFixed(3),
       targetTime:    +worker.seekTime.toFixed(3),
       prerollWindow: PREROLL_WINDOW,
-      result:        prerollResult,
-      reason:        prerollResult === 'discard' ? 'before_target' : 'covers_or_after_target',
+      result:        'keep',
+      reason:        isPreroll ? 'preroll_accumulate' : 'covers_or_after_target',
     });
 
-    if (prerollResult === 'discard') {
-      if (!worker._spawnFirstDiscard) {
-        worker._spawnFirstDiscard = file;
-        this._trace(worker, 'seek.worker_spawn.first_discard', {
-          segmentId: file,
-          absoluteStart: +absoluteStart.toFixed(3),
-          absoluteEnd: +absoluteEnd.toFixed(3),
-          requestedSeekTime: +worker.seekTime.toFixed(3),
-          reason: absoluteEnd < worker.seekTime ? 'before_target' : 'timeline_mismatch',
+    if (isPreroll) {
+      if (!worker._prerollEntered) {
+        worker._prerollEntered = true;
+        this._trace(worker, 'seek.preroll.enter', {
+          decodePoint:  +worker.seekOffset.toFixed(3),
+          targetTime:   +worker.seekTime.toFixed(3),
+          gapSeconds:   +(worker.seekTime - worker.seekOffset).toFixed(3),
         });
       }
-      try { await fs.promises.unlink(segPath); } catch {}
-      worker._lastFailureReason = 'preroll_discarded';
-      this._trace(worker, 'seek.segment.preroll_discarded', {
-        path: segPath,
-        relativeStart,
-        relativeEnd,
-        seekOffset: worker.seekOffset,
-        startTime: absoluteStart,
-        endTime: absoluteEnd,
-        absoluteStart,
-        absoluteEnd,
-        seekTime: worker.seekTime,
-        overlapsTarget: _overlapsTarget(absoluteTiming, worker.seekTime),
-      });
-      this._trace(worker, 'seek.proof.preroll_discarded', {
-        stage: 'preroll_discarded',
+      this._trace(worker, 'seek.preroll.segment', {
         file,
-        path: segPath,
-        relativeStart: +relativeStart.toFixed(3),
-        relativeEnd: +relativeEnd.toFixed(3),
-        seekOffset: +worker.seekOffset.toFixed(3),
-        startTime: +absoluteStart.toFixed(3),
-        endTime: +absoluteEnd.toFixed(3),
-        absoluteStart: +absoluteStart.toFixed(3),
-        absoluteEnd: +absoluteEnd.toFixed(3),
-        targetTime: +worker.seekTime.toFixed(3),
-        overlapsTarget: _overlapsTarget(absoluteTiming, worker.seekTime),
-        promoted: false,
-        inserted: false,
-        timelineCount: session.timeline.count(),
+        absoluteStart:  +absoluteStart.toFixed(3),
+        absoluteEnd:    +absoluteEnd.toFixed(3),
+        targetTime:     +worker.seekTime.toFixed(3),
+        remaining:      +(worker.seekTime - absoluteEnd).toFixed(3),
+        prerollIndex:   worker._prerollCount,
       });
-      return;
+      this._trace(worker, 'seek.preroll.coverage', {
+        coveredFrom:    +worker.seekOffset.toFixed(3),
+        coveredTo:      +absoluteEnd.toFixed(3),
+        targetTime:     +worker.seekTime.toFixed(3),
+        remaining:      +(worker.seekTime - absoluteEnd).toFixed(3),
+        prerollCount:   worker._prerollCount + 1,
+      });
+      worker._prerollCount++;
+      // Fall through — promote this segment normally (no discard).
     }
 
     const destName = `segment_t${Math.round(absoluteStart * 1000)}.m4s`;
@@ -850,11 +844,15 @@ export class SeekWorkerManager {
     });
 
     // Copy seek_init.mp4 before the first segment.
+    if (!this._isCurrentWorker(worker)) return;
+
     if (!worker.seekInitCopied) {
       const seekInitSrc  = path.join(worker.seekDir, 'seek_init.mp4');
       const seekInitDest = path.join(session.hlsPath, 'seek_init.mp4');
       try {
+        if (!this._isCurrentWorker(worker)) return;
         await fs.promises.copyFile(seekInitSrc, seekInitDest);
+        if (!this._isCurrentWorker(worker)) return;
         worker.seekInitCopied = true;
         this._trace(worker, 'seek.segment.seek_init_copied');
       } catch (e) {
@@ -863,7 +861,12 @@ export class SeekWorkerManager {
     }
 
     try {
+      if (!this._isCurrentWorker(worker)) return;
       await fs.promises.copyFile(segPath, destPath);
+      if (!this._isCurrentWorker(worker)) {
+        try { await fs.promises.unlink(destPath); } catch {}
+        return;
+      }
       await fs.promises.unlink(segPath);
     } catch (e) {
       warn(NS, `Failed to move seek segment: ${e.message}`);
@@ -874,10 +877,22 @@ export class SeekWorkerManager {
       return;
     }
 
+    if (!this._isCurrentWorker(worker)) return;
+
     let destStat = null;
     try { destStat = await fs.promises.stat(destPath); } catch {}
     const overlapsTarget = _overlapsTarget(absoluteTiming, worker.seekTime);
     if (overlapsTarget) worker._spawnCoveringFound = true;
+    if (overlapsTarget && !worker._prerollTargetReached) {
+      worker._prerollTargetReached = true;
+      this._trace(worker, 'seek.preroll.target_reached', {
+        file:                        destName,
+        absoluteStart:               +absoluteStart.toFixed(3),
+        absoluteEnd:                 +absoluteEnd.toFixed(3),
+        targetTime:                  +worker.seekTime.toFixed(3),
+        prerollSegmentsAccumulated:  worker._prerollCount,
+      });
+    }
     if (!worker._rootFirstKept) {
       worker._rootFirstKept = destName;
       this._trace(worker, 'seek.root.first_kept_segment', {
@@ -925,6 +940,8 @@ export class SeekWorkerManager {
     worker._segsPromoted++;
 
     // Register in timeline (authoritative).
+    if (!this._isCurrentWorker(worker)) return;
+
     const countBefore = session.timeline.count();
     const entry = session.timeline.register({
       file:      destName,
@@ -937,6 +954,7 @@ export class SeekWorkerManager {
       segmentId: destName,
     });
     const countAfter = session.timeline.count();
+    if (!this._isCurrentWorker(worker)) return;
 
     if (countAfter > countBefore) {
       worker._timelineInserted++;
@@ -997,7 +1015,11 @@ export class SeekWorkerManager {
     });
 
     // Emit segment:ready so the SSE feed delivers it to the frontend.
-    session.events.emit('segment:ready', toSegmentPayload(entry));
+    if (!this._isCurrentWorker(worker)) return;
+    session.events.emit('segment:ready', {
+      ...toSegmentPayload(entry),
+      generation: worker.generation,
+    });
     this._trace(worker, 'seek.segment.promoted', {
       file: destName,
       relativeStart,
@@ -1032,6 +1054,15 @@ export class SeekWorkerManager {
       timelineCount: countAfter,
     });
 
+    if (isPreroll) {
+      this._trace(worker, 'seek.preroll.promote', {
+        file:          destName,
+        absoluteStart: +absoluteStart.toFixed(3),
+        absoluteEnd:   +absoluteEnd.toFixed(3),
+        targetTime:    +worker.seekTime.toFixed(3),
+        prerollIndex:  worker._prerollCount - 1,
+      });
+    }
     log(NS, `Segment ${destName} rel=[${relativeStart.toFixed(2)}-${relativeEnd.toFixed(2)}s] abs=[${absoluteStart.toFixed(2)}-${absoluteEnd.toFixed(2)}s] target=${worker.seekTime.toFixed(3)}s overlap=${overlapsTarget} timeline=${countBefore}->${countAfter}`);
   }
 
@@ -1050,6 +1081,12 @@ export class SeekWorkerManager {
         ? 'WORKER_STARTED_FROM_WRONG_POSITION'
         : 'NOT_WORKER_POSITION',
     });
+  }
+
+  _isCurrentWorker(worker) {
+    if (!worker || worker.state !== 'running') return false;
+    if (worker.generation !== this._seekGeneration) return false;
+    return this._workers.get(worker.jobId) === worker;
   }
 
   async _cleanupWorker(jobId) {
@@ -1084,6 +1121,7 @@ export class SeekWorkerManager {
       ns: NS,
       at: Date.now(),
       jobId: worker?.jobId ?? data.jobId,
+      generation: worker?.generation ?? data.generation,
       seekTime: worker?.seekTime ?? data.seekTime,
       seekByte: worker?.seekByte ?? data.seekByte,
       seekOffset: worker?.seekOffset ?? data.seekOffset,
