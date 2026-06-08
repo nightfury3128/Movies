@@ -23,6 +23,9 @@ import torrentRoutes       from './routes/torrent.js';
 import streamRoutes        from './routes/stream.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ENABLE_TFDT_NORMALIZATION = /^(1|true|yes|on)$/i.test(process.env.ENABLE_TFDT_NORMALIZATION ?? 'true');
+
+console.log(`[config] ENABLE_TFDT_NORMALIZATION=${ENABLE_TFDT_NORMALIZATION}`);
 
 // ── Persistent segment cache ──────────────────────────────────────────────────
 const segmentCache = new SegmentCache();

@@ -38,6 +38,32 @@ const DebugLevel = Object.freeze({ OFF: 0, NORMAL: 1, VERBOSE: 2 });
 const SSE_BATCH_MS = 500;
 const MAX_TRACE_QUEUE = 5000;
 
+function _segmentOwner(session, entryOrFile) {
+  const file = typeof entryOrFile === 'string' ? entryOrFile : entryOrFile?.file;
+  const entry = typeof entryOrFile === 'object' ? entryOrFile : session.timeline?.findByFile?.(file);
+  const owner = file ? session._generationOwnership?.get(file) : null;
+  return {
+    generation: owner?.generation ?? entry?.generation ?? (entry?.source === 'main' ? 0 : null),
+    workerId: owner?.workerId ?? entry?.workerId ?? (entry?.source === 'main' ? 'main' : null),
+    seekEpoch: owner?.seekEpoch ?? entry?.seekEpoch ?? null,
+    source: owner?.source ?? entry?.source ?? null,
+    createdAt: owner?.createdAt ?? entry?.createdAt ?? null,
+  };
+}
+
+function _ownedSegmentPayload(session, entry) {
+  if (!entry) return null;
+  const owner = _segmentOwner(session, entry);
+  return {
+    ...toSegmentPayload(entry),
+    source: owner.source ?? entry.source,
+    generation: owner.generation,
+    workerId: owner.workerId,
+    seekEpoch: owner.seekEpoch,
+    createdAt: owner.createdAt,
+  };
+}
+
 function _debugLevelFromReq(req) {
   const raw = Number(req.query?.debugLevel ?? DebugLevel.NORMAL);
   return Number.isFinite(raw) ? Math.max(DebugLevel.OFF, Math.min(DebugLevel.VERBOSE, raw)) : DebugLevel.NORMAL;
@@ -45,7 +71,8 @@ function _debugLevelFromReq(req) {
 
 function _traceLevel(phase = '') {
   if (/fatal|error|failed|failure|hard_timeout|adaptive_timeout/i.test(phase)) return DebugLevel.OFF;
-  if (/seek\.root\.|seek\.worker_spawn\.|request|started|worker_started|spawned|end$|ready$|done$|segment\.promoted|timeline\.inserted|seek\.summary|seek\.success|stream_ready|stalled|resumed/i.test(phase)) {
+  if (/^track_timeline\./i.test(phase)) return DebugLevel.NORMAL;
+  if (/seek\.root\.|seek\.worker_spawn\.|seek\.decode_point\.|seek\.worker_start\.rejected|seek\.ffmpeg\.command_audit|ffmpeg\.timestamp_warning|seek\.init\.track_info|seek\.first5\.|seek\.segment0\.|seek\.rebase\.trace|seek\.first_divergence\.detected|seek\.av_root_cause\.report|tfdt\.normalization\.|torrent\.priority_source|preroll\.rejected_too_far_from_target|request|started|worker_started|spawned|end$|ready$|done$|segment\.promoted|timeline\.inserted|seek\.summary|seek\.success|stream_ready|stalled|resumed|segment\.|cache\.ownership_audit|timeline\.insert|SEGMENT_OWNERSHIP_VIOLATION|seek\.epoch_created/i.test(phase)) {
     return DebugLevel.NORMAL;
   }
   if (/progress|stderr|piece_gate\.progress|download_rate|bytes_sent|file_modified|file_created|tfdt|timeline|seek_byte|cluster|dir\.|proof\.parsed|proof\.generated/i.test(phase)) {
@@ -216,7 +243,7 @@ export default async function torrentRoutes(fastify, opts) {
     // The client fetches the rest on-demand via /torrent/timeline and /torrent/covering.
     const HOT_WINDOW_SEC = 60;
     for (const entry of session.timeline.getAll()) {
-      if (entry.startTime < HOT_WINDOW_SEC) send('segment:ready', toSegmentPayload(entry));
+      if (entry.startTime < HOT_WINDOW_SEC) send('segment:ready', _ownedSegmentPayload(session, entry));
     }
 
     // Send duration immediately if already known.
@@ -295,12 +322,9 @@ export default async function torrentRoutes(fastify, opts) {
     const from   = after - 2;
     const to     = after + window;
 
-    const entries = session.timeline.getAll()
-      .filter(e => e.startTime >= from && e.startTime <= to)
-      .map(e => ({
-        ...toSegmentPayload(e),
-        source: e.source,
-      }));
+	    const entries = session.timeline.getAll()
+	      .filter(e => e.startTime >= from && e.startTime <= to)
+	      .map(e => _ownedSegmentPayload(session, e));
 
     return reply.send(entries);
   });
@@ -332,7 +356,7 @@ export default async function torrentRoutes(fastify, opts) {
         time: t,
         waitMs,
         elapsedMs: Date.now() - startedAt,
-        segment: entry ? toSegmentPayload(entry) : null,
+        segment: entry ? _ownedSegmentPayload(session, entry) : null,
       });
 
       // If no segment found and no seek worker is still running for this target,
@@ -353,6 +377,13 @@ export default async function torrentRoutes(fastify, opts) {
           if (!last || Math.abs(last.time - t) > 1 || Date.now() - last.at >= COOLDOWN) {
             session._lastSeekSpawn = { time: t, at: Date.now() };
             const decodePoint = await _resolveSafeDecodePoint(session, t);
+            if (!decodePoint) {
+              _trace(session, 'route.covering.respawn_skipped', {
+                time: t,
+                reason: 'SEEK_DECODE_POINT_NOT_FOUND',
+              });
+              return reply.send({ segment: null, code: 'SEEK_DECODE_POINT_NOT_FOUND' });
+            }
             _trace(session, 'route.covering.respawn_start', {
               time: t,
               decodePoint,
@@ -365,7 +396,7 @@ export default async function torrentRoutes(fastify, opts) {
             _trace(session, entry ? 'route.covering.respawn_hit' : 'route.covering.respawn_timeout', {
               time: t,
               elapsedMs: Date.now() - startedAt,
-              segment: entry ? toSegmentPayload(entry) : null,
+              segment: entry ? _ownedSegmentPayload(session, entry) : null,
             });
           } else {
             _trace(session, 'route.covering.respawn_cooldown', {
@@ -384,22 +415,23 @@ export default async function torrentRoutes(fastify, opts) {
         after: bufferedEnd,
         waitMs,
         elapsedMs: Date.now() - startedAt,
-        segment: entry ? toSegmentPayload(entry) : null,
+        segment: entry ? _ownedSegmentPayload(session, entry) : null,
       });
     }
 
     _trace(session, entry ? 'route.covering.response.segment' : 'route.covering.response.empty', {
       elapsedMs: Date.now() - startedAt,
-      segment: entry ? toSegmentPayload(entry) : null,
+      segment: entry ? _ownedSegmentPayload(session, entry) : null,
     });
-    return reply.send({ segment: toSegmentPayload(entry) });
+    return reply.send({ segment: _ownedSegmentPayload(session, entry) });
   });
 
   // ── POST /torrent/seek ────────────────────────────────────────────────────
   fastify.post('/seek', async (req, reply) => {
-    const { sessionId, seekTime: seekTimeRaw, currentPlaybackTime: currentPlaybackTimeRaw } = req.body ?? {};
+    const { sessionId, seekTime: seekTimeRaw, currentPlaybackTime: currentPlaybackTimeRaw, seekEpoch: clientSeekEpochRaw } = req.body ?? {};
     const seekTime = parseFloat(seekTimeRaw);
     const currentPlaybackTime = parseFloat(currentPlaybackTimeRaw);
+    const clientSeekEpoch = Number.isFinite(Number(clientSeekEpochRaw)) ? Number(clientSeekEpochRaw) : null;
 
     if (!sessionId || !isFinite(seekTime)) {
       return reply.code(400).send({ error: 'sessionId and seekTime required' });
@@ -410,8 +442,16 @@ export default async function torrentRoutes(fastify, opts) {
 
     sessionManager.touch(sessionId);
     const requestStartedAt = Date.now();
+    const seekEpoch = (session._seekEpoch = (session._seekEpoch ?? 0) + 1);
+    _trace(session, 'seek.epoch_created', {
+      seekEpoch,
+      seekTime,
+      generation: session.seekWorkerMgr?._seekGeneration ?? 0,
+      clientSeekEpoch,
+    });
     _trace(session, 'route.seek.request', {
       seekTime,
+      seekEpoch,
       currentPlaybackTime: isFinite(currentPlaybackTime) ? currentPlaybackTime : null,
       mainLastTime: session.mainLastTime,
       state: session.state,
@@ -424,12 +464,22 @@ export default async function torrentRoutes(fastify, opts) {
     const onDisk   = covering && _segmentExistsOnDisk(session.hlsPath, covering.file);
     if (onDisk) {
       log(NS, `seek ${seekTime}s → cached (${covering.file})`);
+      const owner = _segmentOwner(session, covering);
+      const cacheAccepted = owner.generation == null || owner.generation === (session.seekWorkerMgr?._seekGeneration ?? 0);
+      _trace(session, 'segment.cache_hit', {
+        segment: covering.file,
+        cacheKey: session.infoHash,
+        ...owner,
+        currentGeneration: session.seekWorkerMgr?._seekGeneration ?? 0,
+        accepted: cacheAccepted,
+      });
       _trace(session, 'route.seek.cached', {
         seekTime,
+        seekEpoch,
         elapsedMs: Date.now() - requestStartedAt,
-        segment: toSegmentPayload(covering),
+        segment: _ownedSegmentPayload(session, covering),
       });
-      return reply.send({ action: 'cached', ...toSegmentPayload(covering) });
+      return reply.send({ action: 'cached', ..._ownedSegmentPayload(session, covering) });
     }
 
     // Case 2: Main encoder is close enough — wait for it.
@@ -469,6 +519,7 @@ export default async function torrentRoutes(fastify, opts) {
       });
       _trace(session, 'route.seek.wait_main_encoder', {
         seekTime,
+        seekEpoch,
         mainTime,
         waitThreshold,
         seekOffset,
@@ -490,6 +541,19 @@ export default async function torrentRoutes(fastify, opts) {
     }
 
     const decodePoint = await _resolveSafeDecodePoint(session, seekTime);
+    if (!decodePoint) {
+      _trace(session, 'seek.decode_point.failed', {
+        seekTime,
+        code: 'SEEK_DECODE_POINT_NOT_FOUND',
+      });
+      return reply.send({
+        action: 'waiting',
+        code: 'SEEK_DECODE_POINT_NOT_FOUND',
+        startTime: seekTime,
+        endTime: seekTime,
+        duration: 0,
+      });
+    }
     _trace(session, 'route.seek.safe_decode_point', {
       seekTime,
       decodePoint,
@@ -547,6 +611,7 @@ export default async function torrentRoutes(fastify, opts) {
         workerStartOffset: workerStartTime,
       });
       const { startTime, endTime } = await session.seekWorkerMgr.startWorker(seekTime, decodePoint, {
+        seekEpoch,
         currentPlaybackTime: isFinite(currentPlaybackTime) ? currentPlaybackTime : null,
         mainLastTime: mainTime,
         timelineEnd,
@@ -554,6 +619,7 @@ export default async function torrentRoutes(fastify, opts) {
       log(NS, `seek ${seekTime}s → worker started (~${startTime.toFixed(1)}s)`);
       _trace(session, 'route.seek.worker_started', {
         seekTime,
+        seekEpoch,
         decodePoint,
         startTime,
         endTime,
@@ -561,6 +627,7 @@ export default async function torrentRoutes(fastify, opts) {
       });
       return reply.send({
         action:    'started',
+        seekEpoch,
         startTime,
         endTime,
         duration:  endTime - startTime,
@@ -569,10 +636,20 @@ export default async function torrentRoutes(fastify, opts) {
       warn(NS, `seek worker failed: ${e.message}`);
       _trace(session, 'route.seek.worker_start_failed', {
         seekTime,
+        seekEpoch,
         decodePoint,
         message: e.message,
         elapsedMs: Date.now() - requestStartedAt,
       });
+      if (e.message === 'INVALID_SEEK_WORKER_START_ZERO') {
+        return reply.send({
+          action: 'waiting',
+          code: 'INVALID_SEEK_WORKER_START_ZERO',
+          startTime: seekTime,
+          endTime: seekTime,
+          duration: 0,
+        });
+      }
       return reply.send({ action: 'waiting', startTime: seekTime - 2, endTime: seekTime });
     }
   });
@@ -834,7 +911,7 @@ async function _processMainSegment(session, filePath, filename) {
     return;
   }
 
-  const entry = session.timeline.register({
+	  const entry = session.timeline.register({
     file:      filename,
     startTime: timing.startTime,
     endTime:   timing.endTime,
@@ -842,9 +919,45 @@ async function _processMainSegment(session, filePath, filename) {
     segmentId: filename,
     byteOffset: _estimateFileByteForTime(session, timing.startTime),
     clusterOffset: null,
-  });
+	  });
+	  session._generationOwnership ??= new Map();
+	  session._generationOwnership.set(filename, {
+	    generation: 0,
+	    workerId: 'main',
+	    seekEpoch: null,
+	    source: 'main',
+	    createdAt: Date.now(),
+	  });
+	  _trace(session, 'timeline.insert', {
+	    segment: filename,
+	    start: +timing.startTime.toFixed(3),
+	    end: +timing.endTime.toFixed(3),
+	    generation: 0,
+	    workerId: 'main',
+	    seekEpoch: null,
+	    source: 'main',
+	  });
+	  _trace(session, 'generation.segment_promoted', {
+	    segment: filename,
+	    generation: 0,
+	    workerId: 'main',
+	    currentActiveGeneration: session.seekWorkerMgr?._seekGeneration ?? 0,
+	    accepted: true,
+	  });
+	  _trace(session, 'generation.timeline_insert', {
+	    segment: filename,
+	    generation: 0,
+	    workerId: 'main',
+	    timelineStart: +timing.startTime.toFixed(3),
+	    timelineEnd: +timing.endTime.toFixed(3),
+	    currentGeneration: session.seekWorkerMgr?._seekGeneration ?? 0,
+	  });
 
-  session.events.emit('segment:ready', toSegmentPayload(entry));
+	  session.events.emit('segment:ready', {
+	    ..._ownedSegmentPayload(session, entry),
+	    generation: 0,
+	    workerId: 'main',
+	  });
   _trace(session, 'main.segment.promoted', {
     file: filename,
     startTime: timing.startTime,
@@ -873,8 +986,7 @@ async function _resolveSafeDecodePoint(session, seekTime) {
   const MAX_KNOWN_PREROLL_SEC = 120;
   const known = session.timeline.findClusterBefore?.(seekTime, 0);
   if (known && seekTime - known.startTime <= MAX_KNOWN_PREROLL_SEC) {
-    _trace(session, 'seek.decode_point.timeline_hit', { seekTime, decodePoint: known });
-    return {
+    const selected = {
       requestedTime: seekTime,
       startTime: known.startTime,
       endTime: known.endTime ?? null,
@@ -882,6 +994,8 @@ async function _resolveSafeDecodePoint(session, seekTime) {
       clusterOffset: known.clusterOffset,
       source: known.source ?? 'timeline',
     };
+    _trace(session, 'seek.decode_point.selected', { seekTime, decodePoint: selected, reason: 'timeline_hit' });
+    return selected;
   }
 
   const duration = session.codecInfo?.duration ?? session._estDuration ?? null;
@@ -890,7 +1004,7 @@ async function _resolveSafeDecodePoint(session, seekTime) {
       duration,
       minPrerollSec: MIN_PREROLL_SEC,
     });
-    if (discovered?.clusterOffset != null) {
+    if (_isUsableDecodePoint(discovered, seekTime)) {
       session.timeline.recordCluster({
         startTime: discovered.startTime,
         endTime: discovered.endTime ?? null,
@@ -898,21 +1012,59 @@ async function _resolveSafeDecodePoint(session, seekTime) {
         clusterOffset: discovered.clusterOffset,
         source: discovered.source,
       });
+      _trace(session, 'seek.decode_point.selected', { seekTime, decodePoint: discovered, reason: 'discovered' });
+      return discovered;
     }
-    _trace(session, 'seek.decode_point.discovered', { seekTime, decodePoint: discovered });
-    return discovered;
+    _trace(session, 'seek.decode_point.failed', {
+      seekTime,
+      decodePoint: discovered ?? null,
+      reason: 'discovered_point_unusable',
+    });
   }
 
-  const fallback = {
-    requestedTime: seekTime,
-    startTime: 0,
-    endTime: null,
-    byteOffset: 0,
-    clusterOffset: 0,
-    source: 'route_fallback_header',
-  };
-  _trace(session, 'seek.decode_point.fallback', { seekTime, decodePoint: fallback });
-  return fallback;
+  if (seekTime > 30 && duration && session.videoFile?.length) {
+    const estimatedByte = _estimateFileByteForTime(session, Math.max(0, seekTime - MIN_PREROLL_SEC));
+    if (estimatedByte != null && estimatedByte > 0) {
+      const estimated = {
+        requestedTime: seekTime,
+        startTime: Math.max(0, seekTime - MIN_PREROLL_SEC),
+        endTime: null,
+        byteOffset: estimatedByte,
+        clusterOffset: estimatedByte,
+        source: 'estimated_byte_fallback',
+      };
+      _trace(session, 'seek.decode_point.selected', { seekTime, decodePoint: estimated, reason: 'estimated_byte_fallback' });
+      return estimated;
+    }
+  }
+
+  if (seekTime <= 30) {
+    const fallback = {
+      requestedTime: seekTime,
+      startTime: 0,
+      endTime: null,
+      byteOffset: 0,
+      clusterOffset: 0,
+      source: 'route_fallback_header',
+    };
+    _trace(session, 'seek.decode_point.selected', { seekTime, decodePoint: fallback, reason: 'early_seek_header_fallback' });
+    return fallback;
+  }
+
+  _trace(session, 'seek.decode_point.failed', {
+    seekTime,
+    reason: 'SEEK_DECODE_POINT_NOT_FOUND',
+    duration,
+    fileLength: session.videoFile?.length ?? null,
+  });
+  return null;
+}
+
+function _isUsableDecodePoint(point, seekTime) {
+  if (!point || point.clusterOffset == null || !isFinite(point.clusterOffset)) return false;
+  const startTime = point.startTime ?? 0;
+  if (seekTime > 30 && point.clusterOffset === 0 && startTime < seekTime - 120) return false;
+  return true;
 }
 
 function _estimateFileByteForTime(session, time) {
@@ -985,6 +1137,26 @@ async function _bootstrapFromCache(session) {
 
   // Single bulk insert keeps the timeline sorted without per-entry splice cost.
   timeline.bulkRegister(batch);
+  session._generationOwnership ??= new Map();
+  for (const entry of batch) {
+    const createdAt = Date.now();
+    session._generationOwnership.set(entry.file, {
+      generation: null,
+      workerId: null,
+      seekEpoch: null,
+      source: 'cache',
+      createdAt,
+    });
+    _trace(session, 'timeline.insert', {
+      segment: entry.file,
+      start: +entry.startTime.toFixed(3),
+      end: +entry.endTime.toFixed(3),
+      generation: null,
+      workerId: null,
+      seekEpoch: null,
+      source: 'cache',
+    });
+  }
 }
 
 function _segmentExistsOnDisk(hlsPath, file) {
@@ -999,9 +1171,43 @@ function _rebalancePiecePriority(session) {
   if (!session.torrentManager || !session.videoFile?.length) return;
   const dur = session.codecInfo?.duration ?? session._estDuration;
   if (!dur) return;
+
+  const activeSeek = session._activeSeek;
+  const seekByte = activeSeek?.clusterOffset ?? activeSeek?.seekByte;
+  if (activeSeek && seekByte != null && isFinite(seekByte)) {
+    const startByte = Math.max(0, seekByte);
+    const endByte = Math.min(session.videoFile.length, startByte + 100 * 1024 * 1024);
+    _trace(session, 'torrent.priority_source', {
+      source: 'active_pending_seek',
+      priority: {
+        targetTime: activeSeek.targetTime,
+        seekByte: startByte,
+        reason: 'active_pending_seek',
+      },
+      targetTime: activeSeek.targetTime,
+      seekByte: startByte,
+      reason: 'active_pending_seek',
+      mainLastTime: session.mainLastTime ?? null,
+    });
+    session.torrentManager.prioritizeRange(startByte, endByte);
+    return;
+  }
+
   for (const pos of session.viewerTimes.values()) {
     const startByte = (pos / dur) * session.videoFile.length;
     const endByte   = (Math.min(pos + 30, dur) / dur) * session.videoFile.length;
+    _trace(session, 'torrent.priority_source', {
+      source: 'viewer_playback',
+      priority: {
+        targetTime: pos,
+        seekByte: startByte,
+        reason: 'viewer_playback',
+      },
+      targetTime: pos,
+      seekByte: startByte,
+      reason: 'viewer_playback',
+      mainLastTime: session.mainLastTime ?? null,
+    });
     session.torrentManager.prioritizeRange(startByte, endByte);
   }
 }

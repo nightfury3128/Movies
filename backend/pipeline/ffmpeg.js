@@ -56,7 +56,7 @@ export class HlsGenerator extends EventEmitter {
    * @param {number} seekOffset  > 0 for seek workers; shifts output TFDT
    * @param {boolean} isSeekWorker  Uses seek_init.mp4 instead of init.mp4
    */
-  start(sourceUrl, videoName, outputDir, codecInfo, seekOffset = 0, isSeekWorker = false, seekByte = null, hlsTime = HLS_TIME) {
+  start(sourceUrl, videoName, outputDir, codecInfo, seekOffset = 0, isSeekWorker = false, seekByte = null, hlsTime = HLS_TIME, diagMode = null) {
     return new Promise((resolve, reject) => {
       if (this.running) return reject(new Error('HlsGenerator already running'));
       this.running = true;
@@ -67,9 +67,13 @@ export class HlsGenerator extends EventEmitter {
       const fmtHint = { '.mkv': 'matroska', '.avi': 'avi', '.mov': 'mov', '.mp4': 'mp4', '.webm': 'webm', '.m4v': 'mp4' }[ext] ?? null;
 
       const mode                = codecInfo?.mode               ?? 'transcode';
-      const needsVideoTranscode = codecInfo?.needsVideoTranscode ?? true;
+      let needsVideoTranscode   = codecInfo?.needsVideoTranscode ?? true;
       const needsAudioTranscode = codecInfo?.needsAudioTranscode ?? true;
       const hasAudio            = codecInfo?.audioCodec !== null && codecInfo?.audioCodec !== undefined;
+
+      // Diagnostic override: force full transcode to isolate copy+transcode mismatch.
+      const diagForceTranscode = diagMode === 'force_transcode_both';
+      if (diagForceTranscode) needsVideoTranscode = true;
 
       log(NS, `start label=${this.label} mode=${mode} seekOffset=${seekOffset} isSeekWorker=${isSeekWorker}`);
 
@@ -118,7 +122,7 @@ export class HlsGenerator extends EventEmitter {
         cmd = cmd
           .videoCodec('libx264')
           .outputOptions([
-            '-preset', 'veryfast',
+            '-preset', diagForceTranscode ? 'ultrafast' : 'veryfast',
             '-crf', '23',
             '-pix_fmt', 'yuv420p',
             '-bf', '0',
@@ -168,7 +172,12 @@ export class HlsGenerator extends EventEmitter {
           // Seek workers read mid-file: source timestamps are already positive (~seekTime).
           // make_zero would reset them to 0 when the header+cluster stream causes the AAC
           // encoder priming delay to appear negative, making every segment look like pre-roll.
-          '-avoid_negative_ts', isSeekWorker ? 'disabled' : 'make_zero',
+          '-avoid_negative_ts',
+          (diagMode === 'ts_norm_B' || diagMode === 'ts_norm_C') ? 'make_zero'
+            : (isSeekWorker ? 'disabled' : 'make_zero'),
+          ...(diagMode === 'ts_norm_A' ? ['-copyts', '-start_at_zero'] : []),
+          ...(diagMode === 'ts_norm_B' ? ['-copyts'] : []),
+          ...(diagMode === 'ts_norm_C' ? ['-copyts', '-start_at_zero'] : []),
 
           // Only shift timestamps for transcode mode (setpts reset to 0 above).
           // Remux mode leaves source timestamps intact — no offset needed.

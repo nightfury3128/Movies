@@ -80,6 +80,7 @@ export class SessionManager {
       // Encoder state
       mainLastTime:      0,
       lastProgress:      null,
+      _seekEpoch:        0,
       _mainPaused:       false, // true while main FFmpeg is SIGSTOP'd during a large seek
       _priorityInterval: null,  // setInterval handle for viewer-aware piece prioritization
 
