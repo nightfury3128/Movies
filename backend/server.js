@@ -11,6 +11,7 @@
  * HLS output persists at cache/segments/<infoHash>/ across server restarts.
  */
 
+import './env.js';
 import Fastify       from 'fastify';
 import cors          from '@fastify/cors';
 import staticPlugin  from '@fastify/static';
@@ -19,6 +20,16 @@ import { fileURLToPath } from 'url';
 
 import { SessionManager }  from './session/manager.js';
 import { SegmentCache }    from './cache/segment-cache.js';
+import { CatalogService }  from './catalog/catalog-service.js';
+import { MetadataAggregator } from './catalog/metadata-aggregator.js';
+import { TmdbProvider } from './catalog/tmdb-provider.js';
+import { AniListProvider } from './catalog/anilist-provider.js';
+import { MemoryCatalogRepository } from './catalog/memory-catalog-repository.js';
+import { TorrentAcquisitionService, NoopAcquisitionProvider } from './acquisition/torrent-acquisition-service.js';
+import { ResolverService } from './resolver/resolver-service.js';
+import { MemoryResolverRepository } from './resolver/memory-resolver-repository.js';
+import contentRoutes       from './routes/content.js';
+import resolverRoutes      from './routes/resolver.js';
 import torrentRoutes       from './routes/torrent.js';
 import streamRoutes        from './routes/stream.js';
 
@@ -33,6 +44,30 @@ segmentCache.start();
 
 // ── Session manager ───────────────────────────────────────────────────────────
 const sessionManager = new SessionManager(segmentCache);
+
+// ── Platform services ────────────────────────────────────────────────────────
+const metadataAggregator = new MetadataAggregator({
+  tmdbProvider: new TmdbProvider({
+    apiKey: process.env.TMDB_API_KEY,
+    accessToken: process.env.TMDB_ACCESS_TOKEN,
+  }),
+  anilistProvider: new AniListProvider(),
+});
+const catalogRepository = new MemoryCatalogRepository();
+const acquisitionService = new TorrentAcquisitionService({
+  providers: [new NoopAcquisitionProvider()],
+});
+const resolverRepository = new MemoryResolverRepository();
+const resolverService = new ResolverService({
+  acquisitionService,
+  resolverRepository,
+  sessionManager,
+});
+const catalogService = new CatalogService({
+  metadataAggregator,
+  catalogRepository,
+  resolverService,
+});
 
 // ── Fastify ───────────────────────────────────────────────────────────────────
 const fastify = Fastify({
@@ -56,6 +91,17 @@ await fastify.register(staticPlugin, {
 });
 
 // ── Route plugins ─────────────────────────────────────────────────────────────
+await fastify.register(contentRoutes, {
+  prefix:         '/',
+  catalogService,
+});
+
+await fastify.register(resolverRoutes, {
+  prefix:         '/resolver',
+  catalogService,
+  resolverService,
+});
+
 await fastify.register(torrentRoutes, {
   prefix:         '/torrent',
   sessionManager,
