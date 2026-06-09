@@ -1,5 +1,10 @@
 backend/node_modules/
 backend/cache/segments/
 backend/cache/lru.json
+node_modules/
+.next/
+tsconfig.tsbuildinfo
+.env
+.env.local
+backend/.env
 *.log
-Untitled

@@ -327,6 +327,22 @@ progress { width: 100%; height: 5px; margin-top: 8px; border-radius: 3px; }
 .panel-hdr h2 { margin: 0; }
 #btn-copy-all-fab { position: fixed; bottom: 24px; right: 24px; z-index: 9999; background: #1a2e3e; border: 1px solid #7df; color: #7df; padding: 9px 16px; font-size: 0.82rem; border-radius: 6px; cursor: pointer; box-shadow: 0 2px 14px rgba(0,0,0,0.55); font-weight: 600; }
 #btn-copy-all-fab:hover { background: #253e54; }
+/* ── Backward Seek Investigation Panel ───────────────────────────────────── */
+.bw-seek-panel {
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  background: #100c18;
+  border: 1px solid #4a2060;
+  color: #ddd;
+  border-radius: 4px;
+  padding: 10px 12px;
+  min-height: 160px;
+  max-height: 640px;
+  overflow-y: auto;
+  overflow-anchor: none;
+  white-space: pre-wrap;
+  margin: 0;
+}
 </style>
 </head>
 <body>
@@ -481,6 +497,123 @@ progress { width: 100%; height: 5px; margin-top: 8px; border-radius: 3px; }
   </div>
 </details>
 
+<details class="card seek-av-analysis-card" id="card-ffmpeg-timestamp-audit" open>
+  <summary>
+    <h2>FFmpeg Timestamp Audit</h2>
+    <button id="btn-copy-ffmpeg-timestamp-audit" class="cp-btn" type="button">Copy Panel</button>
+  </summary>
+  <div class="seek-av-analysis-body">
+    <pre id="ffmpeg-timestamp-audit-panel" style="font-family: ui-monospace, monospace; font-size: 0.72rem; background: #0d1117; border: 1px solid #263241; color: #9cf; border-radius: 4px; padding: 10px 12px; max-height: 600px; overflow-y: auto; white-space: pre-wrap; margin: 0;">No FFmpeg timestamp audit telemetry yet.</pre>
+  </div>
+</details>
+
+<details class="card seek-av-analysis-card" id="card-track-timeline-diagnostics" open>
+  <summary>
+    <h2>Track Timeline Diagnostics</h2>
+    <button id="btn-copy-track-timeline-diagnostics" class="cp-btn" type="button">Copy Panel</button>
+  </summary>
+  <div class="seek-av-analysis-body">
+    <pre id="track-timeline-diagnostics-panel" style="font-family: ui-monospace, monospace; font-size: 0.72rem; background: #090f12; border: 1px solid #24414a; color: #c9f7ff; border-radius: 4px; padding: 10px 12px; max-height: 680px; overflow-y: auto; white-space: pre-wrap; margin: 0;">No track timeline diagnostics yet.</pre>
+  </div>
+</details>
+
+<details class="card seek-av-analysis-card" id="card-seek-av-root-cause" open>
+  <summary>
+    <h2>Seek AV Root-Cause</h2>
+    <button id="btn-copy-seek-av-root-cause" class="cp-btn" type="button">Copy Panel</button>
+  </summary>
+  <div class="seek-av-analysis-body">
+    <pre id="seek-av-root-cause-panel" style="font-family: ui-monospace, monospace; font-size: 0.72rem; background: #100b0f; border: 1px solid #4a2536; color: #ffd7e5; border-radius: 4px; padding: 10px 12px; max-height: 720px; overflow-y: auto; white-space: pre-wrap; margin: 0;">No seek AV root-cause telemetry yet.</pre>
+  </div>
+</details>
+
+<details class="card seek-av-analysis-card" id="card-tfdt-normalization" open>
+  <summary>
+    <h2>TFDT Normalization</h2>
+    <button id="btn-copy-tfdt-normalization" class="cp-btn" type="button">Copy Panel</button>
+  </summary>
+  <div class="seek-av-analysis-body">
+    <pre id="tfdt-normalization-panel" style="font-family: ui-monospace, monospace; font-size: 0.72rem; background: #0d1018; border: 1px solid #334060; color: #dce6ff; border-radius: 4px; padding: 10px 12px; max-height: 640px; overflow-y: auto; white-space: pre-wrap; margin: 0;">No TFDT normalization telemetry yet.</pre>
+  </div>
+</details>
+
+	<details class="card seek-av-analysis-card" id="card-avsync-investigation">
+	  <summary>
+	    <h2>AV Sync Investigation</h2>
+	    <button id="btn-copy-avsync-investigation" class="cp-btn" type="button">Copy</button>
+	  </summary>
+	  <div class="seek-av-analysis-body">
+	    <pre id="avsync-investigation-log" style="font-family:ui-monospace,monospace;font-size:0.71rem;background:#0a0d12;border:1px solid #1e3040;color:#ccc;border-radius:4px;padding:10px 12px;max-height:640px;overflow-y:auto;white-space:pre;margin:0;">No AV sync events yet.</pre>
+	  </div>
+	</details>
+
+	<details class="card seek-av-analysis-card" id="card-avduration-diagnostics" open>
+	  <summary>
+	    <h2>AV Duration Diagnostics</h2>
+	    <button id="btn-copy-avduration-diagnostics" class="cp-btn" type="button">Copy</button>
+	  </summary>
+	  <div class="seek-av-analysis-body">
+	    <pre id="avduration-diagnostics-log" style="font-family:ui-monospace,monospace;font-size:0.71rem;background:#0a0d12;border:1px solid #1e3040;color:#ddd;border-radius:4px;padding:10px 12px;max-height:640px;overflow-y:auto;white-space:pre;margin:0;">No AV duration diagnostics yet.</pre>
+	  </div>
+	</details>
+
+	<details class="card seek-av-analysis-card" id="card-generation-audit" open>
+	  <summary>
+	    <h2>Generation Ownership Audit</h2>
+	    <button id="btn-copy-generation-audit" class="cp-btn" type="button">Copy</button>
+	  </summary>
+	  <div class="seek-av-analysis-body">
+	    <pre id="generation-audit-log" style="font-family:ui-monospace,monospace;font-size:0.71rem;background:#0a0d12;border:1px solid #402020;color:#ddd;border-radius:4px;padding:10px 12px;max-height:720px;overflow-y:auto;white-space:pre;margin:0;">No generation ownership telemetry yet.</pre>
+	  </div>
+	</details>
+
+	<details class="card seek-av-analysis-card" id="card-segment-ownership-forensics" open>
+	  <summary>
+	    <h2>Segment Ownership Forensics</h2>
+	    <button id="btn-copy-segment-ownership-forensics" class="cp-btn" type="button">Copy</button>
+	  </summary>
+	  <div class="seek-av-analysis-body">
+	    <pre id="segment-ownership-forensics-log" style="font-family:ui-monospace,monospace;font-size:0.71rem;background:#081016;border:1px solid #28495c;color:#d9f6ff;border-radius:4px;padding:10px 12px;max-height:760px;overflow-y:auto;white-space:pre-wrap;margin:0;">No segment ownership forensics yet.</pre>
+	  </div>
+	</details>
+
+	<details class="card seek-av-analysis-card" id="card-av-sync-diag">
+  <summary>
+    <h2>Audio/Video Sync Diagnostics</h2>
+    <button id="btn-copy-av-sync-diag" class="cp-btn" type="button">Copy Panel</button>
+  </summary>
+  <div class="seek-av-analysis-body">
+    <div id="av-sync-diag-panel" style="overflow-x:auto;">
+      <table id="av-sync-table" style="font-family:ui-monospace,monospace;font-size:0.72rem;border-collapse:collapse;width:100%;color:#ddd;">
+        <thead>
+          <tr style="background:#1a1a2e;color:#9cf;text-align:left;">
+            <th style="padding:4px 8px;border-bottom:1px solid #333;">Segment</th>
+            <th style="padding:4px 8px;border-bottom:1px solid #333;">Video Start</th>
+            <th style="padding:4px 8px;border-bottom:1px solid #333;">Audio Start</th>
+            <th style="padding:4px 8px;border-bottom:1px solid #333;">Delta(ms)</th>
+            <th style="padding:4px 8px;border-bottom:1px solid #333;">Video TFDT</th>
+            <th style="padding:4px 8px;border-bottom:1px solid #333;">Audio TFDT</th>
+            <th style="padding:4px 8px;border-bottom:1px solid #333;">V-ts</th>
+            <th style="padding:4px 8px;border-bottom:1px solid #333;">A-ts</th>
+          </tr>
+        </thead>
+        <tbody id="av-sync-tbody"></tbody>
+      </table>
+      <p id="av-sync-empty" style="font-family:ui-monospace,monospace;font-size:0.72rem;color:#666;padding:8px;">No A/V sync data yet.</p>
+    </div>
+  </div>
+</details>
+
+<details class="card seek-av-analysis-card" id="card-bw-seek-investigation" open>
+  <summary>
+    <h2>Backward Seek Investigation</h2>
+    <button id="btn-copy-bw-seek-investigation" class="cp-btn" type="button">Copy Panel</button>
+  </summary>
+  <div class="seek-av-analysis-body">
+    <pre id="bw-seek-investigation-panel" class="bw-seek-panel">No backward seek telemetry yet.</pre>
+  </div>
+</details>
+
 <div class="card">
   <h2>Log</h2>
   <div id="log-box"></div>
@@ -602,6 +735,7 @@ const PREFETCH_SEC    = 45;
 const MIN_BUFFER_AHEAD = 15;
 const EVICT_BEHIND    = 15;
 const SEEK_WINDOW_SEC = 30;  // only queue/fetch segments within this window during seek
+const MAX_SEEK_PREROLL_SECONDS = 120;
 const MAX_MSE_BUFFER_SPAN = 60;   // max seconds of media retained in SourceBuffer
 const MAX_MSE_SEGMENTS    = 35;   // max appended segments before cleanup kicks in
 const CLEANUP_AGENT_MS    = 2000; // periodic MSE cleanup interval
@@ -616,6 +750,8 @@ let   VIDEO_TIMESCALE     = 90000; // updated at stream:ready from server
 const AUDIO_TIMESCALE     = 48000; // AAC sample rate in fMP4 from this pipeline
 const AV_WARN_MS          = 200;   // flag A/V drift above this in trace table
 const SEEK_AV_WARN_MS     = 100;   // flag seek A/V drift above this in telemetry
+const AV_TIMELINE_WARN_MS = 250;   // emit raw timeline metadata above this drift
+const AV_TIMELINE_SEEK_SEGMENTS = 10; // always emit first N segments after each seek
 
 /** Shared request clock for video + audio trace tables. */
 const traceRequestClock = {
@@ -678,7 +814,7 @@ const diagnostics = {
   categoryLevel(name) {
     const n = String(name ?? '');
   if (/fatal|error|failed|failure|worker_failed|seek failed/i.test(n)) return DebugLevel.OFF;
-    if (/seek\.root\.|seek\.worker_spawn\.|SEEK_WORKER_SPAWN_|SEEK_ROOT_|SEEK_RESET_START|SEEK_TARGET|SEEK_COVERING_SELECTED|SEEK_COVERING_PLAYABLE|COVERING_FOUND|SEEK_AV_REPORT|SEEK_AV_VALIDATION|APPEND_END|UPDATEEND|FETCH_ERROR|APPEND_ERROR|seek\.segment\.promoted|segment\.promoted|worker_started|spawned|end$|ready$|stalled|playing|resumed/i.test(n)) {
+	    if (/generation\.|seek\.root\.|seek\.worker_spawn\.|SEEK_WORKER_SPAWN_|SEEK_ROOT_|SEEK_RESET_START|SEEK_DIAGNOSTIC|AV_TIMELINE|SOURCEBUFFER_PRE_APPEND|SEEK_TARGET|SEEK_COVERING_SELECTED|SEEK_COVERING_PLAYABLE|COVERING_FOUND|SEEK_AV_REPORT|SEEK_AV_VALIDATION|APPEND_END|UPDATEEND|FETCH_ERROR|APPEND_ERROR|seek\.segment\.promoted|segment\.promoted|worker_started|spawned|end$|ready$|stalled|playing|resumed/i.test(n)) {
       return DebugLevel.NORMAL;
     }
     if (/progress|stderr|CACHE_|GEN_|QUEUE_|SOURCEBUFFER_STATE|BUFFERED_RANGES|MEDIA_STATE|CONTINUITY|APPEND DECISION|timeline|piece_gate\.progress|download_rate|bytes_sent|dir\.file_|tfdt|MP4_TIMELINE|FFMPEG_FRAGMENT|SEGMENT_METADATA|FETCH_START|FETCH_DONE|APPEND_START|APPEND_SUCCESS|VIDEO_STATE/i.test(n)) {
@@ -1459,6 +1595,10 @@ function logServerTrace(data, { feed = 'feed' } = {}) {
     seekLatency.phase('server.' + phase, compact);
   }
   dispatchTraceTelemetry(phase, data);
+  appendFfmpegTimestampAuditEvent(phase, data);
+  appendTrackTimelineDiagnosticEvent(phase, data);
+  appendSeekAvRootCauseEvent(phase, data);
+  appendTfdtNormalizationEvent(phase, data);
 }
 
 // ── Telemetry Dashboard ───────────────────────────────────────────────────────
@@ -1800,6 +1940,484 @@ function appendSeekRootCauseEvent(name, data = {}) {
 }
 
 let _seekWorkerSpawnState = null;
+
+// ── FFmpeg Timestamp Audit Panel ──────────────────────────────────────────────
+
+let _ffmpegTimestampAudit = null;
+
+function resetFfmpegTimestampAudit(seekTime) {
+  _ffmpegTimestampAudit = {
+    seekTime: seekTime ?? null,
+    seekOffset: null,
+    ffmpegCommand: null,
+    jobId: null,
+    rawWorkerVideoPts: null,
+    rawWorkerAudioPts: null,
+    workerDriftMs: null,
+    videoCodec: null,
+    audioCodec: null,
+    videoCopied: null,
+    audioCopied: null,
+    stderrWarnings: [],
+    segments: [],
+  };
+  const el = document.getElementById('ffmpeg-timestamp-audit-panel');
+  if (el) el.textContent = 'Seeking to ' + (seekTime != null ? seekTime.toFixed(2) : '?') + 's... Waiting for FFmpeg telemetry.';
+}
+
+function feedFfmpegTimestampAuditSegment(segData) {
+  if (!_ffmpegTimestampAudit) return;
+  if (_ffmpegTimestampAudit.segments.length >= 10) return;
+  if (_ffmpegTimestampAudit.segments.some(s => s.segment === segData.segment)) return;
+  _ffmpegTimestampAudit.segments.push(segData);
+  _updateFfmpegTimestampAuditUI();
+}
+
+function appendFfmpegTimestampAuditEvent(phase, data) {
+  if (!_ffmpegTimestampAudit) return;
+  const s = _ffmpegTimestampAudit;
+  let changed = false;
+
+  if (phase === 'seek.ffmpeg.spawned') {
+    s.ffmpegCommand = data.command ?? data.ffmpegCommand ?? data.cmd ?? null;
+    s.jobId         = data.jobId ?? data.attempt ?? null;
+    s.videoCodec    = data.videoCodec ?? null;
+    s.audioCodec    = data.audioCodec ?? null;
+    s.videoCopied   = data.videoCopied ?? null;
+    s.audioCopied   = data.audioCopied ?? null;
+    changed = true;
+  } else if (phase === 'seek.worker_spawn.creation_inputs' || phase === 'seek.worker_spawn.no_worker_path') {
+    if (data.seekOffset       != null) s.seekOffset = data.seekOffset;
+    if (data.requestedSeekTime != null && s.seekTime == null) s.seekTime = data.requestedSeekTime;
+    changed = true;
+  } else if (phase === 'seek.root.first_av_packets') {
+    s.rawWorkerVideoPts = data.firstVideoPts ?? null;
+    s.rawWorkerAudioPts = data.firstAudioPts ?? null;
+    s.workerDriftMs     = data.deltaMs ?? null;
+    changed = true;
+  } else if (phase === 'seek.ffmpeg.stderr') {
+    const line = data.line ?? '';
+    if (/pts|dts|timestamp|non.monot|invalid.dts|delay|aac/i.test(line)) {
+      if (s.stderrWarnings.length < 50) s.stderrWarnings.push(line);
+      changed = true;
+    }
+  }
+
+  if (changed) _updateFfmpegTimestampAuditUI();
+}
+
+// ── Track Timeline Diagnostics Panel ────────────────────────────────────────
+
+let _trackTimelineDiagnostics = [];
+
+function resetTrackTimelineDiagnostics(seekTime) {
+  _trackTimelineDiagnostics = [];
+  const el = document.getElementById('track-timeline-diagnostics-panel');
+  if (el) el.textContent = 'Seeking to ' + (seekTime != null ? seekTime.toFixed(2) : '?') + 's... Waiting for track timeline diagnostics.';
+}
+
+function appendTrackTimelineDiagnosticEvent(phase, data) {
+  if (!phase.startsWith('track_timeline.')) return;
+  _trackTimelineDiagnostics.push({
+    phase,
+    at: new Date().toTimeString().slice(0, 8),
+    data: _stripTraceEnvelope(data),
+  });
+  while (_trackTimelineDiagnostics.length > 240) _trackTimelineDiagnostics.shift();
+  _updateTrackTimelineDiagnosticsUI();
+}
+
+function _stripTraceEnvelope(data = {}) {
+  const out = { ...data };
+  delete out.phase;
+  delete out.ns;
+  delete out.at;
+  delete out.state;
+  delete out.elapsedMs;
+  delete out.segmentsGenerated;
+  return out;
+}
+
+function _updateTrackTimelineDiagnosticsUI() {
+  const el = document.getElementById('track-timeline-diagnostics-panel');
+  if (!el) return;
+  if (!_trackTimelineDiagnostics.length) {
+    el.textContent = 'No track timeline diagnostics yet.';
+    return;
+  }
+  el.textContent = _trackTimelineDiagnostics.map(e =>
+    '[' + e.at + '] ' + e.phase + '\n' + JSON.stringify(e.data, null, 2)
+  ).join('\n\n');
+  el.scrollTop = el.scrollHeight;
+}
+
+// ── Seek AV Root-Cause Panel ────────────────────────────────────────────────
+
+const _seekAvRootCauseReports = [];
+const _seekAvRootCauseByKey = new Map();
+
+function appendSeekAvRootCauseEvent(phase, data = {}) {
+  if (!/^(seek\.(ffmpeg\.command_audit|segment0\.|rebase\.trace|first_divergence\.detected|av_root_cause\.report|first5\.final_report|first5\.mp4_timing|first5\.packet_timing|first5\.samples|first5\.continuity|init\.track_info)|ffmpeg\.timestamp_warning)$/.test(phase)) return;
+  const key = _seekAvRootCauseKey(data);
+  if (!key) return;
+  let report = _seekAvRootCauseByKey.get(key);
+  if (!report) {
+    report = {
+      key,
+      workerId: data.workerId ?? data.jobId ?? null,
+      generation: data.generation ?? null,
+      requestedSeekTime: data.requestedSeekTime ?? data.seekTime ?? null,
+      workerStartTime: data.workerStartTime ?? data.seekOffset ?? null,
+      commandAudit: null,
+      segment0Forensics: null,
+      rawBoxes: null,
+      rebaseTrace: null,
+      firstDivergence: null,
+      ffprobe: null,
+      finalReport: null,
+      updatedAt: Date.now(),
+    };
+    _seekAvRootCauseByKey.set(key, report);
+    _seekAvRootCauseReports.push(report);
+    while (_seekAvRootCauseReports.length > 20) {
+      const old = _seekAvRootCauseReports.shift();
+      if (old) _seekAvRootCauseByKey.delete(old.key);
+    }
+  }
+
+  report.updatedAt = Date.now();
+  if (phase === 'seek.ffmpeg.command_audit') {
+    report.commandAudit = _stripTraceEnvelope(data);
+    report.requestedSeekTime = data.requestedSeekTime ?? report.requestedSeekTime;
+    report.workerStartTime = data.workerStartTime ?? report.workerStartTime;
+  } else if (phase === 'seek.segment0.forensics') {
+    report.segment0Forensics = _stripTraceEnvelope(data);
+  } else if (phase === 'seek.segment0.raw_boxes') {
+    report.rawBoxes = _stripTraceEnvelope(data);
+  } else if (phase === 'seek.rebase.trace') {
+    report.rebaseTrace = _stripTraceEnvelope(data);
+  } else if (phase === 'seek.first_divergence.detected') {
+    report.firstDivergence = _stripTraceEnvelope(data);
+  } else if (phase === 'seek.segment0.ffprobe') {
+    report.ffprobe = _stripTraceEnvelope(data);
+  } else if (phase === 'seek.av_root_cause.report') {
+    report.finalReport = _stripTraceEnvelope(data);
+    report.ffprobe = data.ffprobe ?? report.ffprobe;
+    report.commandAudit = data.commandAudit ?? report.commandAudit;
+    report.segment0Forensics = data.segment0?.forensics ?? report.segment0Forensics;
+    report.rawBoxes = data.segment0?.rawBoxes ?? report.rawBoxes;
+    report.rebaseTrace = data.segment0?.rebaseTrace ?? report.rebaseTrace;
+    report.firstDivergence = data.firstDivergence ?? report.firstDivergence;
+  } else if (phase === 'seek.first5.final_report') {
+    report.finalFirst5Report = _stripTraceEnvelope(data);
+    report.finalReport = report.finalReport ?? _stripTraceEnvelope(data);
+  } else if (phase === 'seek.init.track_info') {
+    report.initTrackInfo = _stripTraceEnvelope(data);
+  } else if (phase === 'ffmpeg.timestamp_warning') {
+    report.timestampWarnings ??= [];
+    if (report.timestampWarnings.length < 20) report.timestampWarnings.push(_stripTraceEnvelope(data));
+  }
+  _updateSeekAvRootCauseUI();
+}
+
+function _seekAvRootCauseKey(data = {}) {
+  const workerId = data.workerId ?? data.jobId ?? data.commandAudit?.workerId ?? null;
+  const generation = data.generation ?? data.commandAudit?.generation ?? null;
+  if (workerId != null) return String(workerId);
+  if (generation != null && (data.requestedSeekTime ?? data.seekTime) != null) {
+    return generation + ':' + (data.requestedSeekTime ?? data.seekTime);
+  }
+  return null;
+}
+
+function _updateSeekAvRootCauseUI() {
+  const el = document.getElementById('seek-av-root-cause-panel');
+  if (!el) return;
+  if (!_seekAvRootCauseReports.length) {
+    el.textContent = 'No seek AV root-cause telemetry yet.';
+    return;
+  }
+  el.textContent = _seekAvRootCauseReports
+    .slice()
+    .reverse()
+    .map(_formatSeekAvRootCauseReport)
+    .join('\n\n====================================================\n\n');
+  el.scrollTop = 0;
+}
+
+// ── TFDT Normalization Panel ────────────────────────────────────────────────
+
+const _tfdtNormalizationRows = [];
+
+function appendTfdtNormalizationEvent(phase, data = {}) {
+  if (!phase.startsWith('tfdt.normalization.')) return;
+  const row = {
+    phase,
+    at: new Date().toTimeString().slice(0, 8),
+    segment: data.segment ?? '—',
+    videoTfdt: data.videoTfdtSeconds ?? data.videoTfdt ?? null,
+    audioTfdt: data.audioTfdtSeconds ?? data.audioTfdt ?? data.originalAudioTfdt ?? null,
+    deltaMs: data.deltaMs ?? null,
+    normalized: phase === 'tfdt.normalization.applied' || data.normalized === true,
+    correctedDeltaMs: data.correctedDeltaMs ?? null,
+    reason: data.reason ?? null,
+    raw: _stripTraceEnvelope(data),
+  };
+  _tfdtNormalizationRows.push(row);
+  while (_tfdtNormalizationRows.length > 50) _tfdtNormalizationRows.shift();
+  _updateTfdtNormalizationUI();
+}
+
+function _updateTfdtNormalizationUI() {
+  const el = document.getElementById('tfdt-normalization-panel');
+  if (!el) return;
+  if (!_tfdtNormalizationRows.length) {
+    el.textContent = 'No TFDT normalization telemetry yet.';
+    return;
+  }
+  el.textContent = _tfdtNormalizationRows.map(r => [
+    '[' + r.at + '] ' + r.phase,
+    'segment=' + r.segment,
+    'videoTfdt=' + _rcSec(r.videoTfdt),
+    'audioTfdt=' + _rcSec(r.audioTfdt),
+    'deltaMs=' + _rcMs(r.deltaMs),
+    'normalized=' + (r.normalized ? 'true' : 'false'),
+    'correctedDeltaMs=' + _rcMs(r.correctedDeltaMs),
+    r.reason ? 'reason=' + r.reason : null,
+  ].filter(Boolean).join('  ')).join('\n');
+  el.scrollTop = el.scrollHeight;
+}
+
+function _formatSeekAvRootCauseReport(r) {
+  if (r.finalFirst5Report) return _formatFirstFiveFinalReport(r);
+  const final = r.finalReport;
+  const q = final?.questions ?? {};
+  const f = r.segment0Forensics;
+  const cmd = r.commandAudit;
+  const rebase = r.rebaseTrace;
+  return [
+    'SEEK AV ROOT-CAUSE',
+    'workerId=' + (r.workerId ?? '—') + ' generation=' + (r.generation ?? '—'),
+    'requestedSeekTime=' + _rcSec(r.requestedSeekTime) + ' workerStartTime=' + _rcSec(r.workerStartTime),
+    '',
+    'SECTION 1 — FFMPEG COMMAND AUDIT',
+    JSON.stringify(cmd ?? {}, null, 2),
+    '',
+    'SECTION 2 — SEGMENT_00000 FORENSICS',
+    JSON.stringify(f ?? {}, null, 2),
+    '',
+    'SECTION 3 — RAW MP4 BOXES',
+    JSON.stringify(r.rawBoxes ?? {}, null, 2),
+    '',
+    'SECTION 4 — TIMELINE REBASE TRACE',
+    JSON.stringify(rebase ?? {}, null, 2),
+    '',
+    'SECTION 5 — FIRST DIVERGENCE DETECTOR',
+    JSON.stringify(r.firstDivergence ?? {}, null, 2),
+    '',
+    'SECTION 6 — FFPROBE VERIFICATION',
+    JSON.stringify(r.ffprobe ?? {}, null, 2),
+    '',
+    'SECTION 7 — CLASSIFIER',
+    (final?.rootCauseMarker ?? (final?.rootCause ? 'ROOT_CAUSE: ' + final.rootCause : 'ROOT_CAUSE: pending')),
+    '',
+    'EXPECTED OUTPUT',
+    '1. Is segment_00000 already desynced? ' + _rcBool(q.segment00000AlreadyDesynced),
+    '2. Is FFmpeg using copy or transcode mode? ' + JSON.stringify(q.ffmpegMode ?? _cmdMode(cmd)),
+    '3. Are tfdt values already different? ' + _rcBool(q.tfdtValuesAlreadyDifferent ?? (Math.abs(f?.tfdtDeltaMs ?? 0) > 100)),
+    '4. Are first PTS values already different? ' + _rcBool(q.firstPtsValuesAlreadyDifferent ?? (Math.abs(f?.firstPtsDeltaMs ?? 0) > 100)),
+    '5. Does rebasing introduce the offset? ' + _rcBool(q.rebasingIntroducesOffset),
+    '6. What exact line of code first creates the drift? ' + (q.firstDriftCodeLocation ?? 'pending'),
+  ].join('\n');
+}
+
+function _formatFirstFiveFinalReport(r) {
+  const fr = r.finalFirst5Report;
+  const drift = fr.segmentDrift ?? {};
+  const c = fr.continuity ?? {};
+  const ff = fr.ffmpeg ?? {};
+  const seek = fr.seek ?? {};
+  return [
+    'AV DRIFT ROOT CAUSE REPORT',
+    '',
+    'Seek:',
+    'requestedTime: ' + _rcSec(seek.requestedTime),
+    'workerStartTime: ' + _rcSec(seek.workerStartTime),
+    'gap: ' + _rcSec(seek.gap),
+    '',
+    'FFmpeg:',
+    'mode: ' + (ff.mode ?? '—'),
+    'videoCopy: ' + _rcBool(ff.videoCopy),
+    'audioCopy: ' + _rcBool(ff.audioCopy),
+    'qualityProfile: ' + (ff.qualityProfile ?? '—'),
+    'cmdLine: ' + (ff.cmdLine ?? '—'),
+    '',
+    'Segment Drift:',
+    'segment_00000 delta: ' + _rcMs(drift.segment_00000),
+    'segment_00001 delta: ' + _rcMs(drift.segment_00001),
+    'segment_00002 delta: ' + _rcMs(drift.segment_00002),
+    'segment_00003 delta: ' + _rcMs(drift.segment_00003),
+    'segment_00004 delta: ' + _rcMs(drift.segment_00004),
+    '',
+    'Continuity:',
+    'video gap 00000->00001: ' + _rcMs(c.videoGap00000To00001),
+    'audio gap 00000->00001: ' + _rcMs(c.audioGap00000To00001),
+    '',
+    'Classification:',
+    'ROOT_CAUSE = ' + (fr.classification?.ROOT_CAUSE ?? 'pending'),
+    '',
+    'Most likely fix:',
+    fr.classification?.mostLikelyFix ?? 'pending',
+    '',
+    'Raw report:',
+    JSON.stringify(fr, null, 2),
+  ].join('\n');
+}
+
+function _cmdMode(cmd) {
+  if (!cmd) return null;
+  return {
+    videoCopy: cmd.videoCopy,
+    audioCopy: cmd.audioCopy,
+    videoCodecMode: cmd.videoCodecMode,
+    audioCodecMode: cmd.audioCodecMode,
+  };
+}
+
+function _rcBool(v) {
+  return v == null ? 'pending' : v ? 'YES' : 'NO';
+}
+
+function _rcSec(v) {
+  return v == null || !Number.isFinite(Number(v)) ? '—' : Number(v).toFixed(3);
+}
+
+function _rcMs(v) {
+  return v == null || !Number.isFinite(Number(v)) ? '—' : Math.round(Number(v)) + 'ms';
+}
+
+function _updateFfmpegTimestampAuditUI() {
+  const el = document.getElementById('ffmpeg-timestamp-audit-panel');
+  if (!el || !_ffmpegTimestampAudit) return;
+  const s = _ffmpegTimestampAudit;
+
+  let text = `====================================================
+FFMPEG TIMESTAMP AUDIT
+====================================================\n\n`;
+
+  // ── Section 1 — FFmpeg Command Snapshot ──────────────────────────────────
+  text += `----------------------------------------------------\nSECTION 1 — FFMPEG COMMAND SNAPSHOT\n----------------------------------------------------\n\n`;
+  if (s.jobId != null || s.ffmpegCommand != null || s.seekOffset != null) {
+    text += `{\n  jobId:        ${s.jobId ?? '—'},\n  seekTime:     ${s.seekTime != null ? s.seekTime.toFixed(3) : '—'},\n  seekOffset:   ${s.seekOffset != null ? s.seekOffset.toFixed(3) : '—'},\n\n  ffmpegCommand: ${s.ffmpegCommand ?? '(not emitted by server)'}\n}\n\nFFMPEG COMMAND\n\n${s.ffmpegCommand ?? '(not captured — server does not yet emit this field)'}\n`;
+  } else {
+    text += `Waiting for seek.ffmpeg.spawned / seek.worker_spawn.creation_inputs...\n`;
+  }
+
+  // ── Section 2 — First Fragment Deep Inspection ───────────────────────────
+  const first = s.segments[0];
+  text += `\n----------------------------------------------------\nSECTION 2 — FIRST FRAGMENT DEEP INSPECTION\n----------------------------------------------------\n\n`;
+  if (first) {
+    text += `FIRST FRAGMENT AUDIT\n\n${first.segment ?? '?'}\n\n`;
+    text += `{\n  segment:          "${first.segment ?? '?'}",\n\n` +
+      `  videoTfdt:        ${first.videoTfdt != null ? first.videoTfdt.toFixed(3) : 'null'},\n` +
+      `  audioTfdt:        ${first.audioTfdt != null ? first.audioTfdt.toFixed(3) : 'null'},\n\n` +
+      `  videoFirstPts:    ${first.videoFirstPts != null ? first.videoFirstPts.toFixed(3) : 'null'},\n` +
+      `  videoFirstDts:    ${first.videoFirstDts != null ? first.videoFirstDts.toFixed(3) : 'null'},\n\n` +
+      `  audioFirstPts:    ${first.audioFirstPts != null ? first.audioFirstPts.toFixed(3) : 'null'},\n` +
+      `  audioFirstDts:    ${first.audioFirstDts != null ? first.audioFirstDts.toFixed(3) : 'null'},\n\n` +
+      `  videoDuration:    ${first.videoDuration != null ? first.videoDuration.toFixed(3) : 'null'},\n` +
+      `  audioDuration:    ${first.audioDuration != null ? first.audioDuration.toFixed(3) : 'null'},\n\n` +
+      `  videoSampleCount: ${first.videoSamples ?? 'null'},\n` +
+      `  audioSampleCount: ${first.audioSamples ?? 'null'}\n}\n\n`;
+    text += `videoTfdt:    ${first.videoTfdt  != null ? first.videoTfdt.toFixed(3)  : '—'}\n` +
+            `audioTfdt:    ${first.audioTfdt  != null ? first.audioTfdt.toFixed(3)  : '—'}\n\n` +
+            `videoFirstPts: ${first.videoFirstPts != null ? first.videoFirstPts.toFixed(3) : '—'}\n` +
+            `audioFirstPts: ${first.audioFirstPts != null ? first.audioFirstPts.toFixed(3) : '—'}\n\n` +
+            `PTS Drift:    ${first.driftMs != null ? first.driftMs.toFixed(1) + 'ms' : '—'}\n`;
+  } else {
+    text += `Waiting for first seek segment...\n`;
+  }
+
+  // ── Section 3 — Every Generated Seek Segment ─────────────────────────────
+  text += `\n----------------------------------------------------\nSECTION 3 — SEGMENT TIMELINE (first 10)\n----------------------------------------------------\n\n`;
+  if (s.segments.length > 0) {
+    text += `SEGMENT TIMELINE\n\n`;
+    s.segments.forEach(seg => {
+      const drift = seg.driftMs != null ? seg.driftMs.toFixed(1) + 'ms' : '—';
+      const vPts  = seg.videoFirstPts != null ? seg.videoFirstPts.toFixed(3) : '—';
+      const aPts  = seg.audioFirstPts != null ? seg.audioFirstPts.toFixed(3) : '—';
+      text += `${seg.segment ?? '?'}  videoPts=${vPts}  audioPts=${aPts}  drift=${drift}\n`;
+    });
+    const drifts = s.segments.map(seg => seg.driftMs).filter(d => d != null);
+    if (drifts.length >= 2) {
+      const dFirst = drifts[0];
+      const dLast  = drifts[drifts.length - 1];
+      const trend = Math.abs(dLast) > Math.abs(dFirst) + 100 ? 'B) GROWS OVER TIME'
+        : Math.abs(dLast) < Math.abs(dFirst) - 100 ? 'SHRINKING over time'
+        : 'A) APPEARS IMMEDIATELY (stable drift across segments)';
+      text += `\nDrift pattern: ${trend}\n`;
+    }
+  } else {
+    text += `Waiting for seek segments...\n`;
+  }
+
+  // ── Section 4 — FFmpeg Stderr Audit ──────────────────────────────────────
+  text += `\n----------------------------------------------------\nSECTION 4 — FFMPEG TIMESTAMP WARNINGS\n----------------------------------------------------\n\n`;
+  if (s.stderrWarnings.length > 0) {
+    text += `FFMPEG TIMESTAMP WARNINGS\n\n${s.stderrWarnings.join('\n')}\n`;
+  } else {
+    text += `No matching stderr lines yet.\nFiltering for: pts, dts, timestamp, Non-monotonous, Invalid DTS, delay, aac\n`;
+  }
+
+  // ── Section 5 — Track Origin Audit ───────────────────────────────────────
+  text += `\n----------------------------------------------------\nSECTION 5 — TRACK PIPELINE\n----------------------------------------------------\n\n`;
+  if (s.videoCodec != null || s.audioCodec != null) {
+    text += `{\n` +
+      `  videoCodec:       ${s.videoCodec ?? '—'},\n` +
+      `  audioCodec:       ${s.audioCodec ?? '—'},\n\n` +
+      `  videoCopied:      ${s.videoCopied != null ? String(s.videoCopied) : '—'},\n` +
+      `  audioCopied:      ${s.audioCopied != null ? String(s.audioCopied) : '—'},\n\n` +
+      `  videoTranscoded:  ${s.videoCopied != null ? String(!s.videoCopied) : '—'},\n` +
+      `  audioTranscoded:  ${s.audioCopied != null ? String(!s.audioCopied) : '—'}\n}\n\n`;
+    text += `TRACK PIPELINE\n\nVideo:\n${s.videoCopied === true ? 'copy' : s.videoCopied === false ? 'transcode' : s.videoCodec ?? '(unknown)'}\n\n` +
+            `Audio:\n${s.audioCopied === true ? 'copy' : s.audioCopied === false ? 'transcode' : s.audioCodec ?? '(unknown)'}\n`;
+  } else {
+    text += `Waiting for seek.ffmpeg.spawned with codec info...\n(server may not yet emit videoCodec / audioCopied fields)\n`;
+  }
+
+  // ── Section 6 — Timestamp Evolution ──────────────────────────────────────
+  text += `\n----------------------------------------------------\nSECTION 6 — TIMESTAMP EVOLUTION\n----------------------------------------------------\n\nTIMESTAMP EVOLUTION\n\n`;
+  text += `Worker:\n\n` +
+    `  video = ${s.rawWorkerVideoPts != null ? s.rawWorkerVideoPts.toFixed(3) : '(waiting...)'}\n` +
+    `  audio = ${s.rawWorkerAudioPts != null ? s.rawWorkerAudioPts.toFixed(3) : '(waiting...)'}\n\n` +
+    `  drift = ${s.workerDriftMs != null ? s.workerDriftMs.toFixed(1) + 'ms' : '(waiting...)'}\n\n`;
+  text += `Generated Fragment:\n\n` +
+    `  video = ${first?.videoFirstPts != null ? first.videoFirstPts.toFixed(3) : '(waiting...)'}\n` +
+    `  audio = ${first?.audioFirstPts != null ? first.audioFirstPts.toFixed(3) : '(waiting...)'}\n\n` +
+    `  drift = ${first?.driftMs != null ? first.driftMs.toFixed(1) + 'ms' : '(waiting...)'}\n`;
+
+  // ── Section 7 — Root Cause Detector ──────────────────────────────────────
+  const workerDrift   = s.workerDriftMs;
+  const fragmentDrift = first?.driftMs ?? null;
+  text += `\n----------------------------------------------------\nSECTION 7 — ROOT CAUSE DETECTOR\n----------------------------------------------------\n\n`;
+  if (workerDrift != null && fragmentDrift != null) {
+    if (Math.abs(workerDrift) < 50 && Math.abs(fragmentDrift) > 500) {
+      text += `ROOT CAUSE:\nFFMPEG_FRAGMENT_GENERATION\n\nWorker was synced (drift=${workerDrift.toFixed(1)}ms)\nbut fragment has drift=${fragmentDrift.toFixed(1)}ms.\nFFmpeg introduced the offset during remuxing/transcoding.\n`;
+    } else if (Math.abs(workerDrift) > 500) {
+      text += `ROOT CAUSE:\nUPSTREAM_TIMESTAMPS\n\nWorker had drift=${workerDrift.toFixed(1)}ms before FFmpeg ran.\nDesync originates in the torrent stream or demux layer.\n`;
+    } else if (Math.abs(fragmentDrift) < 50) {
+      text += `ROOT CAUSE:\nMSE_OR_BROWSER\n\nFragment is synced (drift=${fragmentDrift.toFixed(1)}ms).\nIf playback still desyncs, the issue is in MSE append or the browser decoder.\n`;
+    } else {
+      text += `Both captured — threshold not conclusive.\n  workerDrift   = ${workerDrift.toFixed(1)}ms\n  fragmentDrift = ${fragmentDrift.toFixed(1)}ms\n`;
+    }
+  } else {
+    text += `Waiting for both worker PTS and fragment PTS...\n`;
+    if (workerDrift   != null) text += `  workerDrift   = ${workerDrift.toFixed(1)}ms (captured)\n`;
+    if (fragmentDrift != null) text += `  fragmentDrift = ${fragmentDrift.toFixed(1)}ms (captured)\n`;
+  }
+
+  el.textContent = text;
+}
 
 function _fmtSignedSec(v) {
   if (v == null || !isFinite(v)) return '?';
@@ -2402,6 +3020,64 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => { b.textContent = 'Copy Panel'; }, 1500);
     });
   });
+  document.getElementById('btn-copy-ffmpeg-timestamp-audit')?.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    const b = e.currentTarget;
+    navigator.clipboard.writeText(_cpText('ffmpeg-timestamp-audit-panel')).then(() => {
+      b.textContent = 'Copied!';
+      setTimeout(() => { b.textContent = 'Copy Panel'; }, 1500);
+    });
+  });
+  document.getElementById('btn-copy-track-timeline-diagnostics')?.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    const b = e.currentTarget;
+    navigator.clipboard.writeText(_cpText('track-timeline-diagnostics-panel')).then(() => {
+      b.textContent = 'Copied!';
+      setTimeout(() => { b.textContent = 'Copy Panel'; }, 1500);
+    });
+  });
+  document.getElementById('btn-copy-seek-av-root-cause')?.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    const b = e.currentTarget;
+    navigator.clipboard.writeText(_cpText('seek-av-root-cause-panel')).then(() => {
+      b.textContent = 'Copied!';
+      setTimeout(() => { b.textContent = 'Copy Panel'; }, 1500);
+    });
+  });
+  document.getElementById('btn-copy-tfdt-normalization')?.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    const b = e.currentTarget;
+    navigator.clipboard.writeText(_cpText('tfdt-normalization-panel')).then(() => {
+      b.textContent = 'Copied!';
+      setTimeout(() => { b.textContent = 'Copy Panel'; }, 1500);
+    });
+  });
+  document.getElementById('btn-copy-av-sync-diag')?.addEventListener('click', e => {
+    e.preventDefault(); e.stopPropagation();
+    const b = e.currentTarget;
+    const header = 'Segment\tVideo Start\tAudio Start\tDelta(ms)\tVideo TFDT\tAudio TFDT\tV-ts\tA-ts\n';
+    const rows = _avSyncRows.map(r =>
+      [r.segment, r.videoStart, r.audioStart, r.actualAudioMinusVideoMs,
+       r.videoTfdtSeconds, r.audioTfdtSeconds, r.videoTimescale, r.audioTimescale].join('\t')
+    ).join('\n');
+    navigator.clipboard.writeText(header + rows).then(() => {
+      b.textContent = 'Copied!';
+      setTimeout(() => { b.textContent = 'Copy Panel'; }, 1500);
+    });
+  });
+  document.getElementById('btn-copy-bw-seek-investigation')?.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    const b = e.currentTarget;
+    navigator.clipboard.writeText(_cpText('bw-seek-investigation-panel')).then(() => {
+      b.textContent = 'Copied!';
+      setTimeout(() => { b.textContent = 'Copy Panel'; }, 1500);
+    });
+  });
   document.getElementById('btn-copy-seek-debug')?.addEventListener('click', () => {
     const text = _seekDebugLines.join('\n\n');
     navigator.clipboard.writeText(text).then(
@@ -2450,7 +3126,12 @@ const _CP_PANELS = [
   'seek-lifecycle-log', 'seek-byte-log', 'priority-log', 'cluster-log',
   'ffmpeg-log', 'segment-gen-log', 'video-events-log', 'seek-breakdown-pre',
   'seek-av-sync-analysis-panel', 'seek-root-cause-analysis-panel',
-  'seek-worker-spawn-analysis-panel', 'seek-audio-investigation-panel', 'diagnostics-perf-pre',
+	  'seek-worker-spawn-analysis-panel', 'seek-audio-investigation-panel', 'ffmpeg-timestamp-audit-panel',
+      'track-timeline-diagnostics-panel',
+      'seek-av-root-cause-panel',
+      'tfdt-normalization-panel',
+		  'avduration-diagnostics-log', 'generation-audit-log', 'diagnostics-perf-pre',
+		  'segment-ownership-forensics-log',
 ];
 
 function setupCopyButtons() {
@@ -2498,8 +3179,1120 @@ function setupCopyButtons() {
 
 // ── Main trace dispatcher ─────────────────────────────────────────────────────
 
+// ── Backward Seek Investigation ───────────────────────────────────────────────
+
+let _bwSeek = null;
+// segmentId → generation when enqueued; used to count stale-gen survivors after reset
+const _bwGenTracker = new Map();
+
+function _bwFmt(v) {
+  if (v == null) return '—';
+  return typeof v === 'number' ? v.toFixed(3) : String(v);
+}
+
+function _bwResetState(seekTime) {
+  _bwSeek = {
+    s1: null,   // seek request
+    s2: null,   // seek reset audit
+    s3: [],     // timeline ownership (fetched async after reset)
+    s4: [],     // promotion ownership
+    s5: [],     // covering segment selection events
+    s6: [],     // generation filter events
+    s7: null,   // append queue dump
+    s8: null,   // covering segment report
+    s9: null,   // playback ownership
+    seekTime,
+    genBefore: null,
+    genAfter: null,
+    abortFetchCount: 0,
+  };
+  // do NOT clear _bwGenTracker here — we count survivors from prior gen at CLEAR_QUEUE_DONE
+  const el = document.getElementById('bw-seek-investigation-panel');
+  if (el) el.textContent = 'Seeking to ' + seekTime.toFixed(2) + 's… collecting telemetry.';
+}
+
+function _bwDetectRootCauses(s) {
+  const causes = [];
+  if (s.s2 && s.s2.oldGenerationSegmentsRemaining > 0)
+    causes.push('STALE_GENERATION_CONTAMINATION');
+  const hasRejectedCovering = s.s5.some(c =>
+    c.decision !== 'accepted' && c.decision !== 'pending');
+  if (hasRejectedCovering && !s.s8?.coveringFound)
+    causes.push('COVERING_SELECTION_FAILURE');
+  const activeGen = s.genAfter;
+  if (s.s7 && activeGen != null && s.s7.some(q => q.generation != null && q.generation !== activeGen))
+    causes.push('QUEUE_CONTAMINATION');
+  if (s.s6.some(g => g.accepted && g.segmentGeneration !== g.activeGeneration))
+    causes.push('GENERATION_FILTER_FAILURE');
+  if (causes.length === 0 && s.s7 != null && !s.s8?.coveringFound)
+    causes.push('SEEK_WORKER_GENERATION_FAILURE');
+  return causes;
+}
+
+function _bwRender() {
+  const el = document.getElementById('bw-seek-investigation-panel');
+  if (!el || !_bwSeek) return;
+  const s = _bwSeek;
+  let t = '';
+
+  t += '====================================================\n';
+  t += 'BACKWARD SEEK INVESTIGATION\n';
+  t += '====================================================\n\n';
+
+  // ── Section 1 — Seek Request ──────────────────────────────────────────────
+  t += '----------------------------------------------------\n';
+  t += 'SECTION 1 — SEEK REQUEST\n';
+  t += '----------------------------------------------------\n\n';
+  if (s.s1) {
+    t += 'SEEK REQUEST\n\n';
+    t += 'current = ' + s.s1.currentPlaybackTime.toFixed(3) + '\n\n';
+    t += 'target  = ' + s.s1.requestedSeekTime.toFixed(3) + '\n\n';
+    t += 'direction = ' + s.s1.direction + '\n\n';
+    t += 'generation:\n';
+    t += (s.s1.generationBefore ?? '?') + ' -> ' + (s.s1.generationAfter ?? '?') + '\n';
+  } else {
+    t += 'Waiting for seek...\n';
+  }
+
+  // ── Section 2 — Seek Reset Audit ─────────────────────────────────────────
+  t += '\n----------------------------------------------------\n';
+  t += 'SECTION 2 — SEEK RESET AUDIT\n';
+  t += '----------------------------------------------------\n\n';
+  if (s.s2) {
+    t += 'SEEK RESET\n\n';
+    t += 'queueCleared                  = ' + s.s2.queueCleared + '\n';
+    t += 'pendingFetchesAborted         = ' + s.s2.pendingFetchesAborted + '\n';
+    t += 'sourceBufferAbortCalled       = ' + s.s2.sourceBufferAbortCalled + '\n';
+    t += 'timelineCandidatesCleared     = ' + s.s2.timelineCandidatesCleared + '\n';
+    t += 'coveringSegmentCleared        = ' + s.s2.coveringSegmentCleared + '\n';
+    t += 'cacheEntriesCleared           = ' + s.s2.cacheEntriesCleared + '\n\n';
+    const rem = s.s2.oldGenerationSegmentsRemaining;
+    t += (rem > 0 ? '⚠ ' : '') + 'oldGenerationSegmentsRemaining = ' + rem + '\n';
+    if (rem > 0) t += '  ← potential STALE_GENERATION_CONTAMINATION\n';
+  } else {
+    t += 'Waiting for seek reset...\n';
+  }
+
+  // ── Section 3 — Timeline Ownership Dump ──────────────────────────────────
+  t += '\n----------------------------------------------------\n';
+  t += 'SECTION 3 — TIMELINE OWNERSHIP DUMP\n';
+  t += '----------------------------------------------------\n\n';
+  if (s.s3.length > 0) {
+    t += 'TIMELINE OWNERSHIP\n\n';
+    const curGen = s.genAfter;
+    for (const e of s.s3.slice(0, 30)) {
+      const stale = curGen != null && e.clientGenAtFetch != null && e.clientGenAtFetch < curGen;
+      t += _bwFmtRange(e.startTime, e.endTime) + '\n';
+      t += 'source=' + (e.source ?? '?') + '\n';
+      if (stale) t += '⚠ fetched before gen=' + curGen + '\n';
+      t += '\n';
+    }
+    if (s.s3.length > 30) t += '... (' + (s.s3.length - 30) + ' more)\n';
+  } else {
+    t += 'Fetching timeline after reset...\n';
+  }
+
+  // ── Section 4 — Promotion Ownership ──────────────────────────────────────
+  t += '----------------------------------------------------\n';
+  t += 'SECTION 4 — PROMOTION OWNERSHIP\n';
+  t += '----------------------------------------------------\n\n';
+  if (s.s4.length === 0) {
+    t += 'No promotions observed yet.\n\n';
+  } else {
+    for (const p of s.s4.slice(-12)) {
+      t += 'PROMOTION\n\n';
+      t += (p.file ?? '?') + '\n\n';
+      t += 'gen=' + (p.clientGen ?? '?') + '\n\n';
+      t += 'source=' + (p.source ?? '?') + '\n\n';
+      t += _bwFmtRange(p.absoluteStart, p.absoluteEnd) + '\n\n';
+    }
+  }
+
+  // ── Section 5 — Covering Segment Selection ────────────────────────────────
+  t += '----------------------------------------------------\n';
+  t += 'SECTION 5 — COVERING SEGMENT SELECTION\n';
+  t += '----------------------------------------------------\n\n';
+  if (s.s5.length === 0) {
+    t += 'No covering checks yet.\n\n';
+  } else {
+    for (const c of s.s5.slice(-10)) {
+      t += 'COVERING CHECK\n\n';
+      t += 'target=' + _bwFmt(c.targetTime) + '\n\n';
+      t += 'segment=' + _bwFmtRange(c.startTime, c.endTime) + '\n\n';
+      t += 'generation=' + (c.generation ?? '?') + '\n\n';
+      t += 'source=' + (c.source ?? '?') + '\n\n';
+      t += 'decision=' + c.decision + '\n\n';
+    }
+  }
+
+  // ── Section 6 — Generation Filter Audit ──────────────────────────────────
+  t += '----------------------------------------------------\n';
+  t += 'SECTION 6 — GENERATION FILTER AUDIT\n';
+  t += '----------------------------------------------------\n\n';
+  if (s.s6.length === 0) {
+    t += 'No generation checks yet.\n\n';
+  } else {
+    for (const g of s.s6.slice(-10)) {
+      const bad = g.accepted && g.segmentGeneration !== g.activeGeneration;
+      t += (bad ? '⚠ ' : '') + 'GENERATION FILTER\n\n';
+      t += 'segment=' + (g.segmentId ?? '?') + '\n\n';
+      t += 'segmentGeneration=' + g.segmentGeneration + '\n\n';
+      t += 'activeGeneration=' + g.activeGeneration + '\n\n';
+      t += 'accepted=' + g.accepted + '\n';
+      if (bad) t += '  ← GENERATION_FILTER_FAILURE\n';
+      t += '\n';
+    }
+  }
+
+  // ── Section 7 — Append Queue Dump ────────────────────────────────────────
+  t += '----------------------------------------------------\n';
+  t += 'SECTION 7 — APPEND QUEUE DUMP\n';
+  t += '----------------------------------------------------\n\n';
+  if (!s.s7) {
+    t += 'Waiting for queue dump...\n\n';
+  } else if (s.s7.length === 0) {
+    t += 'APPEND QUEUE\n\n(empty)\n\n';
+  } else {
+    t += 'APPEND QUEUE\n\n';
+    const activeGen = s.genAfter;
+    for (const q of s.s7) {
+      const stale = activeGen != null && q.generation != null && q.generation !== activeGen;
+      t += _bwFmtRange(q.startTime, q.endTime) + ' gen=' + (q.generation ?? '?');
+      if (stale) t += ' ⚠ STALE';
+      t += '\n';
+    }
+    t += '\n';
+  }
+
+  // ── Section 8 — Covering Segment Report ──────────────────────────────────
+  t += '----------------------------------------------------\n';
+  t += 'SECTION 8 — COVERING SEGMENT REPORT\n';
+  t += '----------------------------------------------------\n\n';
+  if (!s.s8) {
+    t += 'Waiting for covering report...\n\n';
+  } else {
+    t += 'COVERING REPORT\n\n';
+    t += 'target=' + _bwFmt(s.s8.targetTime) + '\n\n';
+    t += 'coveringFound=' + s.s8.coveringFound + '\n\n';
+    if (s.s8.coveringFound && s.s8.segmentId) {
+      t += 'segment=' + _bwFmtRange(s.s8.startTime, s.s8.endTime) + '\n\n';
+      t += 'generation=' + (s.s8.generation ?? '?') + '\n\n';
+      t += 'source=' + (s.s8.source ?? '?') + '\n\n';
+    }
+  }
+
+  // ── Section 9 — Playback Ownership ───────────────────────────────────────
+  t += '----------------------------------------------------\n';
+  t += 'SECTION 9 — PLAYBACK OWNERSHIP\n';
+  t += '----------------------------------------------------\n\n';
+  if (!s.s9) {
+    t += 'Waiting for playback resume...\n\n';
+  } else {
+    t += 'PLAYBACK RESUMED\n\n';
+    t += 'currentTime=' + _bwFmt(s.s9.currentTime) + '\n\n';
+    t += 'segment=' + (s.s9.segmentId ?? '—') + '\n\n';
+    t += 'generation=' + (s.s9.generation ?? '?') + '\n\n';
+    t += 'source=' + (s.s9.source ?? '?') + '\n\n';
+  }
+
+  // ── Section 10 — Root Cause Detector ─────────────────────────────────────
+  t += '----------------------------------------------------\n';
+  t += 'SECTION 10 — ROOT CAUSE DETECTOR\n';
+  t += '----------------------------------------------------\n\n';
+  const causes = _bwDetectRootCauses(s);
+  if (causes.length === 0) {
+    t += 'No root causes detected yet — still collecting data...\n';
+  } else {
+    for (const c of causes) {
+      t += 'ROOT CAUSE:\n' + c + '\n\n';
+    }
+  }
+
+  el.textContent = t;
+}
+
+function _bwFmtRange(start, end) {
+  const s = start != null ? start.toFixed(0) : '?';
+  const e = end   != null ? end.toFixed(0)   : '?';
+  return s + '-' + e;
+}
+
+function appendBwSeekEvent(name, data) {
+  if (!_bwSeek && name !== 'SEEK_WORKER_SPAWN_REQUEST') return;
+
+  if (name === 'SEEK_WORKER_SPAWN_REQUEST') {
+    _bwResetState(data.requestedSeekTime ?? 0);
+    _bwSeek.s1 = {
+      currentPlaybackTime: data.currentPlaybackTime ?? 0,
+      requestedSeekTime:   data.requestedSeekTime ?? 0,
+      direction:           data.direction ?? '?',
+      generationBefore:    null,
+      generationAfter:     null,
+    };
+    _bwRender();
+    return;
+  }
+
+  if (name === 'SEEK_RESET_START') {
+    if (_bwSeek) _bwSeek.genBefore = data.oldGeneration ?? null;
+    return;
+  }
+
+  if (name === 'ABORT_FETCHES') {
+    if (_bwSeek) _bwSeek.abortFetchCount = data.fetchCount ?? 0;
+    return;
+  }
+
+  if (name === 'GENERATION_INCREMENTED') {
+    _bwSeek.genAfter = data.generation;
+    if (_bwSeek.s1) {
+      _bwSeek.s1.generationBefore = _bwSeek.genBefore;
+      _bwSeek.s1.generationAfter  = data.generation;
+    }
+    return;
+  }
+
+  if (name === 'CLEAR_QUEUE_DONE') {
+    // count segments in tracker that belong to a generation older than the new one
+    const curGen = _bwSeek.genAfter ?? data.generation;
+    let oldRemaining = 0;
+    for (const g of _bwGenTracker.values()) {
+      if (g < curGen) oldRemaining++;
+    }
+    _bwGenTracker.clear();
+    _bwSeek.s2 = {
+      queueCleared:                  (data.queueLengthAfter ?? 0) === 0,
+      pendingFetchesAborted:         _bwSeek.abortFetchCount > 0,
+      sourceBufferAbortCalled:       false,
+      timelineCandidatesCleared:     'unknown (server-side)',
+      coveringSegmentCleared:        true,
+      cacheEntriesCleared:           (data.bufferedSegmentCountAfter ?? 0) === 0,
+      oldGenerationSegmentsRemaining: oldRemaining,
+    };
+    // Async: snapshot the server timeline after reset settles
+    setTimeout(() => {
+      if (!_bwSeek || !activeSession) return;
+      fetch('/torrent/timeline?sessionId=' + encodeURIComponent(activeSession))
+        .then(r => r.ok ? r.json() : null)
+        .then(entries => {
+          if (!entries || !_bwSeek) return;
+          const clientGen = _bwSeek.genAfter;
+          _bwSeek.s3 = entries.map(e => ({
+            file:             e.file,
+            startTime:        e.startTime,
+            endTime:          e.endTime,
+            source:           e.source ?? '?',
+            clientGenAtFetch: clientGen,
+          }));
+          _bwRender();
+        })
+        .catch(() => {});
+    }, 600);
+    _bwRender();
+    return;
+  }
+
+  if (name === 'QUEUE_DUMP') {
+    const queueGen = data.generation;
+    _bwSeek.s7 = (data.queue ?? []).map(q => ({
+      segmentId: q.segmentId,
+      startTime: q.startTime,
+      endTime:   q.endTime,
+      generation: queueGen,
+    }));
+    _bwRender();
+    return;
+  }
+
+  if (name === 'GENERATION_CHECK') {
+    const segGen = data.segmentGeneration ?? data.generation;
+    const curGen = data.currentGeneration ?? segGen;
+    if (segGen == null || curGen == null) return;
+    // Track for old-gen detection in the NEXT reset audit
+    if (data.segmentId && segGen < curGen) _bwGenTracker.set(data.segmentId, segGen);
+    // Update s2 running counter for old-gen arrivals after the reset
+    if (_bwSeek.s2 && !data.accepted && segGen < curGen) {
+      _bwSeek.s2.oldGenerationSegmentsRemaining++;
+    }
+    _bwSeek.s6.push({
+      segmentId:        data.segmentId ?? '?',
+      segmentGeneration: segGen,
+      activeGeneration:  curGen,
+      accepted:          !!data.accepted,
+    });
+    _bwRender();
+    return;
+  }
+
+  if (name === 'SEEK_COVERING_SELECTED' || name === 'COVERING_FOUND') {
+    const entry = {
+      targetTime:  data.targetTime ?? data.pendingSeekTime ?? null,
+      segmentId:   data.segmentId,
+      startTime:   data.startTime,
+      endTime:     data.endTime,
+      generation:  data.generation,
+      source:      data.seekSegment ? 'seek' : 'main',
+      decision:    'accepted',
+    };
+    _bwSeek.s5.push(entry);
+    _bwSeek.s8 = {
+      targetTime:   entry.targetTime,
+      coveringFound: true,
+      segmentId:    data.segmentId,
+      startTime:    data.startTime,
+      endTime:      data.endTime,
+      generation:   data.generation,
+      source:       entry.source,
+    };
+    _bwRender();
+    return;
+  }
+
+  if (name === 'SEEK_COVERING_PLAYABLE') {
+    if (_bwSeek.s8) _bwSeek.s8.coveringFound = true;
+    _bwRender();
+    return;
+  }
+
+  if (name === 'SEEK_ROOT_PLAYBACK_START') {
+    _bwSeek.s9 = {
+      currentTime: data.currentTime,
+      segmentId:   data.pendingSeekSeg ?? data.segmentId ?? null,
+      generation:  data.generation,
+      source:      data.source ?? '?',
+    };
+    _bwRender();
+    return;
+  }
+}
+
+function appendBwSeekServerEvent(phase, data) {
+  if (!_bwSeek) return;
+  if (phase === 'seek.proof.promoted') {
+    _bwSeek.s4.push({
+      file:         data.file ?? '?',
+      clientGen:    _bwSeek.genAfter,
+      source:       data.source ?? (/^segment_t/.test(data.file ?? '') ? 'seek' : 'main'),
+      absoluteStart: data.absoluteStart ?? data.startTime ?? null,
+      absoluteEnd:   data.absoluteEnd  ?? data.endTime   ?? null,
+    });
+    _bwRender();
+  }
+}
+
+// ── AV Sync Investigation panel ──────────────────────────────────────────────
+(function () {
+  const MAX = 50;
+  const _entries = [];
+  let _dirty = false;
+  let _rafPending = false;
+
+  const COLORS = {
+    'avsync.ffmpeg.spawn':    '#7df',
+    'avsync.first_segment':   '#f9a',
+    'avsync.segment':         '#afd',
+    'avsync.mp4':             '#fc9',
+    'avsync.rebase':          '#c9f',
+    'avsync.append':          '#9cf',
+    'avsync.updateend':       '#7b9',
+    'avsync.seek_report':     '#ff7',
+    'avsync.transcode_test':  '#f7c',
+    'avsync.ffprobe':         '#7ff',
+    'avsync.mpegts_compare':  '#cf7',
+    'avsync.root_cause':      '#f44',
+  };
+
+  const LABELS = {
+    'avsync.ffmpeg.spawn':    'S1 SPAWN   ',
+    'avsync.first_segment':   'S2 FIRST   ',
+    'avsync.segment':         'S3 SEG     ',
+    'avsync.mp4':             'S4 MP4     ',
+    'avsync.rebase':          'S5 REBASE  ',
+    'avsync.append':          'S6 APPEND  ',
+    'avsync.updateend':       'S6 UPEND   ',
+    'avsync.seek_report':     'S7 DONE    ',
+    'avsync.transcode_test':  'DG TEST    ',
+    'avsync.ffprobe':         'DG PROBE   ',
+    'avsync.mpegts_compare':  'DG MPEGTS  ',
+    'avsync.root_cause':      '!! CAUSE   ',
+  };
+
+  function _fmt(event, data) {
+    const lbl = LABELS[event] ?? event;
+    const ts  = new Date().toTimeString().slice(3, 8);
+    let body = '';
+    switch (event) {
+      case 'avsync.ffmpeg.spawn':
+        body = `job=${data.jobId} gen=${data.generation} req=${data.requestedSeekTime} start=${data.workerStartTime} gap=${data.requestedMinusWorkerStartMs}ms`;
+        if (data.cmdLine) body += `\n           cmd=${String(data.cmdLine).slice(0, 140)}`;
+        break;
+      case 'avsync.first_segment':
+        body = `seg=${data.segment ?? '?'}\n           abs=[${data.absoluteStart}→${data.absoluteEnd}]`
+             + `\n           vRaw=${data.videoTfdtRaw} aRaw=${data.audioTfdtRaw} vTs=${data.videoTimescale} aTs=${data.audioTimescale}`
+             + `\n           vSec=${data.videoTfdtSeconds} aSec=${data.audioTfdtSeconds}`
+             + `\n           vStart=${data.videoStart} aStart=${data.audioStart} delta=${data.actualAudioMinusVideoMs}ms`;
+        break;
+      case 'avsync.segment': {
+        const d = data.trackDeltaMs;
+        const flag = d != null && Math.abs(d) > 50 ? ' ⚠' : '';
+        body = `seg=${data.segment ?? '?'}  vStart=${data.videoStart} aStart=${data.audioStart} delta=${d}ms${flag}`;
+        break;
+      }
+      case 'avsync.mp4':
+        body = `seg=${data.segment ?? '?'}`
+             + `\n           vTfdt=${data.videoTfdt} vTs=${data.videoTimescale} vRaw=${data.videoTfdtRaw} pts=[${data.videoEarliestPts}→${data.videoLatestPts}]`
+             + `\n           aTfdt=${data.audioTfdt} aTs=${data.audioTimescale} aRaw=${data.audioTfdtRaw} pts=[${data.audioEarliestPts}→${data.audioLatestPts}]`
+             + `\n           audioMinusVideo=${data.audioMinusVideoTfdtMs}ms`;
+        break;
+      case 'avsync.rebase':
+        body = `seg=${data.segment ?? '?'}  offset=${data.workerStartTime}`
+             + `\n           vSec=${data.videoTfdtSeconds} aSec=${data.audioTfdtSeconds}`
+             + `\n           → vStart=${data.videoStart} aStart=${data.audioStart} delta=${data.trackDeltaMs}ms`;
+        break;
+      case 'avsync.append':
+        body = `seg=${data.segment ?? '?'}  vStart=${data.videoStart} aStart=${data.audioStart} delta=${data.trackDeltaMs}ms`
+             + `  tsOff=${data.timestampOffset} bytes=${data.bytes} seek=${data.seekSegment}`;
+        break;
+      case 'avsync.updateend':
+        body = `seg=${data.segment ?? '?'}  seek=${data.seekSegment}  buffered=${JSON.stringify(data.bufferedAfter ?? [])}`;
+        break;
+      case 'avsync.seek_report':
+        body = `target=${data.targetTime}  seg=${data.firstSegment}  vStart=${data.firstVideoStart}  ct=${data.currentVideoTime}`
+             + `\n           buffered=${JSON.stringify(data.buffered ?? [])}`;
+        break;
+      case 'avsync.transcode_test': {
+        const flag = data.trackDeltaMs != null && Math.abs(data.trackDeltaMs) < 100 ? ' ✓ SYNC' : (data.trackDeltaMs != null && Math.abs(data.trackDeltaMs) > 500 ? ' ✗ DRIFT' : '');
+        body = `mode=${data.diagMode}  seg=${data.segment ?? '?'}  delta=${data.trackDeltaMs}ms${flag}`
+             + `\n           vFirst=${data.videoFirstPts} aFirst=${data.audioFirstPts}`
+             + `\n           vLast=${data.videoLatestPts} aLast=${data.audioLatestPts}`;
+        break;
+      }
+      case 'avsync.ffprobe':
+        body = `seg=${data.segment ?? '?'}  audioMinusVideo=${data.audioMinusVideoMs}ms`
+             + `\n           video: pts=${data.video?.firstPts} dts=${data.video?.firstDts} dur=${data.video?.duration}`
+             + `\n           audio: pts=${data.audio?.firstPts} dts=${data.audio?.firstDts} dur=${data.audio?.duration}`;
+        break;
+      case 'avsync.mpegts_compare': {
+        const v = data.verdict ?? '?';
+        body = `seg=${data.segment ?? '?'}  verdict=${v}`
+             + `\n           fmp4_delta=${data.fmp4_deltaMs}ms  mpegts_delta=${data.mpegts_deltaMs}ms  diff=${data.delta_difference}ms`;
+        break;
+      }
+      case 'avsync.root_cause':
+        body = `\n  ╔══════════════════════════════════╗`
+             + `\n  ║  ROOT CAUSE: ${String(data.rootCause).padEnd(20)}║`
+             + `\n  ╚══════════════════════════════════╝`
+             + `\n  mode=${data.diagMode}  drift=${data.drift}ms`
+             + (data.note ? `\n  note: ${data.note}` : '');
+        break;
+      default:
+        body = JSON.stringify(data).slice(0, 160);
+    }
+    return `[${ts}] ${lbl}  ${body}`;
+  }
+
+  function _flush() {
+    _rafPending = false;
+    if (!_dirty) return;
+    _dirty = false;
+    const el = document.getElementById('avsync-investigation-log');
+    if (!el) return;
+    el.textContent = _entries.join('\n');
+    el.scrollTop = el.scrollHeight;
+  }
+
+  window._appendAvSyncInvestigation = function(event, data) {
+    _entries.push(_fmt(event, data));
+    if (_entries.length > MAX) _entries.splice(0, _entries.length - MAX);
+    _dirty = true;
+    if (!_rafPending) { _rafPending = true; requestAnimationFrame(_flush); }
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btn-copy-avsync-investigation')?.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      const b = e.currentTarget;
+      navigator.clipboard.writeText(_entries.join('\n')).then(() => {
+        b.textContent = 'Copied!';
+        setTimeout(() => { b.textContent = 'Copy'; }, 1500);
+      });
+    });
+  });
+	})();
+
+	// ── AV Duration Diagnostics panel ────────────────────────────────────────────
+	(function () {
+	  const MAX = 50;
+	  const _entries = [];
+	  let _dirty = false;
+	  let _rafPending = false;
+
+	  const LABELS = {
+	    'avduration.segment':    'SEGMENT ',
+	    'avduration.first_bad':  'FIRSTBAD',
+	    'avduration.ffprobe':    'FFPROBE ',
+	    'avduration.aac':        'AAC     ',
+	    'avduration.boundary':   'BOUNDARY',
+	    'avduration.continuity': 'CONTINUE',
+	    'avduration.root_cause': 'CAUSE   ',
+	  };
+
+	  function _sec(v) {
+	    return v == null || Number.isNaN(Number(v)) ? '—' : Number(v).toFixed(6);
+	  }
+
+	  function _ms(v) {
+	    return v == null || Number.isNaN(Number(v)) ? '—' : Math.round(Number(v)) + 'ms';
+	  }
+
+	  function _track(name, t) {
+	    if (!t) return `${name}: none`;
+	    return `${name}: packets=${t.packetCount ?? t.nb_frames ?? '—'} first=${_sec(t.firstPts ?? t.start_time)} last=${_sec(t.lastPts)} duration=${_sec(t.duration)}`;
+	  }
+
+	  function _fmt(event, data) {
+	    const lbl = LABELS[event] ?? event;
+	    const ts = new Date().toTimeString().slice(3, 8);
+	    let body = '';
+	    switch (event) {
+	      case 'avduration.segment':
+	        body = `segment=${data.segment ?? '?'}`
+	             + `\n  ${_track('video', data.video)}`
+	             + `\n  ${_track('audio', data.audio)}`
+	             + `\n  durationDelta=${_ms(data.durationDeltaMs)} startDelta=${_ms(data.startDeltaMs)}`;
+	        break;
+	      case 'avduration.first_bad':
+	        body = `${data.marker ?? 'FIRST_DURATION_MISMATCH'} segment=${data.segment ?? '?'}`
+	             + `\n  videoDuration=${_sec(data.videoDuration)} audioDuration=${_sec(data.audioDuration)} delta=${_ms(data.durationDeltaMs)}`;
+	        break;
+	      case 'avduration.ffprobe':
+	        body = `segment=${data.segment ?? '?'} durationDelta=${_ms(data.durationDeltaMs)}`
+	             + `\n  VIDEO start=${_sec(data.video?.start_time)} duration=${_sec(data.video?.duration)} frames=${data.video?.nb_frames ?? '—'} avg=${data.video?.avg_frame_rate ?? '—'}`
+	             + `\n  AUDIO start=${_sec(data.audio?.start_time)} duration=${_sec(data.audio?.duration)} frames=${data.audio?.nb_frames ?? '—'} sampleRate=${data.audio?.sample_rate ?? '—'}`;
+	        break;
+	      case 'avduration.aac':
+	        body = `segment=${data.segment ?? '?'} codec=${data.codec ?? '—'} sampleRate=${data.sampleRate ?? '—'} channels=${data.channels ?? '—'} layout=${data.channelLayout ?? '—'}`
+	             + `\n  encoderDelay=${data.encoderDelay ?? '—'} primingSamples=${data.primingSamples ?? '—'} paddingSamples=${data.paddingSamples ?? '—'}`;
+	        break;
+	      case 'avduration.boundary':
+	        body = `segment=${data.segment ?? '?'} expected=${_sec(data.expectedDuration)}`
+	             + `\n  video=${_sec(data.actualVideoDuration)} videoMinusExpected=${_ms(data.videoMinusExpectedMs)}`
+	             + `\n  audio=${_sec(data.actualAudioDuration)} audioMinusExpected=${_ms(data.audioMinusExpectedMs)}`;
+	        break;
+	      case 'avduration.continuity':
+	        body = `${data.segmentN ?? '?'} -> ${data.segmentNPlus1 ?? '?'}`
+	             + `\n  videoGap=${_ms(data.videoGapMs)} videoOverlap=${_ms(data.videoOverlapMs)}`
+	             + `\n  audioGap=${_ms(data.audioGapMs)} audioOverlap=${_ms(data.audioOverlapMs)}`;
+	        break;
+	      case 'avduration.root_cause':
+	        body = `ROOT CAUSE: ${data.rootCause ?? '?'}`
+	             + `\n  segment=${data.segment ?? '—'} reason=${data.reason ?? '—'}`
+	             + `\n  durationDelta=${_ms(data.durationDeltaMs)} parserDelta=${_ms(data.parserDurationDeltaMs)} ffprobeDelta=${_ms(data.ffprobeDurationDeltaMs)}`
+	             + (data.recentDurationDeltaMs ? `\n  recent=${data.recentDurationDeltaMs.join(',')}ms` : '');
+	        break;
+	      default:
+	        body = JSON.stringify(data).slice(0, 300);
+	    }
+	    return `[${ts}] ${lbl}  ${body}`;
+	  }
+
+	  function _flush() {
+	    _rafPending = false;
+	    if (!_dirty) return;
+	    _dirty = false;
+	    const el = document.getElementById('avduration-diagnostics-log');
+	    if (!el) return;
+	    el.textContent = _entries.join('\n\n');
+	    el.scrollTop = el.scrollHeight;
+	  }
+
+	  window._appendAvDurationDiagnostics = function(event, data) {
+	    _entries.push(_fmt(event, data));
+	    if (_entries.length > MAX) _entries.splice(0, _entries.length - MAX);
+	    _dirty = true;
+	    if (!_rafPending) { _rafPending = true; requestAnimationFrame(_flush); }
+	  };
+
+	  document.addEventListener('DOMContentLoaded', () => {
+	    document.getElementById('btn-copy-avduration-diagnostics')?.addEventListener('click', e => {
+	      e.preventDefault(); e.stopPropagation();
+	      const b = e.currentTarget;
+	      navigator.clipboard.writeText(_entries.join('\n\n')).then(() => {
+	        b.textContent = 'Copied!';
+	        setTimeout(() => { b.textContent = 'Copy'; }, 1500);
+	      });
+	    });
+	  });
+	})();
+
+	// ── Generation Ownership Audit panel ─────────────────────────────────────────
+	const GenerationAudit = (() => {
+	  const MAX = 100;
+	  const entries = [];
+	  let dirty = false;
+	  let rafPending = false;
+	  let lastPlaybackGeneration = null;
+	  let contamination = false;
+
+	  const countsByGeneration = items => {
+	    const counts = new Map();
+	    for (const item of items ?? []) {
+	      const g = item?.generation ?? 'unknown';
+	      counts.set(g, (counts.get(g) ?? 0) + 1);
+	    }
+	    return [...counts.entries()].map(([generation, count]) => ({ generation, count }));
+	  };
+
+	  const formatCounts = counts => counts.length
+	    ? counts.map(c => `generation ${c.generation}: ${c.count}`).join(', ')
+	    : 'none';
+
+	  function append(event, data = {}) {
+	    const ts = new Date().toTimeString().slice(3, 8);
+	    const red = data.highlight === 'red'
+	      || /CONTAMINATION|MISMATCH|FAILURE/.test(String(data.rootCause ?? ''))
+	      || (event === 'generation.segment_promoted' && data.accepted === true &&
+	        data.generation != null && data.currentActiveGeneration != null &&
+	        data.generation !== data.currentActiveGeneration)
+	      || (event === 'generation.append_start' && data.accepted === true &&
+	        data.generation != null && data.currentGeneration != null &&
+	        data.generation !== data.currentGeneration);
+	    entries.push({ ts, event, data, red });
+	    if (entries.length > MAX) entries.splice(0, entries.length - MAX);
+	    if (event === 'generation.segment_promoted' &&
+	        data.accepted === true &&
+	        data.generation != null &&
+	        data.currentActiveGeneration != null &&
+	        data.generation !== data.currentActiveGeneration) {
+	      root('TIMELINE_CONTAMINATION', {
+	        segment: data.segment,
+	        generation: data.generation,
+	        currentActiveGeneration: data.currentActiveGeneration,
+	        workerId: data.workerId,
+	      });
+	    }
+	    if (event === 'generation.avsync' &&
+	        data.generation != null &&
+	        data.currentGeneration != null &&
+	        data.generation !== data.currentGeneration) {
+	      root('AV_GENERATION_MISMATCH', {
+	        segment: data.segment,
+	        generation: data.generation,
+	        currentGeneration: data.currentGeneration,
+	        workerId: data.workerId,
+	      });
+	    }
+	    dirty = true;
+	    if (!rafPending) {
+	      rafPending = true;
+	      requestAnimationFrame(flush);
+	    }
+	  }
+
+	  function root(rootCause, data = {}) {
+	    contamination = true;
+	    append('generation.root_cause', { rootCause, ...data, highlight: 'red' });
+	  }
+
+	  function fmt(data) {
+	    return Object.entries(data)
+	      .filter(([k, v]) => k !== 'highlight' && v !== undefined)
+	      .map(([k, v]) => `${k}=${typeof v === 'object' ? JSON.stringify(v) : v}`)
+	      .join(' ');
+	  }
+
+	  function flush() {
+	    rafPending = false;
+	    if (!dirty) return;
+	    dirty = false;
+	    const el = document.getElementById('generation-audit-log');
+	    if (!el) return;
+	    el.textContent = entries.map(e => {
+	      const prefix = e.red ? '!! ' : '   ';
+	      return `${prefix}[${e.ts}] ${e.event}\n      ${fmt(e.data)}`;
+	    }).join('\n\n');
+	    el.scrollTop = el.scrollHeight;
+	  }
+
+	  function auditTimeline(entries, activeGeneration) {
+	    const items = (entries ?? []).map(e => ({
+	      segment: e.segmentId ?? e.file,
+	      generation: e.generation ?? 'unknown',
+	      workerId: e.workerId ?? 'unknown',
+	      start: e.startTime,
+	      end: e.endTime,
+	    }));
+	    const counts = countsByGeneration(items);
+	    append('generation.timeline_state', {
+	      activeGeneration,
+	      counts: formatCounts(counts),
+	      entries: items,
+	    });
+	    if (counts.filter(c => c.generation !== 'unknown').length > 1) {
+	      root('TIMELINE_CONTAMINATION', { counts: formatCounts(counts) });
+	    }
+	  }
+
+	  function auditQueue(queue, currentGeneration) {
+	    const items = (queue ?? []).map(s => ({
+	      segment: s.segmentId,
+	      generation: s.generation ?? 'unknown',
+	      workerId: s.workerId ?? 'unknown',
+	      appendState: s.appendState ?? 'queued',
+	      queued: true,
+	      appending: s.appendState === 'appending',
+	      completed: s.appendState === 'completed',
+	    }));
+	    const counts = countsByGeneration(items);
+	    append('generation.append_queue', {
+	      currentGeneration,
+	      counts: formatCounts(counts),
+	      entries: items,
+	    });
+	    if (counts.filter(c => c.generation !== 'unknown').length > 1) {
+	      root('QUEUE_CONTAMINATION', { currentGeneration, counts: formatCounts(counts) });
+	    }
+	  }
+
+	  function playbackOwner(data) {
+	    append('generation.playback_owner', data);
+	    if (lastPlaybackGeneration != null && data.generation != null && data.generation !== lastPlaybackGeneration) {
+	      root('PLAYBACK_OWNERSHIP_FAILURE', {
+	        previousGeneration: lastPlaybackGeneration,
+	        currentGeneration: data.generation,
+	        coveringSegment: data.coveringSegment,
+	      });
+	    }
+	    if (data.generation != null) lastPlaybackGeneration = data.generation;
+	  }
+
+	  function finalReport(data) {
+	    append('generation.final_report', {
+	      ...data,
+	      contaminationDetected: contamination ? 'YES' : 'NO',
+	    });
+	  }
+
+	  document.addEventListener('DOMContentLoaded', () => {
+	    document.getElementById('btn-copy-generation-audit')?.addEventListener('click', e => {
+	      e.preventDefault(); e.stopPropagation();
+	      const b = e.currentTarget;
+	      navigator.clipboard.writeText(entries.map(x => `[${x.ts}] ${x.event}\n${fmt(x.data)}`).join('\n\n')).then(() => {
+	        b.textContent = 'Copied!';
+	        setTimeout(() => { b.textContent = 'Copy'; }, 1500);
+	      });
+	    });
+	  });
+
+	  return { append, root, auditTimeline, auditQueue, playbackOwner, finalReport, countsByGeneration, formatCounts };
+	})();
+
+	// ── Segment Ownership Forensics panel ────────────────────────────────────────
+	const SegmentForensics = (() => {
+	  const MAX = 200;
+	  const events = [];
+	  const custody = new Map();
+	  const activeWorkers = new Set();
+	  const timelineInserts = new Map();
+	  let activeSeekEpoch = 0;
+	  let dirty = false;
+	  let rafPending = false;
+
+	  const owner = seg => ({
+	    segment: seg?.segmentId ?? seg?.file ?? seg?.segment ?? null,
+	    generation: seg?.generation ?? null,
+	    workerId: seg?.workerId ?? null,
+	    seekEpoch: seg?.seekEpoch ?? null,
+	    source: seg?.source ?? null,
+	    createdAt: seg?.createdAt ?? null,
+	  });
+
+	  const get = segment => {
+	    const id = segment?.segmentId ?? segment?.file ?? segment?.segment ?? segment;
+	    if (!id) return {};
+	    if (!custody.has(id)) custody.set(id, { segment: id });
+	    return custody.get(id);
+	  };
+
+	  const fmt = data => JSON.stringify(data, null, 2);
+
+	  function append(event, data = {}) {
+	    const ts = new Date().toTimeString().slice(0, 8);
+	    const violation = event === 'SEGMENT_OWNERSHIP_VIOLATION';
+	    events.push({ ts, event, data, violation });
+	    if (events.length > MAX) events.splice(0, events.length - MAX);
+	    dirty = true;
+	    if (!rafPending) {
+	      rafPending = true;
+	      requestAnimationFrame(flush);
+	    }
+	    if (violation) console.warn('SEGMENT_OWNERSHIP_VIOLATION', data);
+	    else if (event === 'SEGMENT APPEND REPORT') console.log('SEGMENT APPEND REPORT', data);
+	  }
+
+	  function flush() {
+	    rafPending = false;
+	    if (!dirty) return;
+	    dirty = false;
+	    const el = document.getElementById('segment-ownership-forensics-log');
+	    if (!el) return;
+	    el.textContent = events.map(e => {
+	      const bang = e.violation ? '!! ' : '   ';
+	      return `${bang}[${e.ts}] ${e.event}\n${fmt(e.data)}`;
+	    }).join('\n\n');
+	    el.scrollTop = el.scrollHeight;
+	  }
+
+	  function detect(seg, currentGeneration, extra = {}) {
+	    if (!seg?.segmentId && !seg?.segment) return;
+	    const id = seg.segmentId ?? seg.segment;
+	    const reasons = [];
+	    const generation = seg.generation ?? null;
+	    const workerId = seg.workerId ?? null;
+	    const seekEpoch = seg.seekEpoch ?? null;
+	    const source = seg.source ?? null;
+	    if (generation != null && currentGeneration != null && generation !== currentGeneration) reasons.push('generation != currentGeneration');
+	    if (seekEpoch != null && activeSeekEpoch != null && seekEpoch !== activeSeekEpoch) reasons.push('seekEpoch != activeSeekEpoch');
+	    if (workerId && workerId !== 'main' && !activeWorkers.has(workerId)) reasons.push('workerId belongs to dead worker');
+	    if (source === 'cache' && generation == null) reasons.push('source=cache AND generation unknown');
+	    if (timelineInserts.get(id) > 1) reasons.push('segment inserted twice');
+	    if (!reasons.length) return;
+	    append('SEGMENT_OWNERSHIP_VIOLATION', {
+	      segment: id,
+	      reasons,
+	      generation,
+	      currentGeneration,
+	      workerId,
+	      seekEpoch,
+	      activeSeekEpoch,
+	      source,
+	      ...extra,
+	    });
+	  }
+
+	  function selection(player, seg, reason, requestedTime = null) {
+	    if (!seg) return;
+	    const c = get(seg);
+	    c.selectedBy = reason;
+	    c.selectedFunction = 'SegmentPlayer._nextToAppend';
+	    c.selectedAt = Date.now();
+	    c.selectedStart = seg.startTime ?? null;
+	    c.selectedEnd = seg.endTime ?? null;
+	    append('segment.selection', {
+	      currentTime: +player.video.currentTime.toFixed(3),
+	      requestedTime,
+	      selectedSegment: seg.segmentId,
+	      selectedStart: seg.startTime ?? null,
+	      selectedEnd: seg.endTime ?? null,
+	      reason,
+	      selectedFunction: c.selectedFunction,
+	      currentGeneration: player._generation,
+	      activeSeekWorkerIds: [...activeWorkers],
+	      timelineSize: player.queue?.segments?.length ?? null,
+	    });
+	    detect(seg, player._generation, { stage: 'selection', selectedBy: reason });
+	  }
+
+	  function cacheHit(player, seg, meta = {}, accepted = true) {
+	    if (!seg) return;
+	    const id = seg.segmentId;
+	    const c = get(id);
+	    c.fetchedFrom = meta.fetchedFrom ?? 'client_buffer_cache';
+	    c.cacheHit = true;
+	    append('segment.cache_hit', {
+	      segment: id,
+	      cacheKey: id,
+	      generation: meta.generation ?? seg.generation ?? null,
+	      workerId: meta.workerId ?? seg.workerId ?? null,
+	      seekEpoch: meta.seekEpoch ?? seg.seekEpoch ?? null,
+	      createdAt: meta.createdAt ?? seg.createdAt ?? null,
+	      source: meta.source ?? seg.source ?? null,
+	      currentGeneration: player._generation,
+	      accepted,
+	    });
+	    detect({ ...seg, ...meta }, player._generation, { stage: 'cache_hit', accepted });
+	  }
+
+	  function admission(player, seg, data = {}) {
+	    if (!seg) return;
+	    const generation = seg.generation ?? data.generation ?? null;
+	    const seekEpoch = seg.seekEpoch ?? data.seekEpoch ?? null;
+	    const generationMatch = generation == null || generation === player._generation;
+	    const epochMatch = seekEpoch == null || seekEpoch === activeSeekEpoch;
+	    append('segment.append_admission', {
+	      segment: seg.segmentId,
+	      generation,
+	      workerId: seg.workerId ?? null,
+	      seekEpoch,
+	      source: seg.source ?? data.source ?? null,
+	      currentGeneration: player._generation,
+	      generationMatch,
+	      epochMatch,
+	      accepted: data.accepted ?? generationMatch,
+	      admittedBy: 'SegmentPlayer._pump',
+	    });
+	    detect(seg, player._generation, { stage: 'append_admission' });
+	  }
+
+	  function rejected(player, seg, reason, data = {}) {
+	    append('segment.append_rejected', {
+	      segment: seg?.segmentId ?? seg?.segment ?? null,
+	      reason,
+	      generation: seg?.generation ?? data.generation ?? null,
+	      currentGeneration: player?._generation ?? data.currentGeneration ?? null,
+	      workerId: seg?.workerId ?? data.workerId ?? null,
+	      seekEpoch: seg?.seekEpoch ?? data.seekEpoch ?? null,
+	    });
+	  }
+
+	  function appended(player, seg, data = {}) {
+	    if (!seg?.segmentId) return;
+	    const c = get(seg);
+	    c.appendedAt = Date.now();
+	    const generation = seg.generation ?? null;
+	    const strictAllowed = (generation == null || generation === player._generation)
+	      && (seg.seekEpoch == null || seg.seekEpoch === activeSeekEpoch)
+	      && (!seg.workerId || seg.workerId === 'main' || activeWorkers.has(seg.workerId))
+	      && !(seg.source === 'cache' && generation == null);
+	    const report = {
+	      segment: seg.segmentId,
+	      generation,
+	      workerId: seg.workerId ?? null,
+	      seekEpoch: seg.seekEpoch ?? null,
+	      source: seg.source ?? null,
+	      selectedBy: c.selectedBy ?? data.selectedBy ?? null,
+	      selectedFunction: c.selectedFunction ?? null,
+	      cacheHit: c.cacheHit === true || data.cacheHit === true,
+	      timelineOwner: {
+	        generation,
+	        workerId: seg.workerId ?? null,
+	        seekEpoch: seg.seekEpoch ?? null,
+	        source: seg.source ?? null,
+	      },
+	      currentGeneration: player._generation,
+	      activeSeekEpoch,
+	      acceptedBecause: data.acceptedBecause ?? null,
+	      'Would strict ownership validation allow this?': strictAllowed ? 'YES' : 'NO',
+	    };
+	    append('segment.chain_of_custody', {
+	      segment: seg.segmentId,
+	      generation,
+	      workerId: seg.workerId ?? null,
+	      seekEpoch: seg.seekEpoch ?? null,
+	      source: seg.source ?? null,
+	      selectedBy: report.selectedBy,
+	      selectedFunction: report.selectedFunction,
+	      fetchedFrom: c.fetchedFrom ?? null,
+	      cacheHit: report.cacheHit,
+	      insertedIntoTimelineAt: c.insertedIntoTimelineAt ?? null,
+	      appendedAt: c.appendedAt,
+	      currentGeneration: player._generation,
+	    });
+	    append('SEGMENT APPEND REPORT', report);
+	    detect(seg, player._generation, { stage: 'appended', strictAllowed });
+	  }
+
+	  function serverTrace(phase, data = {}) {
+	    if (phase === 'seek.epoch_created') {
+	      activeSeekEpoch = data.seekEpoch ?? activeSeekEpoch;
+	      append(phase, data);
+	    }
+	    if (phase === 'seek.worker.started' && data.jobId) activeWorkers.add(data.jobId);
+	    if (/seek\.worker\.(killed|expired|done|failed|error)/.test(phase) && data.jobId) activeWorkers.delete(data.jobId);
+	    if (phase === 'timeline.insert') {
+	      const segment = data.segment;
+	      timelineInserts.set(segment, (timelineInserts.get(segment) ?? 0) + 1);
+	      const c = get(segment);
+	      c.insertedIntoTimelineAt = data.at ?? Date.now();
+	      c.timelineOwner = owner(data);
+	      append(phase, data);
+	      detect({ segmentId: segment, ...data }, data.currentGeneration ?? null, { stage: 'timeline_insert' });
+	    }
+	    if (phase === 'segment.cache_hit') append(phase, data);
+	    if (phase === 'SEGMENT_OWNERSHIP_VIOLATION') append(phase, data);
+	  }
+
+	  function auditCache(player) {
+	    const now = Date.now();
+	    const rows = [...player.buffers.keys()].map(segment => {
+	      const meta = player._bufferMeta?.get(segment) ?? {};
+	      return {
+	        segment,
+	        generation: meta.generation ?? null,
+	        workerId: meta.workerId ?? null,
+	        seekEpoch: meta.seekEpoch ?? null,
+	        source: meta.source ?? null,
+	        ageSeconds: meta.createdAt ? +((now - meta.createdAt) / 1000).toFixed(1) : null,
+	      };
+	    });
+	    append('cache.ownership_audit', rows);
+	  }
+
+	  document.addEventListener('DOMContentLoaded', () => {
+	    document.getElementById('btn-copy-segment-ownership-forensics')?.addEventListener('click', e => {
+	      e.preventDefault(); e.stopPropagation();
+	      const b = e.currentTarget;
+	      navigator.clipboard.writeText(events.map(x => `[${x.ts}] ${x.event}\n${fmt(x.data)}`).join('\n\n')).then(() => {
+	        b.textContent = 'Copied!';
+	        setTimeout(() => { b.textContent = 'Copy'; }, 1500);
+	      });
+	    });
+	  });
+
+	  return { append, selection, cacheHit, admission, rejected, appended, serverTrace, auditCache, setActiveSeekEpoch: v => { activeSeekEpoch = v; }, owner };
+	})();
+
+	// ── A/V Sync Diagnostics panel ───────────────────────────────────────────────
+	const _avSyncRows = [];
+const AV_SYNC_MAX_ROWS = 25;
+
+function appendAvSyncRow(d) {
+  _avSyncRows.push(d);
+  if (_avSyncRows.length > AV_SYNC_MAX_ROWS) _avSyncRows.shift();
+
+  const tbody = document.getElementById('av-sync-tbody');
+  const empty = document.getElementById('av-sync-empty');
+  if (!tbody) return;
+
+  empty && (empty.style.display = 'none');
+
+  const deltaMs = d.actualAudioMinusVideoMs;
+  const deltaBad = deltaMs != null && Math.abs(deltaMs) > 50;
+  const row = document.createElement('tr');
+  row.style.background = deltaBad ? '#2a0a0a' : 'transparent';
+
+  const td = (val, right = false) => {
+    const c = document.createElement('td');
+    c.style.cssText = 'padding:3px 8px;border-bottom:1px solid #222;' + (right ? 'text-align:right;' : '');
+    c.textContent = val ?? '—';
+    return c;
+  };
+
+  const seg = d.segment ?? '?';
+  const shortSeg = seg.length > 24 ? '…' + seg.slice(-22) : seg;
+  row.appendChild(td(shortSeg));
+  row.appendChild(td(d.videoStart != null ? d.videoStart.toFixed(3) : '—', true));
+  row.appendChild(td(d.audioStart != null ? d.audioStart.toFixed(3) : '—', true));
+
+  const deltaCell = document.createElement('td');
+  deltaCell.style.cssText = 'padding:3px 8px;border-bottom:1px solid #222;text-align:right;font-weight:bold;';
+  deltaCell.style.color = deltaBad ? '#f77' : '#7f7';
+  deltaCell.textContent = deltaMs != null ? deltaMs : '—';
+  row.appendChild(deltaCell);
+
+  row.appendChild(td(d.videoTfdtSeconds != null ? d.videoTfdtSeconds.toFixed(3) : '—', true));
+  row.appendChild(td(d.audioTfdtSeconds != null ? d.audioTfdtSeconds.toFixed(3) : '—', true));
+  row.appendChild(td(d.videoTimescale ?? '—', true));
+  row.appendChild(td(d.audioTimescale ?? '—', true));
+
+  // Keep max rows in DOM
+  while (tbody.rows.length >= AV_SYNC_MAX_ROWS) tbody.deleteRow(0);
+  tbody.appendChild(row);
+}
+
 function dispatchTraceTelemetry(phase, data) {
   if (!diagnostics.shouldLog(phase)) return;
+  SegmentForensics.serverTrace(phase, data);
   // ── Seek debug panel: capture all seek.* events ──────────────────────────
   const SEEK_DEBUG_PHASES = new Set([
     'seek.segment_discovered', 'seek.tfdt_parsed', 'seek.tfdt_failed',
@@ -2516,6 +4309,7 @@ function dispatchTraceTelemetry(phase, data) {
     'torrent.stream.open', 'torrent.stream.first_byte',
     'torrent.stream.bytes_sent', 'torrent.stream.closed',
   ]);
+  if (phase === 'seek.proof.promoted') appendBwSeekServerEvent(phase, data);
   if (SEEK_DEBUG_PHASES.has(phase)) { _seekDebugAppend(phase, data); return; }
 
   if (phase.startsWith('torrent.piece_gate.')) { updatePieceGatePanel(data); return; }
@@ -2531,6 +4325,11 @@ function dispatchTraceTelemetry(phase, data) {
   if (phase.startsWith('pipeline.') || phase.startsWith('main.segment.')) {
     appendFfmpeg(phase, data); return;
   }
+	  if (phase.startsWith('generation.'))           { GenerationAudit.append(phase, data); return; }
+	  if (phase.startsWith('avduration.'))           { window._appendAvDurationDiagnostics?.(phase, data); return; }
+  if (phase.startsWith('avsync.'))               { window._appendAvSyncInvestigation?.(phase, data); return; }
+  if (phase === 'seek.av_sync.segment')          { appendAvSyncRow(data); return; }
+  if (phase === 'seek.init.timescales')          { appendAvSyncRow({ segment: 'INIT', videoTimescale: data.videoTimescaleFromInit, audioTimescale: data.audioTimescaleFromInit, actualAudioMinusVideoMs: data.audioTimescaleMismatch ? 'MISMATCH' : null }); return; }
   if (phase.startsWith('seek.segment.'))        { appendSegmentGen(phase, data); return; }
   if (phase.startsWith('route.seek.') || phase.startsWith('seek.worker.')) {
     appendSeekLifecycle(phase, data); return;
@@ -2716,11 +4515,13 @@ class TimelineQueue {
 
     const seg = {
       segmentId,
-      file:     raw.file ?? segmentId,
-      startTime,
-      endTime,
-      duration: raw.duration ?? (endTime - startTime),
-    };
+	      file:     raw.file ?? segmentId,
+	      startTime,
+	      endTime,
+	      duration: raw.duration ?? (endTime - startTime),
+	      generation: raw.generation ?? null,
+	      workerId: raw.workerId ?? null,
+	    };
     this._ids.add(segmentId);
     let i = this.segments.length;
     while (i > 0 && this.segments[i - 1].startTime > startTime) i--;
@@ -2827,12 +4628,14 @@ class SegmentPlayer {
     this.queue       = new TimelineQueue();
     this.appendedIds = new Set();
     this.buffers     = new Map();  // segmentId → ArrayBuffer
+    this._bufferMeta = new Map();  // segmentId → ownership metadata for buffers
     this.fetching    = new Set();  // segmentId in-flight
 
     this._cleanupAgentTimer = null;
     this._appendedTimeline  = [];  // { segmentId, startTime, endTime } in append order
     this.sbQueue           = Promise.resolve();
     this._generation       = 0;
+    this._activeSeekEpoch  = 0;
     this._abortControllers = new Map();
     this._destroyed        = false;
     this._seekTimer        = null;
@@ -2853,9 +4656,13 @@ class SegmentPlayer {
     this._currentInitType      = 'main'; // 'main' | 'seek' — tracks which init segment is active
     this._seekBootstrap        = null;   // first segment that overlaps the active seek target
     this._seekAv               = null;   // seek A/V telemetry accumulator
-    this._mediaStateTimer      = null;
-    this._seekAudioInvestigation = null;
-  }
+    this._seekDiagnostic       = null;
+    this._seekTimelineDiagCount = 0;
+	    this._mediaStateTimer      = null;
+	    this._seekAudioInvestigation = null;
+	    this._generationTimelineTimer = setInterval(() => this._auditTimelineState(), 5000);
+	    this._cacheOwnershipTimer = setInterval(() => SegmentForensics.auditCache(this), 5000);
+	  }
 
   _playheadTime() {
     return this.pendingSeekTime ?? this.video.currentTime;
@@ -3058,20 +4865,35 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
     const isSeekSeg = this._isSeekArtifact(seg.segmentId);
     if (!isSeekSeg) return;
 
+    const videoTfdt     = tracks.video?.tfdt      ?? null;
+    const audioTfdt     = tracks.audio?.tfdt      ?? null;
+    const videoFirstPts = tracks.video?.firstPts  ?? null;
+    const audioFirstPts = tracks.audio?.firstPts  ?? null;
+    const videoLastPts  = tracks.video?.lastPts   ?? null;
+    const audioLastPts  = tracks.audio?.lastPts   ?? null;
+    const videoDuration = tracks.video?.duration  ?? null;
+    const audioDuration = tracks.audio?.duration  ?? null;
+    const videoSamples  = tracks.video?.sampleCount ?? null;
+    const audioSamples  = tracks.audio?.sampleCount ?? null;
+    const driftMs = (videoFirstPts != null && audioFirstPts != null) ? (audioFirstPts - videoFirstPts) * 1000 : null;
+
+    feedFfmpegTimestampAuditSegment({
+      segment:      seg.segmentId,
+      videoTfdt,
+      audioTfdt,
+      videoFirstPts,
+      videoFirstDts: tracks.video?.firstDts ?? null,
+      audioFirstPts,
+      audioFirstDts: tracks.audio?.firstDts ?? null,
+      videoDuration,
+      audioDuration,
+      videoSamples,
+      audioSamples,
+      driftMs,
+    });
+
     let segRecord = this._seekAudioInvestigation.segments.find(r => r.segmentId === seg.segmentId);
     if (!segRecord && this._seekAudioInvestigation.segments.length < 5) {
-      const videoTfdt = tracks.video?.tfdt ?? null;
-      const audioTfdt = tracks.audio?.tfdt ?? null;
-      const videoFirstPts = tracks.video?.firstPts ?? null;
-      const audioFirstPts = tracks.audio?.firstPts ?? null;
-      const videoLastPts = tracks.video?.lastPts ?? null;
-      const audioLastPts = tracks.audio?.lastPts ?? null;
-      const videoDuration = tracks.video?.duration ?? null;
-      const audioDuration = tracks.audio?.duration ?? null;
-      const videoSamples = tracks.video?.sampleCount ?? null;
-      const audioSamples = tracks.audio?.sampleCount ?? null;
-      const driftMs = (videoFirstPts != null && audioFirstPts != null) ? (audioFirstPts - videoFirstPts) * 1000 : null;
-
       segRecord = {
         segmentId: seg.segmentId,
         videoTfdt,
@@ -3335,14 +5157,19 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
     if (!segmentId) return null;
     const startTime = data.startTime ?? 0;
     const endTime   = data.endTime ?? (startTime + (data.duration ?? 0));
-    return {
-      segmentId,
-      file:      data.file ?? segmentId,
-      startTime,
-      endTime,
-      duration:  data.duration ?? (endTime - startTime),
-    };
-  }
+	    return {
+	      segmentId,
+	      file:      data.file ?? segmentId,
+	      startTime,
+	      endTime,
+	      duration:  data.duration ?? (endTime - startTime),
+	      generation: data.generation ?? null,
+	      workerId: data.workerId ?? null,
+	      seekEpoch: data.seekEpoch ?? null,
+	      source: data.source ?? null,
+	      createdAt: data.createdAt ?? null,
+	    };
+	  }
 
   _segmentUrl(segmentId) {
     return `/stream/${this.sessionId}/by-id/${encodeURIComponent(segmentId)}`;
@@ -3355,13 +5182,17 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
       generation: payload.generation ?? this._generation,
       pendingSeekTime: this.pendingSeekTime,
     };
-    if (diagnostics.effectiveLevel() >= DebugLevel.VERBOSE) console.log('[' + name + ']', data);
+	    if (diagnostics.effectiveLevel() >= DebugLevel.VERBOSE) console.log('[' + name + ']', data);
     msePageLog('[' + name + ']', JSON.stringify(data));
     seekSegmentLog.trace(name, data, null);
     appendSeekAvAnalysisEvent(name, data);
     appendSeekRootCauseEvent(name, data);
     appendSeekWorkerSpawnEvent(name, data);
-  }
+	    appendBwSeekEvent(name, data);
+	    if (name.startsWith('generation.')) GenerationAudit.append(name, data);
+	    if (name.startsWith('segment.') || name === 'SEGMENT_OWNERSHIP_VIOLATION') SegmentForensics.append(name, data);
+	    if (name.startsWith('avsync.')) window._appendAvSyncInvestigation?.(name, data);
+	  }
 
   _bufferedSnapshot() {
     return dumpBuffered(this.video).map(r => ({
@@ -3403,6 +5234,16 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
   _cacheInsert(key, buf, seg, gen = this._generation, source = 'unknown') {
     const segmentId = typeof seg === 'string' ? seg : (seg?.segmentId ?? key);
     this.buffers.set(key, buf);
+    this._bufferMeta.set(key, {
+      ...SegmentForensics.owner(typeof seg === 'object' ? seg : { segment: segmentId }),
+      segment: segmentId,
+      generation: typeof seg === 'object' && seg?.generation != null ? seg.generation : gen,
+      workerId: typeof seg === 'object' ? (seg.workerId ?? null) : null,
+      seekEpoch: typeof seg === 'object' ? (seg.seekEpoch ?? null) : null,
+      source: typeof seg === 'object' && seg?.source ? seg.source : source,
+      fetchedFrom: source,
+      createdAt: Date.now(),
+    });
     this._mseTrace('CACHE_INSERT', {
       key,
       segmentId,
@@ -3445,9 +5286,12 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
     this._seekBootstrap = {
       segmentId: seg.segmentId,
       startTime: seg.startTime,
-      endTime: seg.endTime,
-      generation: gen,
-      fetchStarted: false,
+	      endTime: seg.endTime,
+	      generation: gen,
+	      workerId: seg.workerId ?? null,
+	      seekEpoch: seg.seekEpoch ?? this._activeSeekEpoch ?? null,
+	      source: seg.source ?? source,
+	      fetchStarted: false,
       fetchDone: false,
       appended: false,
       playable: false,
@@ -3510,7 +5354,7 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
     return 'other';
   }
 
-  _logAvDrift(segmentId, tracks, source = 'unknown') {
+	  _logAvDrift(segmentId, tracks, source = 'unknown') {
     const driftMs = this._avDriftMs(tracks);
     if (driftMs == null) return null;
     this._mseTrace('AV_DRIFT', {
@@ -3522,15 +5366,170 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
     if (Math.abs(driftMs) > SEEK_AV_WARN_MS) {
       seekSegmentLog.warn('AV_DRIFT ' + segmentId + ' drift=' + driftMs + 'ms source=' + source);
     }
-    return driftMs;
-  }
+	    return driftMs;
+	  }
 
-  _recordSeekAvSegment(seg, tracks, source = 'unknown') {
+	  _trackTimelineMetadata(track) {
+	    return {
+	      tfdt: track?.tfdt ?? null,
+	      baseMediaDecodeTime: track?.tfdt ?? null,
+	      firstPts: track?.firstPts ?? track?.startSec ?? null,
+	      lastPts: track?.lastPts ?? track?.endSec ?? null,
+	      duration: track?.duration ?? track?.durSec ?? null,
+	      sampleCount: track?.sampleCount ?? 0,
+	    };
+	  }
+
+	  _buildAvTimelinePayload(seg, tracks, gen = this._generation) {
+	    const video = this._trackTimelineMetadata(tracks?.video);
+	    const audio = this._trackTimelineMetadata(tracks?.audio);
+	    const startOffsetMs = video.firstPts != null && audio.firstPts != null
+	      ? Math.round((video.firstPts - audio.firstPts) * 1000)
+	      : null;
+	    const endOffsetMs = video.lastPts != null && audio.lastPts != null
+	      ? Math.round((video.lastPts - audio.lastPts) * 1000)
+	      : null;
+	    const durationDeltaMs = video.duration != null && audio.duration != null
+	      ? Math.round((audio.duration - video.duration) * 1000)
+	      : null;
+	    return {
+	      segment: seg?.segmentId ?? null,
+	      segmentId: seg?.segmentId ?? null,
+	      generation: seg?.generation ?? gen,
+	      workerId: seg?.workerId ?? null,
+	      video,
+	      audio,
+	      computed: {
+	        startOffsetMs,
+	        endOffsetMs,
+	        durationDeltaMs,
+	      },
+	    };
+	  }
+
+	  _emitAvTimelineDiagnostics(seg, tracks, source = 'unknown') {
+	    if (!seg?.segmentId || !tracks?.video || !tracks?.audio) return null;
+	    const payload = this._buildAvTimelinePayload(seg, tracks);
+	    const driftMs = payload.computed.startOffsetMs;
+	    const emitForDrift = driftMs != null && Math.abs(driftMs) > AV_TIMELINE_WARN_MS;
+	    const emitForSeek = this._seekDiagnostic
+	      && this._seekDiagnostic.newGeneration === this._generation
+	      && this._seekTimelineDiagCount < AV_TIMELINE_SEEK_SEGMENTS;
+	    if (emitForSeek) this._seekTimelineDiagCount++;
+	    if (!emitForDrift && !emitForSeek) return payload;
+
+	    const enriched = {
+	      ...payload,
+	      source,
+	      reason: emitForDrift ? 'drift_gt_250ms' : 'first_segments_after_seek',
+	      seekSegmentIndex: emitForSeek ? this._seekTimelineDiagCount : null,
+	    };
+	    this._mseTrace('AV_TIMELINE', enriched);
+	    msePageLog(
+	      'AV_TIMELINE',
+	      'segment=' + payload.segment,
+	      'gen=' + payload.generation,
+	      'videoTfdt=' + (payload.video.tfdt ?? 'null'),
+	      'audioTfdt=' + (payload.audio.tfdt ?? 'null'),
+	      'videoFirstPts=' + (payload.video.firstPts ?? 'null'),
+	      'audioFirstPts=' + (payload.audio.firstPts ?? 'null'),
+	      'startOffsetMs=' + (payload.computed.startOffsetMs ?? 'null'),
+	      'durationDeltaMs=' + (payload.computed.durationDeltaMs ?? 'null')
+	    );
+
+	    if (this._seekDiagnostic && !this._seekDiagnostic.firstSegmentAfterSeek) {
+	      this._seekDiagnostic.firstSegmentAfterSeek = {
+	        name: payload.segment,
+	        videoTfdt: payload.video.tfdt,
+	        audioTfdt: payload.audio.tfdt,
+	        videoFirstPts: payload.video.firstPts,
+	        audioFirstPts: payload.audio.firstPts,
+	      };
+	      this._emitSeekDiagnostic('first_segment');
+	    }
+	    return payload;
+	  }
+
+	  _sourceBufferPreAppendPayload(segmentId, generation) {
+	    return {
+	      segment: segmentId,
+	      segmentId,
+	      generation,
+	      sourceBuffer: {
+	        updating: this.sb?.updating ?? null,
+	        bufferedRanges: this._bufferedSnapshot(),
+	      },
+	      media: {
+	        currentTime: +this.video.currentTime.toFixed(3),
+	        readyState: this.video.readyState,
+	      },
+	    };
+	  }
+
+	  _emitSeekDiagnostic(stage = 'snapshot') {
+	    if (!this._seekDiagnostic) return;
+	    this._mseTrace('SEEK_DIAGNOSTIC', {
+	      ...this._seekDiagnostic,
+	      stage,
+	    });
+	  }
+
+	  _segmentOwnerPayload(seg, gen = this._generation, extra = {}) {
+	    const segmentId = typeof seg === 'string' ? seg : seg?.segmentId;
+	    return {
+	      segment: segmentId,
+	      segmentId,
+	      generation: typeof seg === 'object' && seg?.generation != null ? seg.generation : gen,
+	      workerId: typeof seg === 'object' ? (seg.workerId ?? null) : null,
+	      currentGeneration: this._generation,
+	      ...extra,
+	    };
+	  }
+
+	  _auditAppendQueue(reason = 'snapshot') {
+	    GenerationAudit.auditQueue(this.queue.segments.map(s => ({
+	      segmentId: s.segmentId,
+	      generation: s.generation,
+	      workerId: s.workerId,
+	      appendState: this.appendedIds.has(s.segmentId) ? 'completed' : 'queued',
+	    })), this._generation);
+	    this._mseTrace('generation.append_queue', {
+	      reason,
+	      currentGeneration: this._generation,
+	      queue: this.queue.segments.map(s => ({
+	        segment: s.segmentId,
+	        generation: s.generation ?? null,
+	        workerId: s.workerId ?? null,
+	        appendState: this.appendedIds.has(s.segmentId) ? 'completed' : 'queued',
+	        queued: true,
+	        appending: false,
+	        completed: this.appendedIds.has(s.segmentId),
+	      })),
+	    });
+	  }
+
+	  async _auditTimelineState() {
+	    if (this._destroyed || !this.sessionId) return;
+	    try {
+	      const params = new URLSearchParams({
+	        sessionId: this.sessionId,
+	        after: '0',
+	        window: String(this.duration ?? 999999),
+	      });
+	      const r = await fetch('/torrent/timeline?' + params);
+	      if (!r.ok || this._destroyed) return;
+	      const entries = await r.json();
+	      if (!Array.isArray(entries)) return;
+	      GenerationAudit.auditTimeline(entries, this._generation);
+	    } catch {}
+	  }
+
+	  _recordSeekAvSegment(seg, tracks, source = 'unknown') {
     if (!seg?.segmentId || !this._seekAv) return;
     const ranges = this._trackRangesFromSegment(seg, tracks);
     const driftMs = this._avDriftMs(tracks);
     const sourceLabel = this._seekAvSource(source, 'parsed_fragment');
-    const entry = {
+	    const entry = {
       segmentId: seg.segmentId,
       startTime: seg.startTime,
       endTime: seg.endTime,
@@ -3541,9 +5540,14 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
       videoDuration: tracks?.video?.durSec ?? null,
       audioDuration: tracks?.audio?.durSec ?? null,
       driftMs,
-      source: sourceLabel,
-    };
-    this._seekAv.segments.set(seg.segmentId, entry);
+	      source: sourceLabel,
+	    };
+	    this._mseTrace('generation.avsync', this._segmentOwnerPayload(seg, this._generation, {
+	      videoStart: ranges.video?.start ?? null,
+	      audioStart: ranges.audio?.start ?? null,
+	      trackDeltaMs: driftMs,
+	    }));
+	    this._seekAv.segments.set(seg.segmentId, entry);
     if (!this._seekAv.firstVideo && ranges.video && ranges.video.end > this._seekAv.targetTime) {
       this._seekAv.firstVideo = { ...ranges.video, segmentId: seg.segmentId, source: sourceLabel };
       this._mseTrace('FIRST_VIDEO_SEGMENT', {
@@ -3599,6 +5603,7 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
     if (!seg?.segmentId) return;
     const duration = seg.endTime != null && seg.startTime != null ? seg.endTime - seg.startTime : null;
     const driftMs = this._logAvDrift(seg.segmentId, tracks, source);
+    this._emitAvTimelineDiagnostics(seg, tracks, source);
     this._mseTrace('SEGMENT_METADATA', {
       segmentId: seg.segmentId,
       startTime: seg.startTime != null ? +seg.startTime.toFixed(3) : null,
@@ -3789,6 +5794,21 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
       const postSeek   = Date.now() < this._postSeekUntil;
       const nearCt     = this._segmentNearSeek(seg, ct);
       const extendsBuf = seg.startTime <= bufEnd + 1.0 && seg.endTime > bufEnd - 0.1;
+      if (activeSeek && this.pendingSeekTime - seg.endTime > MAX_SEEK_PREROLL_SECONDS) {
+        const remaining = this.pendingSeekTime - seg.endTime;
+        seekSegmentLog.warn('  → drop (preroll too far from target: remaining='
+          + remaining.toFixed(3) + 's max=' + MAX_SEEK_PREROLL_SECONDS + 's)');
+        this._mseTrace('preroll.rejected_too_far_from_target', {
+          segmentId: seg.segmentId,
+          targetTime: +this.pendingSeekTime.toFixed(3),
+          segmentStart: +seg.startTime.toFixed(3),
+          segmentEnd: +seg.endTime.toFixed(3),
+          remaining: +remaining.toFixed(3),
+          maxPrerollSeconds: MAX_SEEK_PREROLL_SECONDS,
+          source: 'client_enqueue_guard',
+        });
+        return;
+      }
       if (!activeSeek && !postSeek && !nearCt && !extendsBuf) {
         seekSegmentLog.muted('  → drop (seek artifact: stale)');
         return;
@@ -3823,8 +5843,9 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
         seekArtifact: this._isSeekArtifact(seg.segmentId),
       });
     }
-    const inserted = this.queue.insert(seg);
-    this._mseTrace('QUEUE_PUSH', {
+	    const inserted = this.queue.insert(seg);
+	    this._auditAppendQueue('enqueue');
+	    this._mseTrace('QUEUE_PUSH', {
       segmentId: seg.segmentId,
       startTime: +seg.startTime.toFixed(3),
       endTime: +seg.endTime.toFixed(3),
@@ -3832,8 +5853,8 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
       generation: this._generation,
       inserted,
       seekSegment: this._isSeekArtifact(seg.segmentId),
-      seekBootstrap: this._isSeekBootstrapSegment(seg.segmentId),
-    });
+	      seekBootstrap: this._isSeekBootstrapSegment(seg.segmentId),
+	    });
     this._trackSeg(seg, 'queued');
     this._pump();
   }
@@ -3895,6 +5916,10 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
       startTime,
       endTime:   startTime + 2,
       duration:  2,
+      generation: this._generation,
+      workerId: 'main',
+      seekEpoch: null,
+      source: 'prefetch',
     };
     msePageLog('[PREFETCH]', JSON.stringify({ segmentId: nextId, afterIndex: maxIdx }));
     this._fetchSegment(seg, this._generation);
@@ -4060,15 +6085,17 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
         if (!bootstrap || this.appendedIds.has(bootstrap.segmentId)) return null;
         this._logContinuityCheck(bootstrap, bufferedEnd);
         this._logAppendDecision(bootstrap.segmentId, 'append', 'seek target coverage bootstrap');
+        SegmentForensics.selection(this, bootstrap, 'seek_worker', seekTime);
         return bootstrap;
       }
       const covering = this._seekCoveringSegments(seekTime)
         .filter(s => !this.appendedIds.has(s.segmentId));
       if (covering.length) {
         const seg = covering[0];
-        this._selectSeekBootstrap(seg, 'next_to_append', gen);
+        this._selectSeekBootstrap(seg, 'next_to_append', this._generation);
         this._logContinuityCheck(seg, bufferedEnd);
         this._logAppendDecision(seg.segmentId, 'append', 'seek target coverage');
+        SegmentForensics.selection(this, seg, 'timeline_lookup', seekTime);
         return seg;
       }
       const ext = this.queue.findNextAfterBuffer(bufferedEnd, this.appendedIds, maxGap);
@@ -4076,6 +6103,7 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
         const gap = this._logContinuityCheck(ext, bufferedEnd);
         if (bufferedEnd <= 0.05 || gap <= maxGap) {
           this._logAppendDecision(ext.segmentId, 'append', 'continuity after seek');
+          SegmentForensics.selection(this, ext, 'fallback', seekTime);
           return ext;
         }
         this._logAppendDecision(ext.segmentId, 'wait', 'gap > ' + maxGap + 's after seek');
@@ -4089,6 +6117,7 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
       if (!start || this.appendedIds.has(start.segmentId)) return null;
       this._logContinuityCheck(start, bufferedEnd);
       this._logAppendDecision(start.segmentId, 'append', 'startup segment at t=0');
+      SegmentForensics.selection(this, start, 'main_pipeline', 0);
       return start;
     }
 
@@ -4112,6 +6141,7 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
     this._stopGapPoll();
     this._logAppendDecision(next.segmentId, 'append',
       gap > 1.05 ? 'seek tail gap ok' : 'continuity ok');
+    SegmentForensics.selection(this, next, next.source === 'prefetch' ? 'prefetch' : 'timeline_lookup', this.video.currentTime);
     return next;
   }
 
@@ -4194,8 +6224,9 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
         msePageLog('[GAP RECOVERY]', JSON.stringify({
           bufferedEnd, segmentId: seg.segmentId, startTime: seg.startTime, endTime: seg.endTime,
         }));
-        this.queue.insert(seg);
-        if (!this.buffers.has(seg.segmentId) && !this.fetching.has(seg.segmentId)) {
+	        this.queue.insert(seg);
+	        this._auditAppendQueue('gap_recovery_insert');
+	        if (!this.buffers.has(seg.segmentId) && !this.fetching.has(seg.segmentId)) {
           this._fetchSegment(seg, this._generation);
         }
         this._pump();
@@ -4224,6 +6255,10 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
             startTime: this._seekBootstrap.startTime,
             endTime: this._seekBootstrap.endTime,
             duration: this._seekBootstrap.endTime - this._seekBootstrap.startTime,
+            generation: this._seekBootstrap.generation ?? this._generation,
+            workerId: this._seekBootstrap.workerId ?? null,
+            seekEpoch: this._seekBootstrap.seekEpoch ?? this._activeSeekEpoch ?? null,
+            source: this._seekBootstrap.source ?? 'seek_worker',
           };
         return this.appendedIds.has(bootstrap.segmentId)
           || this.buffers.has(bootstrap.segmentId)
@@ -4341,14 +6376,37 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
             seekSegsAppended: this._seekSegmentsAppended,
           });
         }
-        this._mseTrace('SEEK_ROOT_PLAYBACK_START', {
+	        this._mseTrace('SEEK_ROOT_PLAYBACK_START', {
           currentTime: +video.currentTime.toFixed(3),
           videoFrameTime: +video.currentTime.toFixed(3),
           audioClockTime: null,
           deltaMs: null,
           segmentId: visibleId,
-          note: 'audio clock is not exposed by HTMLMediaElement',
-        });
+	          note: 'audio clock is not exposed by HTMLMediaElement',
+	        });
+	        const ownerSeg = this.queue.segments.find(s => s.segmentId === visibleId)
+	          ?? this._lastAppendedSeg
+	          ?? this._seekBootstrap;
+	        this._mseTrace('generation.playback_owner', {
+	          currentTime: +video.currentTime.toFixed(3),
+	          coveringSegment: visibleId,
+	          generation: ownerSeg?.generation ?? null,
+	          workerId: ownerSeg?.workerId ?? null,
+	        });
+	        GenerationAudit.playbackOwner({
+	          currentTime: +video.currentTime.toFixed(3),
+	          coveringSegment: visibleId,
+	          generation: ownerSeg?.generation ?? null,
+	          workerId: ownerSeg?.workerId ?? null,
+	        });
+	        GenerationAudit.finalReport({
+	          activeGeneration: this._generation,
+	          timelineEntries: 'see latest TIMELINE STATE',
+	          appendQueue: GenerationAudit.formatCounts(GenerationAudit.countsByGeneration(this.queue.segments)),
+	          bufferedOwnership: GenerationAudit.formatCounts(GenerationAudit.countsByGeneration(this._appendedTimeline)),
+	          playbackOwner: ownerSeg?.generation ?? null,
+	          avSyncSource: this._seekAv?.generation ?? null,
+	        });
         if (typeof video.requestVideoFrameCallback === 'function') {
           video.requestVideoFrameCallback((_, metadata) => {
             this._mseTrace('SEEK_ROOT_PLAYBACK_START', {
@@ -4361,6 +6419,15 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
             });
           });
         }
+        this._mseTrace('avsync.seek_report', {
+          targetTime:      target,
+          firstSegment:    visibleId,
+          firstVideoStart: this._seekBootstrap?.startTime != null ? +this._seekBootstrap.startTime.toFixed(3) : null,
+          firstAudioStart: null,
+          firstDeltaMs:    null,
+          currentVideoTime: +video.currentTime.toFixed(3),
+          buffered:        this._bufferedSnapshot(),
+        });
         this._renderSeekAvReport();
         this._clearSeekWait();
         if (video.seeking || Math.abs(video.currentTime - target) > 0.5) {
@@ -4583,17 +6650,19 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
         log('Timeline bootstrap failed: HTTP ' + r.status, 'warn');
         return;
       }
-      const entries = await r.json();
-      if (!Array.isArray(entries)) return;
-      let inserted = 0;
+	      const entries = await r.json();
+	      if (!Array.isArray(entries)) return;
+	      GenerationAudit.auditTimeline(entries, this._generation);
+	      let inserted = 0;
       for (const e of entries) {
         const seg = this._normalizeSegment(e);
         if (!seg || this._isSeekArtifact(seg.segmentId)) continue;
-        if (this.queue.insert(seg, { quiet: true })) {
-          inserted++;
-          this._trackSeg(seg, 'bootstrap');
-        }
-      }
+	        if (this.queue.insert(seg, { quiet: true })) {
+	          inserted++;
+	          this._trackSeg(seg, 'bootstrap');
+	        }
+	      }
+	      if (inserted > 0) this._auditAppendQueue('timeline_bootstrap');
       log('Timeline bootstrap: ' + inserted + '/' + entries.length + ' segment(s) near t='
         + Math.floor(ct) + 's', 'ok');
       this._pump();
@@ -4611,16 +6680,26 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
   onSegmentReady(data) {
     const seg = this._normalizeSegment(data);
     if (!seg) return;
-    this._mseTrace('SEGMENT_METADATA', {
+	    this._mseTrace('SEGMENT_METADATA', {
       segmentId: seg.segmentId,
       startTime: +seg.startTime.toFixed(3),
       endTime: +seg.endTime.toFixed(3),
       videoTfdt: null,
       audioTfdt: null,
       duration: +(seg.endTime - seg.startTime).toFixed(3),
-      source: 'segment_ready',
-      note: 'track TFDT populated after segment fetch',
-    });
+	      source: 'segment_ready',
+	      generation: seg.generation,
+	      workerId: seg.workerId,
+	      note: 'track TFDT populated after segment fetch',
+	    });
+	    this._mseTrace('generation.segment_discovered', {
+	      segment: seg.segmentId,
+	      generation: seg.generation,
+	      workerId: seg.workerId,
+	      source: data.source ?? 'segment_ready',
+	      absoluteStart: +seg.startTime.toFixed(3),
+	      absoluteEnd: +seg.endTime.toFixed(3),
+	    });
     this._trackSeg(seg, 'sse');
     if (this.pendingSeekTime != null && seekLatency.isActive()) {
       seekLatency.phase('sse_segment_ready', {
@@ -4685,6 +6764,9 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
         generation: gen,
       });
     }
+    if (cacheFound) {
+      SegmentForensics.cacheHit(this, next, this._bufferMeta.get(next.segmentId) ?? {}, gen === this._generation);
+    }
 
     if (!this.ready || !this.sb || this.sb.updating || !cacheFound) {
       this._mseTrace('APPEND_BLOCKED', {
@@ -4706,6 +6788,8 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
       const isSeekSeg  = this._isSeekArtifact(next.segmentId);
       const isBootstrap = this._isSeekBootstrapSegment(next.segmentId);
       this.buffers.delete(next.segmentId);
+      const cacheMeta = this._bufferMeta.get(next.segmentId) ?? {};
+      this._bufferMeta.delete(next.segmentId);
       this.appendedIds.add(next.segmentId);
       this._mseTrace('QUEUE_POP', {
         segmentId: next.segmentId,
@@ -4717,6 +6801,12 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
       });
 
       const wasSeekAnchor = this.seekAnchor && this.seekAnchor.segmentId === next.segmentId;
+      SegmentForensics.admission(this, next, {
+        generation: next.generation ?? gen,
+        seekEpoch: next.seekEpoch ?? null,
+        source: next.source ?? cacheMeta.source ?? null,
+        accepted: gen === this._generation,
+      });
 
       this.sbQueue = this.sbQueue.then(async () => {
         if (this._needsMseCleanup()) await this._ensureMseCapacity();
@@ -4724,6 +6814,10 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
         if (!initOk) {
           // Init segment unavailable — roll back optimistic add so this segment
           // is retried once seek_init.mp4 is ready.
+          SegmentForensics.rejected(this, next, 'init_segment_unavailable', {
+            generation: gen,
+            currentGeneration: this._generation,
+          });
           this.appendedIds.delete(next.segmentId);
           this._cacheInsert(next.segmentId, buf, next, gen, 'init_failed_rollback');
           return;
@@ -4737,7 +6831,13 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
           stage: 'before_append',
           seekSegment: isSeekSeg,
         });
-        if (!genAccepted) return;
+        if (!genAccepted) {
+          SegmentForensics.rejected(this, next, 'generation_mismatch_before_append', {
+            generation: gen,
+            currentGeneration: this._generation,
+          });
+          return;
+        }
         let appended = false;
         try {
           if (isBootstrap) {
@@ -4799,7 +6899,13 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
             return;
           }
         }
-        if (appended) this._registerAppendedSeg(next);
+        if (appended) {
+          this._registerAppendedSeg(next);
+          SegmentForensics.appended(this, next, {
+            cacheHit: true,
+            acceptedBecause: 'ready && sourcebuffer_open && cacheFound && generationMatch',
+          });
+        }
         this._mseTrace('GEN_CHECK', {
           segmentId: next.segmentId,
           segmentGeneration: gen,
@@ -4914,14 +7020,20 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
           }
           if (Number.isFinite(startTime)) {
             const endTime = seg.endTime > startTime ? seg.endTime : startTime + 2;
-            this.queue.insert({
+	            this.queue.insert({
               segmentId: seg.segmentId,
               file:      seg.segmentId,
               startTime,
               endTime,
-              duration:  endTime - startTime,
-            }, { quiet: true });
-          }
+	            duration:  endTime - startTime,
+	            generation: seg.generation ?? gen,
+	            workerId: seg.workerId ?? null,
+	            seekEpoch: seg.seekEpoch ?? null,
+	            source: seg.source ?? null,
+	            createdAt: seg.createdAt ?? null,
+	            }, { quiet: true });
+	            this._auditAppendQueue('fetch_done_insert');
+	          }
         }
         const queued = this.queue.segments.find(s => s.segmentId === seg.segmentId);
         const tracks = parseFragmentTracks(buf);
@@ -5047,6 +7159,12 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
           stage: 'append_entry',
           seekSegment: isSeekSeg,
         });
+        if (isMediaSegment) {
+          SegmentForensics.rejected(this, seg, 'generation_mismatch_append_entry', {
+            generation: gen,
+            currentGeneration: this._generation,
+          });
+        }
         resolve();
         return;
       }
@@ -5058,11 +7176,19 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
           readyState: this.ms?.readyState ?? null,
           seekSegment: isSeekSeg,
         });
+        if (isMediaSegment) {
+          SegmentForensics.rejected(this, seg, 'sourcebuffer_unavailable', {
+            generation: gen,
+            currentGeneration: this._generation,
+          });
+        }
         resolve();
         return;
       }
 
-      const appendTracks = isMediaSegment ? parseFragmentTracks(buf) : null;
+	      const appendTracks = isMediaSegment ? parseFragmentTracks(buf) : null;
+	      const ownerGeneration = isMediaSegment && seg?.generation != null ? seg.generation : gen;
+	      const ownerWorkerId = isMediaSegment ? (seg?.workerId ?? null) : null;
       this._mseTrace('SOURCEBUFFER_STATE', this._sourceBufferStatePayload({
         segmentId: label,
         generation: gen,
@@ -5081,14 +7207,33 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
           note: 'single muxed SourceBuffer; same state applies to audio and video samples',
         });
       }
-      this._mseTrace('APPEND_START', {
+	      this._mseTrace('APPEND_START', {
         segmentId: label,
         generation: gen,
         bytes: buf.byteLength,
         updating: this.sb.updating,
         readyState: this.ms.readyState,
         seekSegment: isSeekSeg,
-      });
+	      });
+	      if (isMediaSegment) {
+	        const accepted = gen === this._generation;
+	        this._mseTrace('generation.append_start', {
+	          segment: label,
+	          generation: ownerGeneration,
+	          workerId: ownerWorkerId,
+	          currentGeneration: this._generation,
+	          accepted,
+	          highlight: accepted && ownerGeneration != null && ownerGeneration !== this._generation ? 'red' : null,
+	        });
+	        if (accepted && ownerGeneration != null && ownerGeneration !== this._generation) {
+	          GenerationAudit.root('APPEND_CONTAMINATION', {
+	            segment: label,
+	            generation: ownerGeneration,
+	            currentGeneration: this._generation,
+	            workerId: ownerWorkerId,
+	          });
+	        }
+	      }
       if (isMediaSegment) {
         this._mseTrace('APPEND_START', {
           segmentId: label,
@@ -5133,14 +7278,22 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
             });
           }
         }
-        this._mseTrace('UPDATEEND', {
+	          this._mseTrace('UPDATEEND', {
           segmentId: label,
           generation: gen,
           buffered: this._bufferedSnapshot(),
           updating: this.sb?.updating ?? null,
           readyState: this.ms?.readyState ?? null,
           seekSegment: isSeekSeg,
-        });
+	          });
+	          this._mseTrace('generation.append_complete', {
+	            segment: label,
+	            generation: ownerGeneration,
+	            workerId: ownerWorkerId,
+	            currentGeneration: this._generation,
+	            buffered: this._bufferedSnapshot(),
+	          });
+	          this._auditAppendQueue('updateend');
         if (isSeekSeg) {
           this._mseTrace('SEEK_APPEND_RESULT', {
             segmentId: label,
@@ -5151,6 +7304,11 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
           });
         }
         if (isMediaSegment) this._logBufferedRanges(seg, appendTracks, 'updateend');
+        this._mseTrace('avsync.updateend', {
+          segment:        label,
+          bufferedAfter:  this._bufferedSnapshot(),
+          seekSegment:    isSeekSeg,
+        });
         msePageLog('[APPEND END]', label);
         if (isMediaSegment && this.pendingSeekTime != null && seekLatency.isActive()) {
           seekLatency.phase('mse_append_end', {
@@ -5192,6 +7350,18 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
             this._captureAppendValues(seg.segmentId, buf, appendTracks);
           }
         }
+        this._mseTrace('avsync.append', {
+          segment:      label,
+          videoStart:   appendTracks?.video?.tfdt != null ? +(appendTracks.video.tfdt + (this.sb?.timestampOffset ?? 0)).toFixed(3) : null,
+          audioStart:   appendTracks?.audio?.tfdt != null ? +(appendTracks.audio.tfdt + (this.sb?.timestampOffset ?? 0)).toFixed(3) : null,
+          trackDeltaMs: appendTracks?.video && appendTracks?.audio
+            ? Math.round((appendTracks.audio.tfdt - appendTracks.video.tfdt) * 1000) : null,
+          timestampOffset: this.sb?.timestampOffset != null ? +this.sb.timestampOffset.toFixed(3) : null,
+          bufferedBefore:  this._bufferedSnapshot(),
+          bytes:           buf.byteLength,
+          seekSegment:     isSeekSeg,
+        });
+        this._mseTrace('SOURCEBUFFER_PRE_APPEND', this._sourceBufferPreAppendPayload(label, ownerGeneration));
         this.sb.appendBuffer(buf);
         this._mseTrace('APPEND_SUCCESS', {
           segmentId: label,
@@ -5217,10 +7387,15 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
   _registerAppendedSeg(seg) {
     if (!seg?.segmentId || seg === 'init') return;
     const entry = {
-      segmentId: seg.segmentId,
-      startTime: seg.startTime,
-      endTime:   seg.endTime,
-    };
+	      segmentId: seg.segmentId,
+	      startTime: seg.startTime,
+	      endTime:   seg.endTime,
+	      generation: seg.generation ?? null,
+	      workerId: seg.workerId ?? null,
+	      seekEpoch: seg.seekEpoch ?? null,
+	      source: seg.source ?? null,
+	      createdAt: seg.createdAt ?? null,
+	    };
     const idx = this._appendedTimeline.findIndex(s => s.segmentId === seg.segmentId);
     if (idx >= 0) this._appendedTimeline[idx] = entry;
     else this._appendedTimeline.push(entry);
@@ -5421,6 +7596,9 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
     if (this._destroyed) return;
     diagnostics.startSeekBurst();
     const currentPlaybackTime = this.video.currentTime;
+    const seekEpoch = this._activeSeekEpoch + 1;
+    this._activeSeekEpoch = seekEpoch;
+    SegmentForensics.setActiveSeekEpoch(seekEpoch);
     const direction = Math.abs(toTime - currentPlaybackTime) < 0.05
       ? 'SAME'
       : toTime > currentPlaybackTime ? 'FORWARD' : 'BACKWARD';
@@ -5429,30 +7607,76 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
       currentPlaybackTime: +currentPlaybackTime.toFixed(3),
       direction,
       source,
+      seekEpoch,
     });
 
-    const bufferedAtSeek = isTimeBuffered(this.video, toTime);
-    if (bufferedAtSeek) {
-      seekLatency.begin(toTime, 'instant_buffered');
-      this.video.currentTime = toTime;
+	    const bufferedAtSeek = isTimeBuffered(this.video, toTime);
+	    if (bufferedAtSeek) {
+	      SegmentForensics.append('seek.epoch_created', {
+	        seekEpoch,
+	        seekTime: +toTime.toFixed(3),
+	        generation: this._generation,
+	        source: 'client_already_buffered',
+	      });
+	      this._seekTimelineDiagCount = 0;
+	      this._seekDiagnostic = {
+	        event: 'SEEK_DIAGNOSTIC',
+	        requestedTime: +toTime.toFixed(3),
+	        oldGeneration: this._generation,
+	        newGeneration: this._generation,
+	        bufferedBefore: this._bufferedSnapshot(),
+	        bufferedAfter: this._bufferedSnapshot(),
+	        queueLengthBefore: this.queue.segments.length,
+	        queueLengthAfter: this.queue.segments.length,
+	        fetchesAborted: 0,
+	        firstSegmentAfterSeek: null,
+	      };
+	      this._emitSeekDiagnostic('already_buffered');
+	      seekLatency.begin(toTime, 'instant_buffered');
+	      this.video.currentTime = toTime;
       seekSegmentLog.seek('skip — already buffered @' + toTime.toFixed(2) + 's');
       log('Seek skipped — already buffered at ' + Math.floor(toTime) + 's', 'ok');
       seekLatency.skip('already_buffered', { currentTime: toTime });
       return;
     }
 
-    segmentTracker.beginUserRequest('seek', toTime);
+	    segmentTracker.beginUserRequest('seek', toTime);
+	    const oldGeneration = this._generation;
+	    const bufferedBeforeSeek = this._bufferedSnapshot();
+	    const queueLengthBeforeSeek = this.queue.segments.length;
+	    const fetchesAborted = this._abortControllers.size;
 
-    this._mseTrace('SEEK_RESET_START', this._sourceBufferStatePayload({
-      seekTime: +toTime.toFixed(3),
-      source,
-      oldGeneration: this._generation,
-    }));
-    this._stopGapPoll();
-    this._generation++;
-    const gen = this._generation;
-    this._mseTrace('GENERATION_INCREMENTED', {
+	    this._mseTrace('SEEK_RESET_START', this._sourceBufferStatePayload({
+	      seekTime: +toTime.toFixed(3),
+	      source,
+	      oldGeneration,
+	    }));
+	    this._stopGapPoll();
+		    this._generation++;
+		    const gen = this._generation;
+		    this._seekTimelineDiagCount = 0;
+		    this._seekDiagnostic = {
+		      event: 'SEEK_DIAGNOSTIC',
+		      requestedTime: +toTime.toFixed(3),
+		      oldGeneration,
+		      newGeneration: gen,
+		      bufferedBefore: bufferedBeforeSeek,
+		      bufferedAfter: this._bufferedSnapshot(),
+		      queueLengthBefore: queueLengthBeforeSeek,
+		      queueLengthAfter: this.queue.segments.length,
+		      fetchesAborted,
+		      firstSegmentAfterSeek: null,
+		    };
+	    this._mseTrace('generation.switch', {
+		      oldGeneration,
+		      newGeneration: gen,
+	      seekEpoch,
+	      seekTime: +toTime.toFixed(3),
+	      timestamp: Date.now(),
+	    });
+	    this._mseTrace('GENERATION_INCREMENTED', {
       generation: gen,
+      seekEpoch,
       seekTime: +toTime.toFixed(3),
       source,
     });
@@ -5472,6 +7696,7 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
       bufferedSegmentCountBefore: this.buffers.size,
     });
     this.buffers.clear();
+    this._bufferMeta.clear();
     this.fetching.clear();
 
     this.pendingSeekTime       = toTime;
@@ -5498,6 +7723,8 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
     if (uiEl) {
       uiEl.textContent = 'Seeking to ' + toTime.toFixed(2) + 's... Waiting for telemetry.';
     }
+    resetFfmpegTimestampAudit(toTime);
+    resetTrackTimelineDiagnostics(toTime);
     this._mseTrace('SEEK_TARGET', {
       targetTime: +toTime.toFixed(3),
       generation: gen,
@@ -5508,13 +7735,22 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
     this.queue.clear();
     this.appendedIds.clear();
     this._appendedTimeline = [];
-    for (const id of [...this.buffers.keys()]) this.buffers.delete(id);
-    this._mseTrace('CLEAR_QUEUE_DONE', {
-      generation: gen,
-      queueLengthAfter: this.queue.segments.length,
-      appendedCountAfter: this.appendedIds.size,
-      bufferedSegmentCountAfter: this.buffers.size,
-    });
+    for (const id of [...this.buffers.keys()]) {
+      this.buffers.delete(id);
+      this._bufferMeta.delete(id);
+    }
+		    this._mseTrace('CLEAR_QUEUE_DONE', {
+	      generation: gen,
+	      queueLengthAfter: this.queue.segments.length,
+	      appendedCountAfter: this.appendedIds.size,
+	      bufferedSegmentCountAfter: this.buffers.size,
+		    });
+		    if (this._seekDiagnostic?.newGeneration === gen) {
+		      this._seekDiagnostic.queueLengthAfter = this.queue.segments.length;
+		      this._seekDiagnostic.bufferedAfter = this._bufferedSnapshot();
+		      this._emitSeekDiagnostic('queue_cleared');
+		    }
+		    this._auditAppendQueue('seek_reset');
     this._mseTrace('QUEUE_DUMP', {
       generation: gen,
       queue: this.queue.segments.map(s => ({
@@ -5530,11 +7766,16 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
         aggressive: true,
       }));
       await this._purgeOrphanRanges({ aggressive: true });
-      this._mseTrace('REMOVE_BUFFER_DONE', this._sourceBufferStatePayload({
-        generation: gen,
-        aggressive: true,
-      }));
-      this._syncAppendedIdsToBuffer();
+	      this._mseTrace('REMOVE_BUFFER_DONE', this._sourceBufferStatePayload({
+	        generation: gen,
+	        aggressive: true,
+	      }));
+	      if (this._seekDiagnostic?.newGeneration === gen) {
+	        this._seekDiagnostic.queueLengthAfter = this.queue.segments.length;
+	        this._seekDiagnostic.bufferedAfter = this._bufferedSnapshot();
+	        this._emitSeekDiagnostic('buffer_removed');
+	      }
+	      this._syncAppendedIdsToBuffer();
       this._mseTrace('SEEK_RESET_DONE', this._sourceBufferStatePayload({
         generation: gen,
         seekTime: +toTime.toFixed(3),
@@ -5554,7 +7795,7 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
       fetch('/torrent/seek', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ sessionId: this.sessionId, seekTime: toTime, currentPlaybackTime }),
+        body:    JSON.stringify({ sessionId: this.sessionId, seekTime: toTime, currentPlaybackTime, seekEpoch }),
       })
         .then(r => { if (!r.ok) throw new Error('Seek ' + r.status); return r.json(); })
         .then(d => {
@@ -5633,9 +7874,11 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
     this._destroyed = true;
     clearInterval(this._cleanupAgentTimer);
     clearInterval(this._durationLock);
-    clearInterval(this._seekPollTimer);
-    clearInterval(this._gapPollTimer);
-    clearInterval(this._mediaStateTimer);
+	    clearInterval(this._seekPollTimer);
+	    clearInterval(this._gapPollTimer);
+	    clearInterval(this._mediaStateTimer);
+	    clearInterval(this._generationTimelineTimer);
+	    clearInterval(this._cacheOwnershipTimer);
     clearTimeout(this._seekTimer);
     clearTimeout(this._timelineRetry);
     for (const controller of this._abortControllers.values()) controller.abort();
@@ -5645,6 +7888,7 @@ SECTION 7 — FIRST 5 SEEK SEGMENTS
     } catch {}
     this.video.src = '';
     this.buffers.clear();
+    this._bufferMeta.clear();
     this.fetching.clear();
   }
 }
